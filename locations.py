@@ -1,6 +1,10 @@
 import requests
 import os
 import json
+from dotenv import load_dotenv
+
+# Cargar variables desde el archivo .env si existe
+load_dotenv()
 
 # Leer la clave API desde la variable de entorno
 API_KEY = os.getenv("METEOCAT_API_KEY")
