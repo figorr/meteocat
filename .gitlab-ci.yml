@@ -16,7 +16,7 @@ test_job:
       - municipis_result.json  # Archivo que queremos guardar
     expire_in: 1 week  # Opcional: Configura cuánto tiempo estará disponible el archivo
   only:
-    - main
+    - master
 
 deploy_job:
   stage: deploy
