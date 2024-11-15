@@ -28,16 +28,13 @@ test_job:
 
 release_job:
   stage: release
-  image: node:20  # Imagen de Docker para ejecutar Semantic Release
+  image: python:3.12.7  # Imagen de Docker para usar Python 3.12.7
   script:
-    - apt-get update -y  # Actualiza la lista de paquetes
-    - apt-get install -y python3 python3-pip  # Instala Python 3 y pip
-    - python3 --version  # Verifica que Python 3 esté instalado correctamente
-    - pip3 --version  # Verifica que pip3 esté disponible
+    - poetry install  # Instalar dependencias con Poetry
     - npm install -g semantic-release  # Instalar Semantic Release globalmente
     - semantic-release  # Ejecutar Semantic Release para crear una nueva versión
   only:
-    - master  # Ejecutar sólo en la rama master
+    - master  # Ejecutar solo en la rama master
 
 deploy_job:
   stage: deploy
