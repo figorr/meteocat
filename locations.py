@@ -1,6 +1,10 @@
 import requests
 import os
 import json
+from dotenv import load_dotenv
+
+# Cargar variables desde el archivo .env si existe
+load_dotenv()
 
 # Leer la clave API desde la variable de entorno
 API_KEY = os.getenv("METEOCAT_API_KEY")
@@ -64,4 +68,9 @@ if __name__ == "__main__":
     print("=== Consulta de Municipios ===")
     print(f"Status Code: {status_code}")
     print(f"Message: {message}")
-    print(f"Archivo guardado: municipis_result.json")
+    
+    # Guardar la respuesta en un archivo .json si la respuesta fue exitosa
+    if status_code == 200:
+        with open('municipis_result.json', 'w', encoding='utf-8') as f:
+            json.dump(message, f, ensure_ascii=False, indent=4)
+        print(f"Archivo guardado: municipis_result.json")

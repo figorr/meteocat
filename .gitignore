@@ -7,6 +7,9 @@
 # Archivos de configuración de Visual Studio Code
 .vscode/
 
+# Archivos de configuración de Git
+.git/
+
 # Archivos de bytecode de Python
 *.pyc
 __pycache__/
