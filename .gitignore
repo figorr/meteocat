@@ -1,1 +1,15 @@
+# Entorno virtual
 venv/
+
+# Variables de entorno
+.env
+
+# Archivos de configuración de Visual Studio Code
+.vscode/
+
+# Archivos de bytecode de Python
+*.pyc
+__pycache__/
+
+# Archivos de log
+*.log
