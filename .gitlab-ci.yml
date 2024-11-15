@@ -30,7 +30,10 @@ release_job:
   stage: release
   image: node:20  # Imagen de Docker para ejecutar Semantic Release
   script:
-    - apt-get update && apt-get install -y python3 python3-pip  # Instalar Python 3 y pip
+    - apt-get update -y  # Actualiza la lista de paquetes
+    - apt-get install -y python3 python3-pip  # Instala Python 3 y pip
+    - python3 --version  # Verifica que Python 3 esté instalado correctamente
+    - pip3 --version  # Verifica que pip3 esté disponible
     - npm install -g semantic-release  # Instalar Semantic Release globalmente
     - semantic-release  # Ejecutar Semantic Release para crear una nueva versión
   only:
