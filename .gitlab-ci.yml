@@ -28,9 +28,9 @@ test_job:
 
 release_job:
   stage: release
-  image: python:3.12-slim  # Imagen que ya tiene Python 3.12
+  image: python:3.12-slim  # Imagen de Docker que incluye Python
   script:
-    - apt-get update && apt-get install -y python3-pip curl gnupg  # Instalar dependencias
+    - apt-get update && apt-get install -y python3-pip curl gnupg git  # Instalar Git y dependencias
     - curl -sL https://deb.nodesource.com/setup_20.x | bash -  # Instalar Node.js
     - apt-get install -y nodejs  # Instalar Node.js
     - npm install -g semantic-release  # Instalar Semantic Release
