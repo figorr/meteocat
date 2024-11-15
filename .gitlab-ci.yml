@@ -1,5 +1,6 @@
 stages:
   - test
+  - release
   - deploy
 
 variables:
@@ -7,6 +8,7 @@ variables:
 
 before_script:
   - python -V  # Verificar versión de Python
+  - python -m pip install --upgrade pip
   - pip install poetry  # Instalar Poetry
   - poetry config virtualenvs.create false  # Desactivar la creación de entornos virtuales
   - poetry install  # Instalar dependencias con Poetry
@@ -15,15 +17,23 @@ test_job:
   stage: test
   image: python:3.12.7  # Actualización a Python 3.12.7
   script:
-    - python -m pip install --upgrade pip
-    - pip install -r requirements.txt
-    - python locations.py  # Ejecuta tu script principal
+    - poetry install  # Instalar dependencias con Poetry
+    - python meteocat/locations.py  # Ejecuta tu script principal
   artifacts:
     paths:
       - municipis_result.json  # Archivo que queremos guardar
     expire_in: never  # No expira. El archivo generado estará siempre disponible
   only:
     - master
+
+release_job:
+  stage: release
+  image: node:16  # Imagen de Docker para ejecutar Semantic Release
+  script:
+    - npm install -g semantic-release  # Instalar Semantic Release globalmente
+    - semantic-release  # Ejecutar Semantic Release para crear una nueva versión
+  only:
+    - master  # Ejecutar sólo en la rama master
 
 deploy_job:
   stage: deploy
