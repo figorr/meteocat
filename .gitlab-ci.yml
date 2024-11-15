@@ -28,13 +28,9 @@ test_job:
 
 release_job:
   stage: release
-  image: node:20  # Imagen base para ejecutar npm
+  image: python:3.11-slim  # Use a Python image instead of node
   script:
-    - apt-get update && apt-get install -y python3 python3-pip curl gnupg  # Instalar Python 3, pip y dependencias para Node.js
-    - curl -sL https://deb.nodesource.com/setup_20.x | bash -  # Instalar Node.js 20
-    - apt-get install -y nodejs  # Instalar Node.js
-    - npm install -g semantic-release  # Instalar Semantic Release globalmente
-    - semantic-release  # Ejecutar Semantic Release para crear una nueva versión
+    - pip install semantic-release  # Install Semantic Release
   only:
     - master  # Ejecutar sólo en la rama master
 
