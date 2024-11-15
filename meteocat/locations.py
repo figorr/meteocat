@@ -1,8 +1,8 @@
-from . import _LOGGER
 import requests
 import os
 import json
 from dotenv import load_dotenv
+from meteocat import _LOGGER
 
 # Cargar variables desde el archivo .env si existe
 load_dotenv()
