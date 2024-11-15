@@ -14,6 +14,14 @@ include = ["LICENSE"]
 python = "3.12.7"
 requests = "^2.32.3"
 python-dotenv = "^1.0.1"
+simplejson = "^3.19.3"
+semantic-release = "^0.1.0"
+
+
+[tool.semantic_release]
+branch = "master"  # Cambia esta línea si usas una rama diferente, como 'main' o 'dev'
+version_source = "commit"  # Fuente de la versión basada en los commits
+upload_to_pypi = false  # No publicará automáticamente en PyPI
 
 
 [build-system]
