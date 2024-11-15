@@ -5,6 +5,12 @@ stages:
 variables:
   BASE_URL: "https://api.meteo.cat"
 
+before_script:
+  - python -V  # Verificar versión de Python
+  - pip install poetry  # Instalar Poetry
+  - poetry config virtualenvs.create false  # Desactivar la creación de entornos virtuales
+  - poetry install  # Instalar dependencias con Poetry
+
 test_job:
   stage: test
   image: python:3.12.7  # Actualización a Python 3.12.7
