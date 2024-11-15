@@ -28,11 +28,16 @@ test_job:
 
 release_job:
   stage: release
-  image: python:3.11-slim  # Use a Python image instead of node
+  image: python:3.12-slim  # Imagen que ya tiene Python 3.12
   script:
-    - pip install semantic-release  # Install Semantic Release
+    - apt-get update && apt-get install -y python3-pip curl gnupg  # Instalar dependencias
+    - curl -sL https://deb.nodesource.com/setup_20.x | bash -  # Instalar Node.js
+    - apt-get install -y nodejs  # Instalar Node.js
+    - npm install -g semantic-release  # Instalar Semantic Release
+    - semantic-release  # Ejecutar Semantic Release
   only:
-    - master  # Ejecutar sólo en la rama master
+    - master  # Solo en la rama master
+
 
 deploy_job:
   stage: deploy
