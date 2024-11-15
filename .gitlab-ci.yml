@@ -28,7 +28,7 @@ test_job:
 
 release_job:
   stage: release
-  image: node:16  # Imagen de Docker para ejecutar Semantic Release
+  image: node:20  # Imagen de Docker para ejecutar Semantic Release
   script:
     - npm install -g semantic-release  # Instalar Semantic Release globalmente
     - semantic-release  # Ejecutar Semantic Release para crear una nueva versión
