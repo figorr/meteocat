@@ -49,10 +49,13 @@ def get_meteocat_data(path):
         elif response.status_code == 403:
             message = response.json().get("message", "Causa desconocida")
             if message == "Forbidden":
+                _LOGGER.error("Error 403: No tienes permiso para realizar esta petición.")
                 return response.status_code, "Error 403: No tienes permiso para realizar esta petición."
             elif message == "Missing Authentication Token":
+                _LOGGER.error("Error 403: El recurso no existe.")
                 return response.status_code, "Error 403: El recurso no existe."
             else:
+                _LOGGER.error(f"Error 403: {message}")
                 return response.status_code, f"Error 403: {message}"
         
         elif response.status_code == 429:
