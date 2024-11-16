@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.1.2 (2024-11-16)
+
+### Bug Fixes
+
+- Delete deploy job
+  ([`69b049c`](https://github.com/figorr1/meteocat/commit/69b049cc53ab62ddd45636e0bc5f5886561093ee))
+
+
 ## v0.1.1 (2024-11-16)
 
 ### Bug Fixes
