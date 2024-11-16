@@ -26,28 +26,19 @@ test_job:
   only:
     - master
 
-bump_and_publish:
+release_job:
+  image: python:3.12
   stage: release
-  image: python:3.12.7  # Actualización a Python 3.12.7
-  variables:
-    PYPI_USERNAME: $PRODUCTION_USERNAME
-    PYPI_PASSWORD: $PRODUCTION_PASSWORD
-    GL_TOKEN: $GL_TOKEN
-  before_script:  # Incluir instalación específica para python-semantic-release
-    - python -V
-    - python -m pip install --upgrade pip
-    - pip install python-semantic-release>=9.14.0
-  script:
-    - git config --global user.name "semantic-release (via GitLabCI)"
-    - git config --global user.email "semantic-release@GitLabCI"
-    - python-semantic-release publish
-    - poetry config http-basic.pypi $PYPI_USERNAME $PYPI_PASSWORD
-    - poetry publish --build
-  artifacts:
-    paths:
-      - dist
   only:
-    - master
+    - master  # Solo ejecuta este job en la rama master
+  script:
+    - pip install poetry  # Instala Poetry
+    - poetry install  # Instala las dependencias del proyecto
+    - poetry run semantic-release publish  # Ejecuta el comando para publicar el release
+  variables:
+    PYPI_USERNAME: $PRODUCTION_USERNAME  # Usuario de PyPI
+    PYPI_PASSWORD: $PRODUCTION_PASSWORD  # Token de PyPI
+    GL_TOKEN: $GL_TOKEN  # Token de GitLab
 
 deploy_job:
   stage: deploy
