@@ -21,7 +21,7 @@ python-semantic-release = "^9.14.0"
 [tool.semantic_release]
 branch = "master"  # Cambia esta línea si usas una rama diferente, como 'main' o 'dev'
 version_source = "commit"  # Fuente de la versión basada en los commits
-upload_to_pypi = false  # No publicará automáticamente en PyPI
+upload_to_pypi = true  # Publicará automáticamente en PyPI
 
 
 [build-system]
