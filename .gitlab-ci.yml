@@ -43,12 +43,3 @@ release_job:
     GL_TOKEN: $GL_TOKEN  # Token de GitLab
     GIT_STRATEGY: fetch
     GIT_DEPTH: 0
-
-deploy_job:
-  stage: deploy
-  image: python:3.12.7  # Actualización a Python 3.12.7
-  script:
-    - echo "Desplegando la aplicación..."
-    - python deploy.py  # Reemplaza con tu lógica de despliegue
-  only:
-    - tags
