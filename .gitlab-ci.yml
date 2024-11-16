@@ -37,5 +37,8 @@ release_job:
   script:
     - git fetch --tags  # Asegurarse de obtener todas las etiquetas
     - git checkout master  # Asegurarse de estar en la rama master
+    - poetry run semantic-release version  # Generar la nueva versión
     - poetry run semantic-release publish  # Ejecuta el comando para publicar el release
+  variables:
+    GH_TOKEN: $GH_TOKEN  # Usar el token de GitHub configurado
 
