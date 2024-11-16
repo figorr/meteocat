@@ -8,6 +8,9 @@ https://gitlab.com/figorr1/meteocat
 
 import logging
 
+# Version
+__version__ = "0.1.2"
+
 # Configuración básica para el sistema de logging
 logging.basicConfig(
     level=logging.INFO,  # Cambia a logging.DEBUG durante el desarrollo

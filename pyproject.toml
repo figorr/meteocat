@@ -20,10 +20,11 @@ python-semantic-release = "^9.14.0"
 
 
 [tool.semantic_release]
-branch = "master"  # Cambia esta línea si usas una rama diferente, como 'main' o 'dev'
-version_source = "commit"  # Fuente de la versión basada en los commits
-changelog = true
-changelog_path = "CHANGELOG.md"
+branch = "master"  # Define la rama desde la que se harán los lanzamientos
+version_source = "commit"  # Determina la versión basada en los commits
+version_variable = "meteocat/__init__.py:__version__"  # Ubicación de la variable de versión
+changelog = { file = "CHANGELOG.md" }  # Genera el changelog en el archivo especificado
+upload_to_pypi = true  # Sube automáticamente la versión a PyPI
 
 
 [build-system]
