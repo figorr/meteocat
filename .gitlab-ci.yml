@@ -1,6 +1,7 @@
 stages:
   - test
-  - release
+  - gitlab
+  - github
 
 variables:
   BASE_URL: "https://api.meteo.cat"
@@ -31,12 +32,25 @@ test_job:
   only:
     - master
 
-release_job:
-  stage: release
+gitlab_job:
+  stage: gitlab
   only:
     - master  # Solo ejecuta este job en la rama master
   script:
     - git fetch --tags  # Asegurarse de obtener todas las etiquetas
     - git checkout master  # Asegurarse de estar en la rama master
+    - git remote set-url origin https://gitlab.com/figorr1/meteocat.git  # Cambiar la URL para GitLab
     - poetry run semantic-release version  # Generar nueva versión
-    - poetry run semantic-release publish  # Ejecuta el comando para publicar el release
+    - poetry run semantic-release publish  # Ejecutar el comando para publicar el release
+
+github_job:
+  stage: github
+  only:
+    - master  # Solo ejecuta este job en la rama master
+  script:
+    - git fetch --tags  # Asegurarse de obtener todas las etiquetas
+    - git checkout master  # Asegurarse de estar en la rama master
+    - git remote set-url origin https://github.com/figorr/meteocat.git  # Cambiar la URL para GitHub
+    - poetry run semantic-release version  # Generar nueva versión
+    - poetry run semantic-release publish  # Ejecutar el comando para publicar el release
+    - git push origin master  # Hacer push al repositorio GitHub
