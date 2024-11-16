@@ -38,7 +38,10 @@ version_job:
     - git fetch --tags  # Asegurarse de obtener todas las etiquetas
     - git checkout master  # Cambiar explícitamente a la rama master
     - |
-      VERSION=$(poetry run semantic-release version --no-push | tee /dev/tty | grep -oP '(?<=The next version is: )\S+')
+      echo "Running semantic-release to determine the next version"
+      poetry run semantic-release version --no-push  # Ver el resultado completo
+      VERSION=$(poetry run semantic-release version --no-push | grep -oP '(?<=The next version is: )\S+')
+      echo "Next version: $VERSION"
       echo $VERSION > release_version.txt
     - cat release_version.txt  # Mostrar el archivo generado para depuración
   artifacts:
