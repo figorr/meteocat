@@ -1,7 +1,6 @@
 stages:
   - test
-  - version
-  - release
+  - github
 
 variables:
   BASE_URL: "https://api.meteo.cat"
@@ -32,24 +31,13 @@ test_job:
   only:
     - master
 
-version_job:
-  stage: version
+github_job:
+  stage: github
   script:
-    - python -m versioneer version  # Incrementa la versión según las reglas de versioneer
-    - VERSION=$(python -m versioneer --version)  # Obtener la nueva versión con versioneer
-    - echo $VERSION > release_version.txt  # Guardar la versión en un archivo
-  artifacts:
-    paths:
-      - release_version.txt  # Si quieres guardar la versión como artefacto
-    expire_in: never  # Opcional: Expira en 1 semana
-  only:
-    - master
-
-gitlab_job:
-  stage: release
-  dependencies:
-    - version_job
-  script:
-    - python gitlab_release.py
+    - git fetch --tags  # Asegurarse de obtener todas las etiquetas
+    - git checkout master  # Asegurarse de estar en la rama master
+    - poetry run semantic-release version  # Generar nueva versión
+    - poetry run semantic-release publish  # Ejecutar el comando para publicar el release
+    - git push origin master  # Hacer push al repositorio GitHub
   only:
     - master

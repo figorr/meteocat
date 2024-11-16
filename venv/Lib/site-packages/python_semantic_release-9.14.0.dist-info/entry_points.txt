@@ -1,0 +1,3 @@
+[console_scripts]
+psr = semantic_release.__main__:main
+semantic-release = semantic_release.__main__:main
