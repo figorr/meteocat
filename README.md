@@ -2,7 +2,7 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python version compatibility](https://img.shields.io/pypi/pyversions/alexapy)](https://pypi.org/project/alexapy)
-[![pipeline status](https://gitlab.com/figorr1/meteocat/badges/master/pipeline.svg)](https://gitlab.com/figorr1/meteocat/commits/master)
+[![pipeline status](https://gitlab.com/figorr/meteocat/badges/master/pipeline.svg)](https://gitlab.com/figorr/meteocat/commits/master)
 
 
 This is a project to obtain meteorological data from the Meteocat API.
@@ -15,9 +15,9 @@ This is a personal project.
 
 # Contributing
 
-1.  [Check for open features/bugs](https://gitlab.com/figorr1/meteocat/issues)
-    or [initiate a discussion on one](https://gitlab.com/figorr1/meteocat/issues/new).
-2.  [Fork the repository](https://gitlab.com/figorr1/meteocat/forks/new).
+1.  [Check for open features/bugs](https://gitlab.com/figorr/meteocat/issues)
+    or [initiate a discussion on one](https://gitlab.com/figorr/meteocat/issues/new).
+2.  [Fork the repository](https://gitlab.com/figorr/meteocat/forks/new).
 3.  Install the dev environment: `make init`.
 4.  Enter the virtual environment: `pipenv shell`
 5.  Code your new feature or bug fix.
