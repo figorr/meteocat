@@ -41,4 +41,6 @@ github_job:
     - git remote set-url origin https://github.com/figorr/meteocat.git  # Cambiar la URL para GitHub
     - poetry run semantic-release version  # Generar nueva versión
     - poetry run semantic-release publish  # Ejecutar el comando para publicar el release
+    # Configurar Git para usar el token de GitHub
+    - git config --global url."https://${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
     - git push origin master  # Hacer push al repositorio GitHub
