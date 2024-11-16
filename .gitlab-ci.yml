@@ -28,6 +28,7 @@ test_job:
 
 bump_and_publish:
   stage: release
+  image: python:3.12.7  # Actualización a Python 3.12.7
   variables:
     PYPI_USERNAME: $PRODUCTION_USERNAME
     PYPI_PASSWORD: $PRODUCTION_PASSWORD
