@@ -1,6 +1,7 @@
 stages:
   - test
-  - github
+  - version
+  - release
 
 variables:
   BASE_URL: "https://api.meteo.cat"
@@ -31,16 +32,23 @@ test_job:
   only:
     - master
 
-github_job:
-  stage: github
-  only:
-    - master  # Solo ejecuta este job en la rama master
+version_job:
+  stage: version
   script:
     - git fetch --tags  # Asegurarse de obtener todas las etiquetas
-    - git checkout master  # Asegurarse de estar en la rama master
-    - git remote set-url origin https://github.com/figorr/meteocat.git  # Cambiar la URL para GitHub
-    - poetry run semantic-release version  # Generar nueva versión
-    - poetry run semantic-release publish  # Ejecutar el comando para publicar el release
-    # Configurar Git para usar el token de GitHub
-    - git config --global url."https://${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
-    - git push origin master  # Hacer push al repositorio GitHub
+    - poetry run semantic-release version --dry-run  # Determina la próxima versión sin realizar cambios
+  artifacts:
+    paths:
+      - next_version.txt  # Incluye el archivo como artefacto
+    expire_in: 1 week  # Opcional: Expira en 1 semana
+  only:
+    - master
+
+gitlab_job:
+  stage: release
+  dependencies:
+    - version_job
+  script:
+    - python gitlab_release.py
+  only:
+    - master
