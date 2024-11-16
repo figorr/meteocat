@@ -7,7 +7,6 @@ variables:
   PYPI_USERNAME: $PRODUCTION_USERNAME  # Usuario de PyPI
   PYPI_PASSWORD: $PRODUCTION_PASSWORD  # Token de PyPI
   GL_TOKEN: $GL_TOKEN  # Token de GitLab
-  GH_TOKEN: $GH_TOKEN  # Token de GitHub
   GIT_STRATEGY: fetch
   GIT_DEPTH: 0
 
@@ -40,5 +39,3 @@ release_job:
     - git checkout master  # Asegurarse de estar en la rama master
     - poetry run semantic-release version  # Generar la nueva versión
     - git add pyproject.toml  # Asegurarse de añadir la versión actualizada
-    - git push github master  # O gitlab master, según tu configuración
-    - poetry run semantic-release publish  # Ejecuta el comando para publicar el release
