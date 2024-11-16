@@ -33,10 +33,13 @@ bump_and_publish:
     PYPI_USERNAME: $PRODUCTION_USERNAME
     PYPI_PASSWORD: $PRODUCTION_PASSWORD
     GL_TOKEN: $GL_TOKEN
+  before_script:  # Incluir instalación específica para python-semantic-release
+    - python -V
+    - python -m pip install --upgrade pip
+    - pip install python-semantic-release>=9.14.0
   script:
     - git config --global user.name "semantic-release (via GitLabCI)"
     - git config --global user.email "semantic-release@GitLabCI"
-    - pip install python-semantic-release>=9.14.0
     - python-semantic-release publish
     - poetry config http-basic.pypi $PYPI_USERNAME $PYPI_PASSWORD
     - poetry publish --build
