@@ -1,7 +1,6 @@
 stages:
   - test
   - release
-  - deploy
 
 variables:
   BASE_URL: "https://api.meteo.cat"
@@ -37,3 +36,4 @@ release_job:
     - master  # Solo ejecuta este job en la rama master
   script:
     - poetry run semantic-release publish  # Ejecuta el comando para publicar el release
+
