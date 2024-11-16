@@ -1,6 +1,7 @@
 stages:
   - test
   - release
+  - deploy
 
 variables:
   BASE_URL: "https://api.meteo.cat"
@@ -10,18 +11,18 @@ variables:
   GIT_STRATEGY: fetch
   GIT_DEPTH: 0
 
-default:
-  image: python:3.12.7
-  before_script:
-    - python -V  # Verificar versión de Python
-    - python -m pip install --upgrade pip
-    - pip install poetry  # Instalar Poetry
-    - poetry config virtualenvs.create false  # Desactivar la creación de entornos virtuales
-    - poetry install  # Instalar dependencias con Poetry
+before_script:
+  - python -V  # Verificar versión de Python
+  - python -m pip install --upgrade pip
+  - pip install poetry  # Instalar Poetry
+  - poetry config virtualenvs.create false  # Desactivar la creación de entornos virtuales
+  - poetry install  # Instalar dependencias con Poetry
 
 test_job:
   stage: test
+  image: python:3.12.7  # Actualización a Python 3.12.7
   script:
+    - poetry install  # Instalar dependencias con Poetry
     - python meteocat/locations.py  # Ejecuta tu script principal
   artifacts:
     paths:
@@ -31,11 +32,9 @@ test_job:
     - master
 
 release_job:
+  image: python:3.12.7
   stage: release
   only:
     - master  # Solo ejecuta este job en la rama master
   script:
-    - git fetch --tags  # Asegurarse de obtener todas las etiquetas
-    - git checkout master  # Asegurarse de estar en la rama master
-    - poetry run semantic-release version  # Generar la nueva versión
-    - git add pyproject.toml  # Asegurarse de añadir la versión actualizada
+    - poetry run semantic-release version  # Ejecuta el comando para publicar el release
