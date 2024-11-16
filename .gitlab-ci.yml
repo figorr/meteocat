@@ -38,7 +38,7 @@ version_job:
     - git fetch --tags  # Asegurarse de obtener todas las etiquetas
     - git checkout master  # Cambiar explícitamente a la rama master
     - |
-      VERSION=$(poetry run semantic-release version --no-ci --no-publish | grep -oP '(?<=The next version is: )\S+')
+      VERSION=$(poetry run semantic-release version --no-push | grep -oP '(?<=The next version is: )\S+')
       echo $VERSION > release_version.txt
   artifacts:
     paths:
