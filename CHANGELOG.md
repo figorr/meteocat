@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.1.3 (2024-11-16)
+
+### Bug Fixes
+
+- Fix Jobs
+  ([`47ef9ae`](https://github.com/figorr1/meteocat/commit/47ef9ae50c6a8f092afbff6b26cfb4bcd384a579))
+
+
 ## v0.1.2 (2024-11-16)
 
 ### Bug Fixes
