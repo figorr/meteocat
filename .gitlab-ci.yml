@@ -5,19 +5,24 @@ stages:
 
 variables:
   BASE_URL: "https://api.meteo.cat"
+  PYPI_USERNAME: $PRODUCTION_USERNAME  # Usuario de PyPI
+  PYPI_PASSWORD: $PRODUCTION_PASSWORD  # Token de PyPI
+  GL_TOKEN: $GL_TOKEN  # Token de GitLab
+  GIT_STRATEGY: fetch
+  GIT_DEPTH: 0
 
-before_script:
-  - python -V  # Verificar versión de Python
-  - python -m pip install --upgrade pip
-  - pip install poetry  # Instalar Poetry
-  - poetry config virtualenvs.create false  # Desactivar la creación de entornos virtuales
-  - poetry install  # Instalar dependencias con Poetry
+default:
+  image: python:3.12.7
+  before_script:
+    - python -V  # Verificar versión de Python
+    - python -m pip install --upgrade pip
+    - pip install poetry  # Instalar Poetry
+    - poetry config virtualenvs.create false  # Desactivar la creación de entornos virtuales
+    - poetry install  # Instalar dependencias con Poetry
 
 test_job:
   stage: test
-  image: python:3.12.7  # Actualización a Python 3.12.7
   script:
-    - poetry install  # Instalar dependencias con Poetry
     - python meteocat/locations.py  # Ejecuta tu script principal
   artifacts:
     paths:
@@ -27,19 +32,8 @@ test_job:
     - master
 
 release_job:
-  image: python:3.12
   stage: release
   only:
     - master  # Solo ejecuta este job en la rama master
   script:
-    - python3 -m venv venv
-    - source venv/bin/activate
-    - pip install poetry  # Instala Poetry
-    - poetry install  # Instala las dependencias del proyecto
     - poetry run semantic-release publish  # Ejecuta el comando para publicar el release
-  variables:
-    PYPI_USERNAME: $PRODUCTION_USERNAME  # Usuario de PyPI
-    PYPI_PASSWORD: $PRODUCTION_PASSWORD  # Token de PyPI
-    GL_TOKEN: $GL_TOKEN  # Token de GitLab
-    GIT_STRATEGY: fetch
-    GIT_DEPTH: 0
