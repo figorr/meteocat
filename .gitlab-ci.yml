@@ -35,7 +35,7 @@ release_job:
   only:
     - master  # Solo ejecuta este job en la rama master
   script:
-    - git fetch --unshallow  # Asegurarse de obtener todos los commits
+    - git fetch --tags  # Asegurarse de obtener todas las etiquetas
     - git checkout master  # Asegurarse de estar en la rama master
     - poetry run semantic-release publish  # Ejecuta el comando para publicar el release
 
