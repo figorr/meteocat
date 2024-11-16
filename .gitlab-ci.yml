@@ -35,18 +35,10 @@ test_job:
 version_job:
   stage: version
   script:
-    - git fetch --tags  # Asegurarse de obtener todas las etiquetas
-    - git checkout master  # Cambiar explícitamente a la rama master
-    - |
-      echo "Running semantic-release to determine the next version"
-      poetry run semantic-release version --no-push  # Ver el resultado completo
-      VERSION=$(poetry run semantic-release version --no-push | grep -oP '(?<=The next version is: )\S+')
-      echo "Next version: $VERSION"
-      echo $VERSION > release_version.txt
-    - cat release_version.txt  # Mostrar el archivo generado para depuración
+    - python -m versioneer --version  # Obtiene la versión actual
   artifacts:
     paths:
-      - release_version.txt  # Incluye el archivo como artefacto
+      - release_version.txt  # Si quieres guardar la versión como artefacto
     expire_in: never  # Opcional: Expira en 1 semana
   only:
     - master
