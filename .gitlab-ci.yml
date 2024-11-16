@@ -35,7 +35,8 @@ test_job:
 version_job:
   stage: version
   script:
-    - python -m versioneer --version  # Obtiene la versión actual
+    - VERSION=$(python -m versioneer --version)  # Obtener la versión con versioneer
+    - echo $VERSION > release_version.txt  # Guardar la versión en un archivo
   artifacts:
     paths:
       - release_version.txt  # Si quieres guardar la versión como artefacto
