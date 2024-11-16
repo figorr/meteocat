@@ -36,6 +36,7 @@ github_job:
   script:
     - git fetch --tags  # Asegurarse de obtener todas las etiquetas
     - git checkout master  # Asegurarse de estar en la rama master
+    - git pull origin master --rebase  # Integra los cambios remotos con un rebase
     - poetry run semantic-release version  # Generar nueva versión
     - poetry run semantic-release publish  # Ejecutar el comando para publicar el release
     - git push origin master  # Hacer push al repositorio GitHub
