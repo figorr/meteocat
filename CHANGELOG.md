@@ -1,6 +1,95 @@
 # CHANGELOG
 
 
+## v0.1.3 (2024-11-16)
+
+### Bug Fixes
+
+- Fix Jobs
+  ([`47ef9ae`](https://github.com/figorr1/meteocat/commit/47ef9ae50c6a8f092afbff6b26cfb4bcd384a579))
+
+- Fix GitHub Job
+  ([`59114e2`](https://github.com/figorr1/meteocat/commit/59114e273294f63abd7072eb39278c5b819bc56a))
+
+- Update README
+  ([`c29929e`](https://github.com/figorr1/meteocat/commit/c29929e572969cff2ae07cdc56b4812e169ac7de))
+
+- Fix semantic-release
+  ([`2d2c192`](https://github.com/figorr1/meteocat/commit/2d2c1928445eb65199a7f8693d5fad8bd81770fd))
+
+- Fix Jobs
+  ([`15ec59b`](https://github.com/figorr1/meteocat/commit/15ec59b068cd27de73fe89b7f5e2143f79d52e9b))
+
+- Fix version job
+  ([`7317949`](https://github.com/figorr1/meteocat/commit/7317949f6c6cbc8ea7933b6d6c8567b431bd3924))
+
+- Fix version_job
+  ([`278d896`](https://github.com/figorr1/meteocat/commit/278d896480df2c13e8ff17657fd1fe5935e2e363))
+
+- Fix version_job
+  ([`a0fdd80`](https://github.com/figorr1/meteocat/commit/a0fdd80233129c40a424d8dde509444da105e0a9))
+
+- Fix semantic-release no-push
+  ([`5fedeaa`](https://github.com/figorr1/meteocat/commit/5fedeaab3ef2516ccc781cccd091971b43a165e8))
+
+- Fix version_job
+  ([`010252a`](https://github.com/figorr1/meteocat/commit/010252a8506b43649dcdc2bdafc8e8c0af95e363))
+
+- Fix semantic-release master
+  ([`2638433`](https://github.com/figorr1/meteocat/commit/26384332a90e41b1e8e1bfd63e0eba66f270ee09))
+
+- Fix version_job
+  ([`56459f6`](https://github.com/figorr1/meteocat/commit/56459f6bb581c41fde69d1cc2bcc8a85181de749))
+
+- Fix version_job
+  ([`b825a5c`](https://github.com/figorr1/meteocat/commit/b825a5cbba56f27bc4474c226a010d9d5a9c3bff))
+
+- Fix semantic-release
+  ([`82e90a4`](https://github.com/figorr1/meteocat/commit/82e90a45af3cbe6432d3a8b7532607fb7d819734))
+
+- Gitlab release Job
+  ([`35e05f9`](https://github.com/figorr1/meteocat/commit/35e05f9e0067104563260ff34e340c0bb4d89aa3))
+
+- Fix authentication
+  ([`af5c349`](https://github.com/figorr1/meteocat/commit/af5c349f51bbfad972250840b1b81451389a4f4b))
+
+- Fix job bugs
+  ([`11c169a`](https://github.com/figorr1/meteocat/commit/11c169a05b348dd5cb7fb9a3281e541323dd2a1f))
+
+- Fix Jobs
+  ([`2d7204a`](https://github.com/figorr1/meteocat/commit/2d7204a7e95ea75db0bed7dd63f096039f4af9a2))
+
+- Fix bugs
+  ([`52f3c0f`](https://github.com/figorr1/meteocat/commit/52f3c0f34016c8a8002e2356bf60c85c32548c7f))
+
+- Fix jobs
+  ([`c9d5d3f`](https://github.com/figorr1/meteocat/commit/c9d5d3fea8659cca9ef3c05f8a99e576ed75c4d5))
+
+- Fix jobs
+  ([`6cbfcaa`](https://github.com/figorr1/meteocat/commit/6cbfcaae0344da0981f66703001ef69b047ba3ef))
+
+- Fix script
+  ([`ebcf377`](https://github.com/figorr1/meteocat/commit/ebcf377afc020865329ed601ff21bb07991487b0))
+
+- Fix variables
+  ([`6c28da8`](https://github.com/figorr1/meteocat/commit/6c28da86ab60d441fe7cc2a923cefec805b25f77))
+
+- Fix semantic-release
+  ([`2ab754e`](https://github.com/figorr1/meteocat/commit/2ab754e9f65a346f188b6ca57a8043503eee7b6d))
+
+- Fix semantic-release
+  ([`162685b`](https://github.com/figorr1/meteocat/commit/162685b2c1fd692802ac4d18bda7b394bbdf9a72))
+
+- Create .releaserc for semantic-release
+  ([`8d1859b`](https://github.com/figorr1/meteocat/commit/8d1859b928964ed16d83c26de42c179a1597af53))
+
+- Fix release_job
+  ([`60c4d19`](https://github.com/figorr1/meteocat/commit/60c4d19afd2a65944267bb9c25c7f62f39cc7ebb))
+
+- Update release job
+  ([`0070caf`](https://github.com/figorr1/meteocat/commit/0070caff7cc1c9ddbf11b03d63380f6a3375cde4))
+
+
 ## v0.1.2 (2024-11-16)
 
 ### Bug Fixes
