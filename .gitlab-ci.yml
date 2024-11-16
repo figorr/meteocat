@@ -7,6 +7,7 @@ variables:
   PYPI_USERNAME: $PRODUCTION_USERNAME  # Usuario de PyPI
   PYPI_PASSWORD: $PRODUCTION_PASSWORD  # Token de PyPI
   GL_TOKEN: $GL_TOKEN  # Token de GitLab
+  GH_TOKEN: $GH_TOKEN  # Token de GitHub
   GIT_STRATEGY: fetch
   GIT_DEPTH: 0
 
@@ -44,6 +45,3 @@ release_job:
       git commit -m "chore: update version to $NEW_VERSION"  # Hacer commit con la nueva versión
     - git push github master  # O gitlab master, según tu configuración
     - poetry run semantic-release publish  # Ejecuta el comando para publicar el release
-  variables:
-    GH_TOKEN: $GH_TOKEN  # Usar el token de GitHub configurado
-
