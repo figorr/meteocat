@@ -36,12 +36,13 @@ version_job:
   stage: version
   script:
     - git fetch --tags  # Asegurarse de obtener todas las etiquetas
-    - VERSION=$(poetry run semantic-release version | grep -oP '(?<=The next version is: )\S+')  # Extrae la siguiente versión
-    - echo $VERSION > release_version.txt  # Guarda la versión en un archivo
+    - |
+      VERSION=$(poetry run semantic-release version | grep -oP '(?<=The next version is: )\S+')  # Extrae la siguiente versión
+      echo $VERSION > release_version.txt  # Guarda la versión en un archivo
   artifacts:
     paths:
       - release_version.txt  # Incluye el archivo como artefacto
-    expire_in: 1 week  # Opcional: Expira en 1 semana
+    expire_in: never  # Opcional: Expira en 1 semana
   only:
     - master
 
