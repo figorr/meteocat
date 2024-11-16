@@ -1,6 +1,5 @@
 stages:
   - test
-  - gitlab
   - github
 
 variables:
@@ -31,17 +30,6 @@ test_job:
     expire_in: never  # No expira. El archivo generado estará siempre disponible
   only:
     - master
-
-gitlab_job:
-  stage: gitlab
-  only:
-    - master  # Solo ejecuta este job en la rama master
-  script:
-    - git fetch --tags  # Asegurarse de obtener todas las etiquetas
-    - git checkout master  # Asegurarse de estar en la rama master
-    - git remote set-url origin https://gitlab.com/figorr1/meteocat.git  # Cambiar la URL para GitLab
-    - poetry run semantic-release version  # Generar nueva versión
-    - poetry run semantic-release publish  # Ejecutar el comando para publicar el release
 
 github_job:
   stage: github
