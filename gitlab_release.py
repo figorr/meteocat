@@ -4,7 +4,7 @@ import requests
 # Configuración básica
 GL_TOKEN = os.getenv("GL_TOKEN")  # Token de GitLab
 PROJECT_ID = os.getenv("GL_PROJECT_ID")  # ID del proyecto en GitLab
-VERSION_FILE = "next_version.txt"  # Archivo con la próxima versión
+VERSION_FILE = "release_version.txt"  # Archivo con la próxima versión
 DESCRIPTION = "Release generado automáticamente desde el pipeline de GitLab."
 
 def read_next_version(file_path):

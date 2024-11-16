@@ -36,10 +36,10 @@ version_job:
   stage: version
   script:
     - git fetch --tags  # Asegurarse de obtener todas las etiquetas
-    - poetry run semantic-release version --dry-run  # Determina la próxima versión sin realizar cambios
+    - poetry run semantic-release --dry-run  # Determina la próxima versión sin realizar cambios
   artifacts:
     paths:
-      - next_version.txt  # Incluye el archivo como artefacto
+      - release_version.txt  # Incluye el archivo como artefacto
     expire_in: 1 week  # Opcional: Expira en 1 semana
   only:
     - master
