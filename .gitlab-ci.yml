@@ -1,6 +1,7 @@
 stages:
   - test
   - github
+  - pypi
 
 variables:
   BASE_URL: "https://api.meteo.cat"
@@ -43,5 +44,14 @@ github_job:
     # Configurar Git para usar el token de GitHub
     - git config --global url."https://${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
     - git push origin master  # Hacer push al repositorio de GitHub
+  only:
+    - master
+
+pypy_job:
+  stage: pypi
+  script:
+    - pip install twine
+    - python setup.py sdist bdist_wheel  # Generar los paquetes
+    - twine upload dist/* -u $PYPI_USERNAME -p $PYPI_PASSWORD
   only:
     - master
