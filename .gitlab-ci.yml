@@ -67,10 +67,10 @@ gitlab_job:
   script:
     - git checkout master  # Asegurarse de estar en la rama master
     - git remote set-url origin "https://$GL_TOKEN:@gitlab.com/figorr/meteocat.git"  # Cambiar la URL para GitLab
+    - git pull origin master  # Traer los últimos cambios desde GitLab
     - poetry run semantic-release version  # Generar nueva versión
     - poetry run semantic-release publish  # Ejecutar el comando para publicar el release
     - git push origin master  # Hacer push al repositorio de GitLab
-    - git push --tags  # Empujar las etiquetas a GitLab
   allow_failure: true  # Opcional: evita que el pipeline falle completamente
   only:
     - master
