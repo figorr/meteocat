@@ -9,6 +9,7 @@ variables:
   PYPI_PASSWORD: $PRODUCTION_PASSWORD  # Token de PyPI
   GL_TOKEN: $GL_TOKEN  # Token de GitLab
   GH_TOKEN: $GH_TOKEN  # Token de GitHub
+  GH_REMOTE_URL: $GH_REMOTE_URL  # GH Remote URL Repository
   GIT_STRATEGY: fetch
   GIT_DEPTH: 0
 
@@ -38,20 +39,17 @@ github_job:
   script:
     - git fetch --tags  # Asegurarse de obtener todas las etiquetas
     - git checkout master  # Asegurarse de estar en la rama master
-    - git remote set-url origin https://github.com/figorr/meteocat.git  # Cambiar la URL para GitHub
+    - git remote set-url origin "$GH_REMOTE_URL"  # Cambiar la URL para GitHub
     - poetry run semantic-release version  # Generar nueva versión
     - poetry run semantic-release publish  # Ejecutar el comando para publicar el release
-    # Configurar Git para usar el token de GitHub
-    - git config --global url."https://${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
     - git push origin master  # Hacer push al repositorio de GitHub
+  allow_failure: true  # Opcional: evita que el pipeline falle completamente
   only:
     - master
 
 pypy_job:
   stage: pypi
   script:
-    - pip install twine
-    - python setup.py sdist bdist_wheel  # Generar los paquetes
-    - twine upload dist/* -u $PRODUCTION_USERNAME -p $PRODUCTION_PASSWORD
+    - poetry publish --build -u $PYPI_USERNAME -p $PYPI_PASSWORD
   only:
     - master
