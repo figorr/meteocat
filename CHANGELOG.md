@@ -5,6 +5,12 @@
 
 ### Bug Fixes
 
+- Pypi API TOKEN
+  ([`0a53bca`](https://github.com/figorr/meteocat/commit/0a53bcac4afa46f0a4b3847d8809aae75be4e31d))
+
+- 0.1.6
+  ([`378f4ee`](https://github.com/figorr/meteocat/commit/378f4eeb822dd54e6e614fe50173a8012a5b33a7))
+
 - Add PyPi job
   ([`cdd6e48`](https://github.com/figorr/meteocat/commit/cdd6e48fbc47b2d8090425c9af800110b3188bf2))
 
