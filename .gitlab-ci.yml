@@ -41,12 +41,14 @@ gitlab_job:
     - git fetch --tags  # Asegurarse de obtener todas las etiquetas
     - git checkout master  # Asegurarse de estar en la rama master
     - git remote set-url origin "$GL_REMOTE_URL"  # Cambiar la URL para GitLab
+    - git config --global url."https://$GL_TOKEN:@gitlab.com".insteadOf "https://gitlab.com"  # Autenticación con GL_TOKEN
     - poetry run semantic-release version  # Generar nueva versión
     - poetry run semantic-release publish  # Ejecutar el comando para publicar el release
     - git push origin master  # Hacer push al repositorio de GitLab
-    - git push --tags  # Asegurarse de empujar las etiquetas a GitLab
+    - git push --tags  # Empujar las etiquetas a GitLab
   only:
     - master
+
 
 github_job:
   stage: github
