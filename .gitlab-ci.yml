@@ -50,6 +50,6 @@ github_job:
 pypy_job:
   stage: pypi
   script:
-    - poetry publish --build -u $PYPI_USERNAME -p $PYPI_PASSWORD
+    - poetry publish --build -u "__token__" -p $PYPI_API_TOKEN  # Usar el token de API de PyPI
   only:
     - master
