@@ -68,7 +68,6 @@ gitlab_job:
   script:
     - git checkout master  # Asegurarse de estar en la rama master
     - git remote set-url origin "$GL_REMOTE_URL"  # Cambiar la URL para GitLab
-    - git pull origin master  # Traer los últimos cambios desde GitLab
     - poetry run semantic-release version  # Generar nueva versión
     - poetry run semantic-release publish  # Ejecutar el comando para publicar el release
     - git push origin master  # Hacer push al repositorio de GitLab
