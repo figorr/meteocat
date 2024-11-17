@@ -52,6 +52,6 @@ pypy_job:
   script:
     - pip install twine
     - python setup.py sdist bdist_wheel  # Generar los paquetes
-    - twine upload dist/* -u $PYPI_USERNAME -p $PYPI_PASSWORD
+    - twine upload dist/* -u $PRODUCTION_USERNAME -p $PRODUCTION_PASSWORD
   only:
     - master
