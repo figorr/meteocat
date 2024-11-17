@@ -1,0 +1,16 @@
+{
+  "branches": ["master"],
+  "plugins": [
+    "@semantic-release/gitlab",
+    "@semantic-release/github",
+    "@semantic-release/changelog",
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    "@semantic-release/git",
+    {
+      "path": "@semantic-release/git",
+      "assets": ["meteocat/version.py"],
+      "message": "chore(release): update version to ${nextRelease.version}"
+    }
+  ]
+}
