@@ -33,7 +33,7 @@ test_job:
   artifacts:
     paths:
       - municipis_result.json  # Archivo que queremos guardar
-    expire_in: never  # No expira. El archivo generado estará siempre disponible
+    expire_in: 1 week  # No expira. El archivo generado estará siempre disponible
   only:
     - master
 
@@ -45,17 +45,17 @@ semantic_job:
     - NEXT_VERSION=$(poetry run semantic-release version --print)  # Calcula la próxima versión
     - echo "$NEXT_VERSION" > next_version.txt  # Guarda la próxima versión
     - python update_version.py "$NEXT_VERSION"  # Actualiza pyproject.toml
-    - git add pyproject.toml
-    - git add __init__.py
+    - git add .
     - git commit -m "bump version to $NEXT_VERSION [skip ci]"
     - git push origin master
-  only:
-    - master
   artifacts:
     paths:
       - last_version.txt  # Especifica el archivo que deseas guardar como artefacto
       - next_version.txt  # Especifica el archivo que deseas guardar como artefacto
     expire_in: 1 week  # Opcional: define un tiempo de expiración para el artefacto
+  allow_failure: true  # Opcional: evita que el pipeline falle completamente
+  only:
+    - master
 
 github_job:
   stage: github
