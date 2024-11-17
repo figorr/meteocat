@@ -1,6 +1,38 @@
 # CHANGELOG
 
 
+## v0.1.8 (2024-11-17)
+
+### Bug Fixes
+
+- Semantic_job
+  ([`d57c77c`](https://github.com/figorr/meteocat/commit/d57c77c8d25d09920a51f902af04ff4a95e4c7ce))
+
+- Fix automatic version update
+  ([`2708da0`](https://github.com/figorr/meteocat/commit/2708da07b53305826a2c652e7495a8c3dad79f7b))
+
+- Fix updated_content sintaxis
+  ([`3e9be4f`](https://github.com/figorr/meteocat/commit/3e9be4f3d2bee8857b9e9cb6a6b7bb254b8b544c))
+
+- Fix version print
+  ([`ebfeb99`](https://github.com/figorr/meteocat/commit/ebfeb9937e448b5b858980cde0a40a17fc56b1ef))
+
+- Version at __init__.py
+  ([`6171eaa`](https://github.com/figorr/meteocat/commit/6171eaa29d16474b3fc24bd5a2cf97db614c2d10))
+
+- Update_version script
+  ([`3c2c641`](https://github.com/figorr/meteocat/commit/3c2c6418e1aeb6f78c797302ebe15cadee9f8d6f))
+
+- Version.py
+  ([`e620c1b`](https://github.com/figorr/meteocat/commit/e620c1b4808807a3475f60708906689806ff58cd))
+
+- Set version_variable to version.py
+  ([`9a624db`](https://github.com/figorr/meteocat/commit/9a624db6b2c8efb2ec7fd93499a01ce71b2ca601))
+
+- Disable gitlab_job
+  ([`69ced63`](https://github.com/figorr/meteocat/commit/69ced63a2c5e100bc31120c29925575908f5143a))
+
+
 ## v0.1.7 (2024-11-17)
 
 ### Bug Fixes
