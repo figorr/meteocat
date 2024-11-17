@@ -30,15 +30,21 @@ semantic_job:
   stage: semantic
   script:
     - git checkout master  # Asegurarse de estar en la rama master
-    - poetry run semantic-release version --print-last-released > last_version.txt  # Guarda la última versión en el archivo
-    - poetry run semantic-release version --print > next_version.txt  # Guarda la siguiente versión en el archivo
+    - poetry run semantic-release version --print-last-released > last_version.txt  # Guarda la última versión
+    - NEXT_VERSION=$(poetry run semantic-release version --print)  # Calcula la próxima versión
+    - echo "$NEXT_VERSION" > next_version.txt  # Guarda la próxima versión
+    - python update_version.py "$NEXT_VERSION"  # Actualiza pyproject.toml
+    - git add pyproject.toml
+    - git add __init__.py
+    - git commit -m "bump version to $NEXT_VERSION [skip ci]"
+    - git push origin master
   only:
     - master
   artifacts:
     paths:
       - last_version.txt  # Especifica el archivo que deseas guardar como artefacto
       - next_version.txt  # Especifica el archivo que deseas guardar como artefacto
-    expire_in: never  # Opcional: define un tiempo de expiración para el artefacto
+    expire_in: 1 week  # Opcional: define un tiempo de expiración para el artefacto
 
 test_job:
   stage: test
