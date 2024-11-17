@@ -13,7 +13,7 @@ def update_version(file_path, new_version, version_pattern):
         content = file.read()
 
     # Reemplaza la versión en el contenido del archivo
-    updated_content = re.sub(version_pattern, f'\\1{new_version}\\2', content)
+    updated_content = re.sub(version_pattern, f'\g<1>{new_version}\g<2>', content)
 
     with open(file_path, "w") as file:
         file.write(updated_content)
