@@ -9,7 +9,7 @@ https://gitlab.com/figorr1/meteocat
 import logging
 
 # Version
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 
 # Configuración básica para el sistema de logging
 logging.basicConfig(
