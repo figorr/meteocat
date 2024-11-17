@@ -1,5 +1,6 @@
 stages:
   - test
+  - gitlab
   - github
   - pypi
 
@@ -31,6 +32,19 @@ test_job:
     paths:
       - municipis_result.json  # Archivo que queremos guardar
     expire_in: never  # No expira. El archivo generado estará siempre disponible
+  only:
+    - master
+
+gitlab_job:
+  stage: gitlab
+  script:
+    - git fetch --tags  # Asegurarse de obtener todas las etiquetas
+    - git checkout master  # Asegurarse de estar en la rama master
+    - git remote set-url origin "$GL_REMOTE_URL"  # Cambiar la URL para GitLab
+    - poetry run semantic-release version  # Generar nueva versión
+    - poetry run semantic-release publish  # Ejecutar el comando para publicar el release
+    - git push origin master  # Hacer push al repositorio de GitLab
+    - git push --tags  # Asegurarse de empujar las etiquetas a GitLab
   only:
     - master
 
