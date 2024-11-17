@@ -7,12 +7,15 @@ stages:
 
 variables:
   BASE_URL: "https://api.meteo.cat"
-  PYPI_USERNAME: $PRODUCTION_USERNAME  # Usuario de PyPI
-  PYPI_PASSWORD: $PRODUCTION_PASSWORD  # Token de PyPI
+  PYPI_USERNAME: $PRODUCTION_USERNAME  # Usuario de PyPi
+  PYPI_PASSWORD: $PRODUCTION_PASSWORD  # Token de PyPi
+  PYPI_API_TOKEN: $PYPI_API_TOKEN  # Token de PyPi
   GL_TOKEN: $GL_TOKEN  # Token de GitLab
   GH_TOKEN: $GH_TOKEN  # Token de GitHub
   GH_REMOTE_URL: $GH_REMOTE_URL  # GH Remote URL Repository
   GL_REMOTE_URL: $GL_REMOTE_URL  # GL Remote URL Repository
+  GIT_USER_NAME: $GIT_USER_NAME  # USER NAME FOR GIT
+  GIT_USER_EMAIL: $GIT_USER_EMAIL  # USER EMAIL FOR GIT
   GIT_STRATEGY: fetch
   GIT_DEPTH: 0
 
@@ -40,6 +43,8 @@ test_job:
 semantic_job:
   stage: semantic
   script:
+    - git config --global user.email "$GIT_USER_EMAIL"
+    - git config --global user.name "$GIT_USER_NAME"
     - git checkout master  # Asegurarse de estar en la rama master
     - poetry run semantic-release version --print-last-released > last_version.txt  # Guarda la última versión
     - NEXT_VERSION=$(poetry run semantic-release version --print)  # Calcula la próxima versión
