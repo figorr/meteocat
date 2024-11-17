@@ -1,8 +1,30 @@
 # CHANGELOG
 
 
-## v0.1.4 (2024-11-17)
+## v0.1.5 (2024-11-17)
 
+### Bug Fixes
+
+- Add PyPi job
+  ([`cdd6e48`](https://github.com/figorr/meteocat/commit/cdd6e48fbc47b2d8090425c9af800110b3188bf2))
+
+- 0.1.4
+  ([`e3028ed`](https://github.com/figorr/meteocat/commit/e3028edb0ff5f37a280616a9d24cc94165833883))
+
+- Twine dep
+  ([`3df0717`](https://github.com/figorr/meteocat/commit/3df07175ae8a807c3ab9f0ee1a1ac5421bfaa49b))
+
+- Gh job
+  ([`545034e`](https://github.com/figorr/meteocat/commit/545034e7cbbd38417247e6c21d99d1be93ab6b28))
+
+- Fix push to GH
+  ([`5db9892`](https://github.com/figorr/meteocat/commit/5db989256b06ec5e94edd3c8825a8e26758a45cc))
+
+- Virtual env
+  ([`62852bf`](https://github.com/figorr/meteocat/commit/62852bff62585b22744651515f58ded7ffa02515))
+
+
+## v0.1.4 (2024-11-17)
 
 ### Bug Fixes
 
