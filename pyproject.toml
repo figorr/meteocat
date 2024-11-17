@@ -17,6 +17,7 @@ python-dotenv = "^1.0.1"
 simplejson = "^3.19.3"
 setuptools = "^75.5.0"
 python-semantic-release = "^9.14.0"
+twine = "^5.1.1"
 
 
 [tool.semantic_release]
