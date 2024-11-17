@@ -40,8 +40,7 @@ gitlab_job:
   script:
     - git fetch --tags  # Asegurarse de obtener todas las etiquetas
     - git checkout master  # Asegurarse de estar en la rama master
-    - git remote set-url origin "$GL_REMOTE_URL"  # Cambiar la URL para GitLab
-    - git config --global url."https://$GL_TOKEN:@gitlab.com".insteadOf "https://gitlab.com"  # Autenticación con GL_TOKEN
+    - git remote set-url origin "https://$GL_TOKEN:@gitlab.com/figorr/meteocat.git"  # Cambiar la URL para GitLab
     - poetry run semantic-release version  # Generar nueva versión
     - poetry run semantic-release publish  # Ejecutar el comando para publicar el release
     - git push origin master  # Hacer push al repositorio de GitLab
