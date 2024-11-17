@@ -1,6 +1,50 @@
 # CHANGELOG
 
 
+## v0.1.6 (2024-11-17)
+
+### Bug Fixes
+
+- Fix Jobs
+  ([`3d9566c`](https://github.com/figorr/meteocat/commit/3d9566c0ec75dad55973c8ca2f355902cd484f93))
+
+- Fix semantic-release test
+  ([`1ffa9d4`](https://github.com/figorr/meteocat/commit/1ffa9d4c2237898109d4794040579abb6e7a3e56))
+
+- Fix semantic-release test
+  ([`7a56521`](https://github.com/figorr/meteocat/commit/7a56521a3b7f38314894bdab61e6938dcf6dd7f3))
+
+- Test semantic-release
+  ([`7f3e017`](https://github.com/figorr/meteocat/commit/7f3e017f301cfa7d62f480050cd7875e7e9279c3))
+
+- Fix version
+  ([`ab6365a`](https://github.com/figorr/meteocat/commit/ab6365a325273589e9f14b3e3819e585d5f56bad))
+
+- Fix gitlab_job
+  ([`d11870a`](https://github.com/figorr/meteocat/commit/d11870ac9fe9ba727563fcb7515c2c0cacb0fd59))
+
+- Fix Gitlab job
+  ([`0d619fd`](https://github.com/figorr/meteocat/commit/0d619fd3d78c6081ab2db126658cbef3dc492f59))
+
+- Fix gitlab_job
+  ([`795d13b`](https://github.com/figorr/meteocat/commit/795d13b1a8706a324a732151859c8f59cabf62a8))
+
+- Setup.py version
+  ([`67699de`](https://github.com/figorr/meteocat/commit/67699de3aa561ccc0892bb83810628a1c97a65f8))
+
+- Gitlab job
+  ([`14bf324`](https://github.com/figorr/meteocat/commit/14bf32407a7222a4d8a319c17bee483ea54dfd31))
+
+- Gitignore update
+  ([`c0f949a`](https://github.com/figorr/meteocat/commit/c0f949abe67e312b6db250d04963caf06fb311eb))
+
+- Add version.py file
+  ([`7a8364b`](https://github.com/figorr/meteocat/commit/7a8364bd98c9a3cf2267a90072d1f8933b7d559e))
+
+- Add release file
+  ([`66a7c42`](https://github.com/figorr/meteocat/commit/66a7c427da442233a2b27188336272f9ced41886))
+
+
 ## v0.1.5 (2024-11-17)
 
 ### Bug Fixes
