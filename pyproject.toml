@@ -23,7 +23,7 @@ twine = "^5.1.1"
 [tool.semantic_release]
 branch = "master"  # Define la rama desde la que se harán los lanzamientos
 version_source = "commit"  # Determina la versión basada en los commits
-version_variable = "meteocat/__init__.py:__version__"  # Ubicación de la variable de versión
+version_variable = "meteocat/version.py:__version__"  # Ubicación de la variable de versión
 changelog = { file = "CHANGELOG.md" }  # Genera el changelog en el archivo especificado
 upload_to_pypi = true  # Sube automáticamente la versión a PyPI
 
