@@ -17,13 +17,14 @@ default:
     - python -V  # Verificar versión de Python
     - python -m pip install --upgrade pip
     - pip install poetry  # Instalar Poetry
-    - poetry config virtualenvs.create false  # Desactivar la creación de entornos virtuales
+    - poetry config virtualenvs.create true  # Activada la creación de entornos virtuales
+    - poetry config virtualenvs.in-project true  # Crear el virtualenv en el directorio del proyecto
     - poetry install  # Instalar dependencias con Poetry
 
 test_job:
   stage: test
   script:
-    - python meteocat/locations.py  # Ejecuta tu script principal
+    - poetry run python meteocat/locations.py  # Ejecuta tu script principal
   artifacts:
     paths:
       - municipis_result.json  # Archivo que queremos guardar
