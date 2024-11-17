@@ -1,6 +1,6 @@
 stages:
-  - semantic
   - test
+  - semantic
   - github
   # - gitlab
   - pypi
@@ -26,6 +26,17 @@ default:
     - poetry config virtualenvs.in-project true  # Crear el virtualenv en el directorio del proyecto
     - poetry install  # Instalar dependencias con Poetry
 
+test_job:
+  stage: test
+  script:
+    - poetry run python meteocat/locations.py  # Ejecuta tu script principal
+  artifacts:
+    paths:
+      - municipis_result.json  # Archivo que queremos guardar
+    expire_in: never  # No expira. El archivo generado estará siempre disponible
+  only:
+    - master
+
 semantic_job:
   stage: semantic
   script:
@@ -45,17 +56,6 @@ semantic_job:
       - last_version.txt  # Especifica el archivo que deseas guardar como artefacto
       - next_version.txt  # Especifica el archivo que deseas guardar como artefacto
     expire_in: 1 week  # Opcional: define un tiempo de expiración para el artefacto
-
-test_job:
-  stage: test
-  script:
-    - poetry run python meteocat/locations.py  # Ejecuta tu script principal
-  artifacts:
-    paths:
-      - municipis_result.json  # Archivo que queremos guardar
-    expire_in: never  # No expira. El archivo generado estará siempre disponible
-  only:
-    - master
 
 github_job:
   stage: github
