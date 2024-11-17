@@ -6,5 +6,5 @@ with open("meteocat/version.py") as f:
 
 setup(
     name="meteocat",
-    version=__version__,  # Usa la versión cargada dinámicamente
+    version=__version__,  # Usa la versión cargada dinámicamente # type: ignore
 )
