@@ -1,9 +1,9 @@
 stages:
   - semantic
-  # - test
-  # - gitlab
-  # - github
-  # - pypi
+  - test
+  - github
+  - gitlab
+  - pypi
 
 variables:
   BASE_URL: "https://api.meteo.cat"
@@ -39,48 +39,45 @@ semantic_job:
       - next_version.txt  # Especifica el archivo que deseas guardar como artefacto
     expire_in: never  # Opcional: define un tiempo de expiración para el artefacto
 
-# test_job:
-#   stage: test
-#   script:
-#     - poetry run python meteocat/locations.py  # Ejecuta tu script principal
-#   artifacts:
-#     paths:
-#       - municipis_result.json  # Archivo que queremos guardar
-#     expire_in: never  # No expira. El archivo generado estará siempre disponible
-#   only:
-#     - master
+test_job:
+  stage: test
+  script:
+    - poetry run python meteocat/locations.py  # Ejecuta tu script principal
+  artifacts:
+    paths:
+      - municipis_result.json  # Archivo que queremos guardar
+    expire_in: never  # No expira. El archivo generado estará siempre disponible
+  only:
+    - master
 
-# gitlab_job:
-#   stage: gitlab
-#   script:
-#     - git fetch --tags  # Asegurarse de obtener todas las etiquetas
-#     - git checkout master  # Asegurarse de estar en la rama master
-#     - git remote set-url origin "https://$GL_TOKEN:@gitlab.com/figorr/meteocat.git"  # Cambiar la URL para GitLab
-#     - poetry run semantic-release version  # Generar nueva versión
-#     - poetry run semantic-release publish  # Ejecutar el comando para publicar el release
-#     - git push origin master  # Hacer push al repositorio de GitLab
-#     - git push --tags  # Empujar las etiquetas a GitLab
-#   allow_failure: true  # Opcional: evita que el pipeline falle completamente
-#   only:
-#     - master
+github_job:
+  stage: github
+  script:
+    - git checkout master  # Asegurarse de estar en la rama master
+    - git remote set-url origin "$GH_REMOTE_URL"  # Cambiar la URL para GitHub
+    - poetry run semantic-release version  # Generar nueva versión
+    - poetry run semantic-release publish  # Ejecutar el comando para publicar el release
+    - git push origin master  # Hacer push al repositorio de GitHub
+  allow_failure: true  # Opcional: evita que el pipeline falle completamente
+  only:
+    - master
 
+gitlab_job:
+  stage: gitlab
+  script:
+    - git checkout master  # Asegurarse de estar en la rama master
+    - git remote set-url origin "https://$GL_TOKEN:@gitlab.com/figorr/meteocat.git"  # Cambiar la URL para GitLab
+    - poetry run semantic-release version  # Generar nueva versión
+    - poetry run semantic-release publish  # Ejecutar el comando para publicar el release
+    - git push origin master  # Hacer push al repositorio de GitLab
+    - git push --tags  # Empujar las etiquetas a GitLab
+  allow_failure: true  # Opcional: evita que el pipeline falle completamente
+  only:
+    - master
 
-# github_job:
-#   stage: github
-#   script:
-#     - git fetch --tags  # Asegurarse de obtener todas las etiquetas
-#     - git checkout master  # Asegurarse de estar en la rama master
-#     - git remote set-url origin "$GH_REMOTE_URL"  # Cambiar la URL para GitHub
-#     - poetry run semantic-release version  # Generar nueva versión
-#     - poetry run semantic-release publish  # Ejecutar el comando para publicar el release
-#     - git push origin master  # Hacer push al repositorio de GitHub
-#   allow_failure: true  # Opcional: evita que el pipeline falle completamente
-#   only:
-#     - master
-
-# pypy_job:
-#   stage: pypi
-#   script:
-#     - poetry publish --build -u "__token__" -p $PYPI_API_TOKEN  # Usar el token de API de PyPI
-#   only:
-#     - master
+pypy_job:
+  stage: pypi
+  script:
+    - poetry publish --build -u "__token__" -p $PYPI_API_TOKEN  # Usar el token de API de PyPI
+  only:
+    - master
