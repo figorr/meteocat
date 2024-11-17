@@ -40,6 +40,6 @@ github_job:
     - git pull origin master --rebase  # Integra los cambios remotos con un rebase
     - poetry run semantic-release version  # Generar nueva versión
     - poetry run semantic-release publish  # Ejecutar el comando para publicar el release
-    - git push origin master  # Hacer push al repositorio GitHub en la rama master
+    - git push https://${GH_TOKEN}@github.com//figorr/meteocat.git  # Hacer push al repositorio GitHub en la rama master
   only:
     - master
