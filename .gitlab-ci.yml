@@ -12,6 +12,7 @@ variables:
   GL_TOKEN: $GL_TOKEN  # Token de GitLab
   GH_TOKEN: $GH_TOKEN  # Token de GitHub
   GH_REMOTE_URL: $GH_REMOTE_URL  # GH Remote URL Repository
+  GL_REMOTE_URL: $GL_REMOTE_URL  # GL Remote URL Repository
   GIT_STRATEGY: fetch
   GIT_DEPTH: 0
 
@@ -66,7 +67,7 @@ gitlab_job:
   stage: gitlab
   script:
     - git checkout master  # Asegurarse de estar en la rama master
-    - git remote set-url origin "https://$GL_TOKEN:@gitlab.com/figorr/meteocat.git"  # Cambiar la URL para GitLab
+    - git remote set-url origin "$GL_REMOTE_URL"  # Cambiar la URL para GitLab
     - git pull origin master  # Traer los últimos cambios desde GitLab
     - poetry run semantic-release version  # Generar nueva versión
     - poetry run semantic-release publish  # Ejecutar el comando para publicar el release
