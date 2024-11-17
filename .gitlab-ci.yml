@@ -28,8 +28,8 @@ default:
 semantic_job:
   stage: semantic
   script:
-    - python -m semantic_release version --print-last-released > last_version.txt  # Guarda la última versión en el archivo
-    - python -m semantic_release version --print > next_version.txt  # Guarda la siguiente versión en el archivo
+    - poetry run semantic-release version --print-last-released > last_version.txt  # Guarda la última versión en el archivo
+    - poetry run semantic-release version --print > next_version.txt  # Guarda la siguiente versión en el archivo
   only:
     - master
   artifacts:
