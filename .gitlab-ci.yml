@@ -52,9 +52,9 @@ semantic_job:
     - python update_version.py "$NEXT_VERSION"  # Actualiza pyproject.toml
     - git add .
     - git commit -m "bump version to $NEXT_VERSION [skip ci]"
-    - git push -u $GL_REMOTE_URL master -o ci.skip
+    - git push -u https://oauth2:$GL_TOKEN@gitlab.com/figorr/meteocat.git/ master -o ci.skip
     - git tag -a v"$NEXT_VERSION" -m "v$NEXT_VERSION"
-    - git push origin v"$NEXT_VERSION" -o ci.skip
+    - git push https://oauth2:$GL_TOKEN@gitlab.com/figorr/meteocat.git/ v"$NEXT_VERSION" -o ci.skip
   artifacts:
     paths:
       - last_version.txt  # Especifica el archivo que deseas guardar como artefacto
