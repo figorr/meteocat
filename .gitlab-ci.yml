@@ -52,9 +52,9 @@ semantic_job:
     - python update_version.py "$NEXT_VERSION"  # Actualiza pyproject.toml
     - git add .
     - git commit -m "bump version to $NEXT_VERSION [skip ci]"
-    - git push -u $GL_REMOTE_URL master
+    - git push -u $GL_REMOTE_URL master -o ci.skip
     - git tag -a v"$NEXT_VERSION" -m "v$NEXT_VERSION"
-    - git push origin v"$NEXT_VERSION"
+    - git push origin v"$NEXT_VERSION" -o ci.skip
   artifacts:
     paths:
       - last_version.txt  # Especifica el archivo que deseas guardar como artefacto
@@ -64,17 +64,17 @@ semantic_job:
   only:
     - master
 
-github_job:
-  stage: github
-  script:
-    - git checkout master  # Asegurarse de estar en la rama master
-    - git remote set-url origin "$GH_REMOTE_URL"  # Cambiar la URL para GitHub
-    - poetry run semantic-release version  # Generar nueva versión
-    - poetry run semantic-release publish  # Ejecutar el comando para publicar el release
-    - git push origin master  # Hacer push al repositorio de GitHub
-  allow_failure: true  # Opcional: evita que el pipeline falle completamente
-  only:
-    - master
+# github_job:
+#   stage: github
+#   script:
+#     - git checkout master  # Asegurarse de estar en la rama master
+#     - git remote set-url origin "$GH_REMOTE_URL"  # Cambiar la URL para GitHub
+#     - poetry run semantic-release version  # Generar nueva versión
+#     - poetry run semantic-release publish  # Ejecutar el comando para publicar el release
+#     - git push origin master  # Hacer push al repositorio de GitHub
+#   allow_failure: true  # Opcional: evita que el pipeline falle completamente
+#   only:
+#     - master
 
 # gitlab_job:
 #   stage: gitlab
