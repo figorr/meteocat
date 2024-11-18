@@ -82,7 +82,7 @@ if __name__ == "__main__":
     ruta_repositorio = obtener_ruta_repositorio()
 
     # Ruta de la carpeta /meteocat/files/
-    carpeta_files = os.path.join(ruta_repositorio, "meteocat", "files")
+    carpeta_files = os.path.join(ruta_repositorio, "files")
 
     # Crear la carpeta si no existe
     os.makedirs(carpeta_files, exist_ok=True)
