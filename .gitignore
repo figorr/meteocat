@@ -19,3 +19,6 @@ __pycache__/
 
 # Archivos de dist
 dist/
+
+# Archivos en carpeta files
+meteocat/files/
