@@ -84,6 +84,17 @@ if __name__ == "__main__":
     
     # Guardar la respuesta en un archivo .json si la respuesta fue exitosa
     if status_code == 200:
-        with open('municipis_result.json', 'w', encoding='utf-8') as f:
+        # Ruta del directorio de salida
+        output_dir = '/meteocat/files'
+        
+        # Crear el directorio si no existe
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # Ruta completa del archivo
+        output_path = os.path.join(output_dir, 'municipis_list.json')
+        
+        # Guardar el archivo
+        with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(message, f, ensure_ascii=False, indent=4)
-        print(f"Archivo guardado: municipis_result.json")
+        
+        print(f"Archivo guardado: {output_path}")
