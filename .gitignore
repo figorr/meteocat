@@ -28,3 +28,7 @@ semantic_print.py
 
 # TEST VARIABLES .ENV
 test_dotenv.py
+
+# VERSIONS
+current_version.txt
+next_version.txt
