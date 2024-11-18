@@ -26,7 +26,7 @@ version_source = "commit"  # Determina la versión basada en los commits
 version_variable = "meteocat/version.py:__version__"  # Ubicación de la variable de versión
 changelog = { file = "CHANGELOG.md" }  # Genera el changelog en el archivo especificado
 upload_to_pypi = false  # Sube automáticamente la versión a PyPI
-ci = true
+ci = false  # Cambiar a false si no usas CI/CD
 
 
 [build-system]
