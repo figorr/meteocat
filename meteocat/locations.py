@@ -74,7 +74,35 @@ def get_meteocat_data(path):
         _LOGGER.critical(f"Error en la conexión: {e}")
         return None, f"Error en la conexión: {e}"
 
+
+def obtener_ruta_repositorio():
+    """
+    Obtiene la ruta base del repositorio asumiendo que este script se ejecuta desde el repositorio.
+    
+    Returns:
+        str: Ruta base del repositorio.
+    """
+    # Obtener la ruta absoluta del directorio donde está este script
+    ruta_script = os.path.abspath(__file__)
+    # Asumimos que el repositorio es el directorio raíz del script
+    ruta_repositorio = os.path.dirname(ruta_script)
+    return ruta_repositorio
+
+
 if __name__ == "__main__":
+    # Obtener la ruta del repositorio
+    ruta_repositorio = obtener_ruta_repositorio()
+
+    # Ruta de la carpeta /meteocat/files/
+    carpeta_files = os.path.join(ruta_repositorio, "meteocat", "files")
+
+    # Crear la carpeta si no existe
+    if not os.path.exists(carpeta_files):
+        os.makedirs(carpeta_files)
+
+    # Ruta completa del archivo de salida
+    archivo_salida = os.path.join(carpeta_files, "municipis_list.json")
+
     # Ejemplo 1: Lista de municipios
     path_municipis = '/referencia/v1/municipis'
     status_code, message = get_meteocat_data(path_municipis)
@@ -84,17 +112,7 @@ if __name__ == "__main__":
     
     # Guardar la respuesta en un archivo .json si la respuesta fue exitosa
     if status_code == 200:
-        # Ruta del directorio de salida
-        output_dir = '/meteocat/files'
-        
-        # Crear el directorio si no existe
-        os.makedirs(output_dir, exist_ok=True)
-        
-        # Ruta completa del archivo
-        output_path = os.path.join(output_dir, 'municipis_list.json')
-        
         # Guardar el archivo
-        with open(output_path, 'w', encoding='utf-8') as f:
+        with open(archivo_salida, 'w', encoding='utf-8') as f:
             json.dump(message, f, ensure_ascii=False, indent=4)
-        
-        print(f"Archivo guardado: {output_path}")
+        print(f"Archivo guardado: {archivo_salida}")
