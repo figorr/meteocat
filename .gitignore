@@ -22,3 +22,6 @@ dist/
 
 # Archivos en carpeta files
 meteocat/files/
+
+# Semantic-release print
+semantic_print.py
