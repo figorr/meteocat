@@ -87,7 +87,7 @@ if __name__ == "__main__":
     nombre = input("Introduce el nombre del municipio: ")
 
     # Ruta del archivo JSON generado previamente
-    archivo_origen = os.path.join(carpeta_files, "municipis_result.json")
+    archivo_origen = os.path.join(carpeta_files, "municipis_list.json")
 
     # Ruta del archivo JSON para guardar el resultado
     archivo_destino = os.path.join(carpeta_files, "municipi.json")
