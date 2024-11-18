@@ -32,3 +32,6 @@ test_dotenv.py
 # VERSIONS
 current_version.txt
 next_version.txt
+
+# GITLAB JOBS
+.gitlab-ci.yml
