@@ -25,3 +25,6 @@ meteocat/files/
 
 # Semantic-release print
 semantic_print.py
+
+# TEST VARIABLES .ENV
+test_dotenv.py
