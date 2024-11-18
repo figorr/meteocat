@@ -1,9 +1,10 @@
 import json
 import os
 
+
 def buscar_y_guardar_municipio(nombre_municipio, archivo_json, archivo_resultado):
     """
-    Busca el código asociado a un municipio y guarda el resultado en un archivo JSON.
+    Busca el código asociado a un municipio y guarda el resultado en un archivo JSON con un mensaje adicional.
 
     Args:
         nombre_municipio (str): Nombre del municipio a buscar (insensible a mayúsculas).
@@ -16,7 +17,11 @@ def buscar_y_guardar_municipio(nombre_municipio, archivo_json, archivo_resultado
     # Comprobar si el archivo existe
     if not os.path.exists(archivo_json):
         return f"Error: El archivo {archivo_json} no existe."
-    
+
+    # Comprobar si el archivo está vacío
+    if os.stat(archivo_json).st_size == 0:
+        return f"Error: El archivo {archivo_json} está vacío."
+
     try:
         # Cargar el archivo JSON
         with open(archivo_json, 'r', encoding='utf-8') as f:
@@ -25,7 +30,7 @@ def buscar_y_guardar_municipio(nombre_municipio, archivo_json, archivo_resultado
         # Inicializar variables para el resultado
         codi = None
         nom = None
-        
+
         # Buscar el municipio ignorando mayúsculas/minúsculas
         for municipio in datos:
             if municipio['nom'].lower() == nombre_municipio.lower():
@@ -33,29 +38,29 @@ def buscar_y_guardar_municipio(nombre_municipio, archivo_json, archivo_resultado
                 nom = municipio['nom']
                 break
 
-        # Si no se encuentra, establecer nom y codi a null
+        # Si no se encuentra, establecer nom y codi a "null"
         if codi is None:
             nom = "null"
             codi = "null"
+            missatge = "El municipio no se encontró en la base de datos."
+        else:
+            missatge = f"El municipio {nom} se encontró en la base de datos con código {codi}."
 
         # Crear el diccionario del resultado
         resultado = {
             "nom": nom,
-            "codi": codi
+            "codi": codi,
+            "missatge": missatge
         }
 
         # Guardar el resultado en el archivo JSON
         with open(archivo_resultado, 'w', encoding='utf-8') as f:
             json.dump(resultado, f, ensure_ascii=False, indent=4)
 
-        # Mensaje de éxito o no encontrado
-        if codi != "null":
-            return f"El municipio '{nombre_municipio}' fue encontrado y guardado con código: {codi}"
-        else:
-            return f"Municipio '{nombre_municipio}' no encontrado. Guardado con nom: null y codi: null"
+        return missatge
 
-    except json.JSONDecodeError:
-        return f"Error: El archivo {archivo_json} no es un archivo JSON válido."
+    except json.JSONDecodeError as e:
+        return f"Error: El archivo {archivo_json} no es un archivo JSON válido. Detalles: {e}"
 
 
 def obtener_ruta_repositorio():
@@ -80,11 +85,15 @@ if __name__ == "__main__":
     carpeta_files = os.path.join(ruta_repositorio, "meteocat", "files")
 
     # Crear la carpeta si no existe
-    if not os.path.exists(carpeta_files):
-        os.makedirs(carpeta_files)
+    os.makedirs(carpeta_files, exist_ok=True)
 
     # Nombre del municipio a buscar
-    nombre = input("Introduce el nombre del municipio: ")
+    nombre = input("Introduce el nombre del municipio: ").strip()
+
+    # Validar entrada del usuario
+    if not nombre:
+        print("Error: El nombre del municipio no puede estar vacío.")
+        exit(1)
 
     # Ruta del archivo JSON generado previamente
     archivo_origen = os.path.join(carpeta_files, "municipis_list.json")
@@ -94,4 +103,6 @@ if __name__ == "__main__":
 
     # Buscar y guardar el municipio
     resultado = buscar_y_guardar_municipio(nombre, archivo_origen, archivo_destino)
+    
+    # Imprimir en pantalla el mismo mensaje que el de "missatge"
     print(resultado)
