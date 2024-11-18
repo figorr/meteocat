@@ -1,6 +1,32 @@
 # CHANGELOG
 
 
+## v0.1.9 (2024-11-18)
+
+### Bug Fixes
+
+- Folder location
+  ([`ea225a2`](https://github.com/figorr/meteocat/commit/ea225a24c62df29f56e33e5930d5c7af140b114f))
+
+- Folder location
+  ([`478c4f0`](https://github.com/figorr/meteocat/commit/478c4f0d8eed498789d7626851665f7c8a3357b4))
+
+- .gitignore
+  ([`0af4025`](https://github.com/figorr/meteocat/commit/0af4025312267ae9e9bb69a23126bf7ea3216fb2))
+
+- Semantic_job git push
+  ([`daa4cc0`](https://github.com/figorr/meteocat/commit/daa4cc054caddfad43c54098a807a45a1a045b92))
+
+- Locations.py message
+  ([`a05abfb`](https://github.com/figorr/meteocat/commit/a05abfb560636aef5ba3c264e2f2b0e68b637e92))
+
+- Municipis_list name
+  ([`84e0dbb`](https://github.com/figorr/meteocat/commit/84e0dbb30eade0beaf11a4b356b7654cbcc32792))
+
+- Locations list
+  ([`1abe8dc`](https://github.com/figorr/meteocat/commit/1abe8dcb8ff3558be72d9b9bf124121f19d38829))
+
+
 ## v0.1.8 (2024-11-17)
 
 ### Bug Fixes
