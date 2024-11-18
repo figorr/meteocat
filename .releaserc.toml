@@ -1,0 +1,14 @@
+branches = ["master"]
+
+[plugins]
+"@semantic-release/gitlab" = {}
+"@semantic-release/github" = {}
+"@semantic-release/changelog" = {}
+"@semantic-release/commit-analyzer" = { preset = "conventional" }
+"@semantic-release/release-notes-generator" = {}
+"@semantic-release/git" = {}
+
+[[plugins]]
+path = "@semantic-release/git"
+assets = ["meteocat/version.py"]
+message = "chore(release): update version to ${nextRelease.version}"
