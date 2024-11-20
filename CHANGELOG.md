@@ -1,9 +1,35 @@
 # CHANGELOG
 
 
+## v0.1.10 (2024-11-20)
+
+### Bug Fixes
+
+- Remove files folder
+  ([`6f62ea4`](https://github.com/figorr/meteocat/commit/6f62ea48c679f5e61c93e989af86d12102185e01))
+
+- Fix .gitignore new repository structure
+  ([`f603248`](https://github.com/figorr/meteocat/commit/f603248b3d69b023a664a8d578a4771ceb34162b))
+
+- Fix repository structure
+  ([`9ef2514`](https://github.com/figorr/meteocat/commit/9ef2514be5396c11c26945024548aeec93fb50f3))
+
+- Fix async_setup
+  ([`e0605c7`](https://github.com/figorr/meteocat/commit/e0605c7f3cc3fa7b0875867f6880185684a57778))
+
+
 ## v0.1.9 (2024-11-18)
 
 ### Bug Fixes
+
+- Jobs
+  ([`43321f1`](https://github.com/figorr/meteocat/commit/43321f1f40c04d210ece3b6f3a53378d338971e5))
+
+- Semnatic_job
+  ([`5444b01`](https://github.com/figorr/meteocat/commit/5444b01bd5d89b5bfe0c85315195fb0be797e44c))
+
+- Testing semantic_job
+  ([`bb43877`](https://github.com/figorr/meteocat/commit/bb43877cab2d3e0823883efc4ca9117d0cad3b7e))
 
 - Folder location
   ([`ea225a2`](https://github.com/figorr/meteocat/commit/ea225a24c62df29f56e33e5930d5c7af140b114f))
