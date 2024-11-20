@@ -8,6 +8,9 @@ import aiohttp
 
 _LOGGER = logging.getLogger(__name__)
 
+# Version
+__version__ = "0.1.13"
+
 # Constantes
 DOMAIN = "meteocat"
 BASE_URL = "https://api.meteo.cat"
