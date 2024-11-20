@@ -1,4 +1,4 @@
-# Meteocat
+# Meteocat for Home Assistant
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python version compatibility](https://img.shields.io/pypi/pyversions/meteocat)](https://pypi.org/project/meteocat)
