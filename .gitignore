@@ -21,9 +21,6 @@ custom_components/meteocat/__pycache__/
 # Archivos de dist
 dist/
 
-# Archivos en carpeta files
-custom_components/meteocat/files/
-
 # Semantic-release print
 semantic_print.py
 
@@ -38,7 +35,7 @@ next_version.txt
 # .gitlab-ci.yml
 
 # ASSETS
-custom_components/meteocat/assets/
+meteocat/assets/
 
 # FILES
-custom_components/meteocat/files/
+meteocat/files/
