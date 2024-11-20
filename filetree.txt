@@ -1,0 +1,30 @@
+├── .gitignore
+├── .gitlab-ci.yml
+├── .pre-commit-config.yaml
+├── .releaserc.toml
+├── AUTHORS.md
+├── CHANGELOG.md
+├── README.md
+└── custom_components/
+    ├── __init__.py
+    └── meteocat/
+        ├── __init__.py
+        ├── config_flow.py
+        ├── const.py
+        ├── manifest.json
+        ├── version.py
+├── hacs.json
+├── locations.py
+├── municipi.py
+├── package-lock.json
+├── poetry.lock
+├── pyproject.toml
+├── requirements.test.txt
+├── setup.cfg
+├── setup.py
+└── tests/
+    ├── __init__.py
+    ├── bandit.yaml
+    ├── conftest.py
+    ├── test_init.py
+├── update_version.py
