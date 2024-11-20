@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.1.13 (2024-11-20)
+
+### Bug Fixes
+
+- Add translations
+  ([`119d539`](https://github.com/figorr/meteocat/commit/119d539d3334d4dbae8e4d13ae47639e7ccf0064))
+
+
 ## v0.1.12 (2024-11-20)
 
 ### Bug Fixes
