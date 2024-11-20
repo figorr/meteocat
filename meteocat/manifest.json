@@ -4,13 +4,13 @@
     "version": "0.1.9",
     "documentation": "https://gitlab.com/figorr/meteocat",
     "requirements": [
-      "requests",
-      "dotenv",
-      "voluptuous"
+        "aiohttp",
+        "aiofiles",
+        "python-dotenv",
+        "voluptuous"
     ],
     "config_flow": true,
     "dependencies": [],
     "codeowners": ["@figorr"],
     "iot_class": "cloud_polling"
-  }
-  
+}
