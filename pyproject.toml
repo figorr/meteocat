@@ -1,13 +1,13 @@
 [tool.poetry]
 name = "meteocat"
-version = "0.1.10"
+version = "0.1.12"
 description = "Script para obtener datos meteorológicos de la API de Meteocat"
 authors = ["figorr <jdcuartero@yahoo.es>"]
 license = "Apache-2.0"
 readme = "README.md"
 repository = "https://gitlab.com/figorr/meteocat"
 keywords = ['meteocat']
-include = ["LICENSE"]
+include = "Apache-2.0"
 
 
 [tool.poetry.dependencies]
@@ -32,3 +32,31 @@ ci = false  # Cambiar a false si no usas CI/CD
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+
+[tool.poetry.dev-dependencies]
+aresponses = "*"
+detox = "*"
+flake8 = "*"
+mypy = "*"
+pydocstyle = "*"
+pylint = "*"
+pytest-aiohttp = "*"
+pytest-cov = "*"
+python-semantic-release = "^9.14.0"
+tox = "*"
+safety = ">=1.8.7"
+black = { version = ">19.10b0", allow-prereleases = true }
+Sphinx = ">=3.5.0,<7.0.0"
+autoapi = ">=2.0.1"
+sphinx-rtd-theme = "^0.5.1"
+m2r2 = ">=0.2.7"
+tomlkit = ">=0.7.0"
+sphinx-autoapi = ">=1.7.0"
+sphinx-copybutton = ">=0.3.1"
+pipdeptree = "^2.2.1"
+
+
+[tool.poetry.group.dev.dependencies]
+pyupgrade = "^3.4.0"
+pre-commit = "^3.3.1"
