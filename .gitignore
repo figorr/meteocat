@@ -31,8 +31,8 @@ test_dotenv.py
 current_version.txt
 next_version.txt
 
-# # GITLAB JOBS
-# .gitlab-ci.yml
+# GITLAB JOBS
+.gitlab-ci.yml
 
 # ASSETS
 meteocat/assets/
