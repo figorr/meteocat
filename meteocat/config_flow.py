@@ -1,5 +1,6 @@
 import logging
-import requests
+import aiohttp
+import aiofiles
 import os
 import json
 import voluptuous as vol
@@ -31,7 +32,7 @@ class MeteocatConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if "cancel" in user_input:
                 return self.async_abort(reason="user_cancelled")
             
-            self.api_key = user_input[CONF_API_KEY]
+            self.api_key = user_input["api_key"]
             status_code, municipios_data = await self._validate_and_download_municipis(self.api_key)
 
             if status_code == 200:
@@ -44,7 +45,7 @@ class MeteocatConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema({
-                vol.Required(CONF_API_KEY): str
+                vol.Required("api_key"): str
             }),
             description_placeholders={"step_description": "Ingresa tu API Key para validarla."},
             errors=errors,
@@ -82,19 +83,17 @@ class MeteocatConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_final(self, user_input=None):
         """Paso final: Confirmación de la integración."""
         if user_input is not None:
-            if "cancel" in user_input:
-                return self.async_abort(reason="user_cancelled")
+            # Crea la entrada de configuración
+            return self.async_create_entry(
+                title="Meteocat",
+                data={
+                    "api_key": self.api_key,  # Guardamos la API Key
+                    "municipi": self.selected_municipi["nom"],  # Guardamos el nombre del municipio
+                    "codi": self.selected_municipi["codi"],  # Guardamos el código del municipio
+                },
+            )
 
-            if "accept" in user_input:
-                return self.async_create_entry(
-                    title="Meteocat",
-                    data={
-                        CONF_API_KEY: self.api_key,
-                        "municipi": self.selected_municipi["nom"],
-                        "codi": self.selected_municipi["codi"],
-                    }
-                )
-
+        # Muestra el formulario para confirmar la configuración
         return self.async_show_form(
             step_id="final",
             data_schema=vol.Schema({}),
@@ -108,42 +107,47 @@ class MeteocatConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors={},
         )
 
+
     async def _validate_and_download_municipis(self, api_key):
         """Valida la API Key y descarga la lista de municipios."""
         url = f"{BASE_URL}{self.path_municipis}"
         headers = {"X-Api-Key": api_key}
 
         try:
-            response = await self.hass.async_add_executor_job(requests.get, url, headers=headers)
-            status_code = response.status_code
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, headers=headers) as response:
+                    status_code = response.status
+                    if status_code == 200:
+                        municipios_data = await response.json()
+                        return status_code, municipios_data
 
-            if status_code == 200:
-                return status_code, response.json()
+                    error_details = await response.text()
+                    _LOGGER.warning(f"Error {status_code}: {error_details}")
+                    return status_code, None
 
-            error_details = self._process_api_error(response)
-            _LOGGER.warning(f"Error {status_code}: {error_details}")
-            return status_code, error_details
-
-        except requests.exceptions.RequestException as e:
+        except aiohttp.ClientError as e:
             _LOGGER.critical(f"Error en la conexión: {e}")
-            return -1, "Error de conexión"
+            return -1, None
 
     async def _save_municipis(self, municipios_data):
-        """Guarda los datos de municipios en un archivo JSON."""
-        if not municipios_data:
-            _LOGGER.error("No se obtuvieron datos de los municipios para guardar.")
-            return
-
+        """Guarda la lista de municipios en un archivo JSON."""
         carpeta_files = self.hass.config.path("custom_components", DOMAIN, "files")
-        os.makedirs(carpeta_files, exist_ok=True)
-
         archivo_salida = os.path.join(carpeta_files, "municipis_list.json")
+
+        # Asegurarnos de que la carpeta exista
+        if not os.path.exists(carpeta_files):
+            os.makedirs(carpeta_files)
+
         try:
-            with open(archivo_salida, "w", encoding="utf-8") as file:
-                json.dump(municipios_data, file, ensure_ascii=False, indent=4)
-            _LOGGER.info(f"Municipios guardados en {archivo_salida}")
-        except OSError as e:
-            _LOGGER.error(f"No se pudo guardar el archivo JSON: {e}")
+            # Convertimos la lista de municipios a una cadena JSON
+            municipios_json = json.dumps(municipios_data, ensure_ascii=False, indent=4)
+
+            # Guardar el archivo de manera asincrónica
+            async with aiofiles.open(archivo_salida, "w", encoding="utf-8") as file:
+                await file.write(municipios_json)
+            _LOGGER.info(f"Archivo guardado correctamente: {archivo_salida}")
+        except Exception as e:
+            _LOGGER.error(f"Error al guardar el archivo de municipios: {e}")
 
     def _map_error_code_to_user_message(self, status_code):
         """Mapea códigos de error HTTP a mensajes amigables para el usuario."""
