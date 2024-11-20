@@ -22,11 +22,11 @@ def update_init_version(file_path, new_version):
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"El archivo {file_path} no se encontró en la ruta especificada.")
 
-    # Leer el contenido del archivo __init__.py
+    # Leer el contenido del archivo
     with open(file_path, "r") as file:
         content = file.read()
 
-    # Patrón para encontrar la línea de la versión en __init__.py
+    # Patrón para encontrar la línea de la versión
     init_version_pattern = r'__version__ = "([0-9]+\.[0-9]+\.[0-9]+)"'
 
     # Sustituir la versión en el archivo
@@ -40,6 +40,7 @@ if __name__ == "__main__":
     # Archivos a modificar y la nueva versión a asignar
     pyproject_path = "pyproject.toml"
     init_path = "meteocat/__init__.py"  # Ruta correcta para __init__.py
+    version_path = "meteocat/version.py"  # Ruta correcta para version.py
     new_version = sys.argv[1]  # Obtener la nueva versión desde los argumentos
 
     # Actualizar la versión en pyproject.toml
@@ -47,3 +48,6 @@ if __name__ == "__main__":
 
     # Actualizar la versión en __init__.py
     update_init_version(init_path, new_version)
+
+    # Actualizar la versión en version.py
+    update_init_version(version_path, new_version)
