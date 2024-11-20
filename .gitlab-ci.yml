@@ -1,0 +1,46 @@
+stages:
+  - github
+  - pypi
+
+variables:
+  BASE_URL: "https://api.meteo.cat"
+  PYPI_USERNAME: $PRODUCTION_USERNAME  # Usuario de PyPi
+  PYPI_PASSWORD: $PRODUCTION_PASSWORD  # Token de PyPi
+  PYPI_API_TOKEN: $PYPI_API_TOKEN  # Token de PyPi
+  GL_TOKEN: $GL_TOKEN  # Token de GitLab
+  GH_TOKEN: $GH_TOKEN  # Token de GitHub
+  GH_REMOTE_URL: $GH_REMOTE_URL  # GH Remote URL Repository
+  GL_REMOTE_URL: $GL_REMOTE_URL  # GL Remote URL Repository
+  GIT_USER_NAME: $GIT_USER_NAME  # USER NAME FOR GIT
+  GIT_USER_EMAIL: $GIT_USER_EMAIL  # USER EMAIL FOR GIT
+  GIT_STRATEGY: fetch
+  GIT_DEPTH: 0
+
+default:
+  image: python:3.12.7
+  before_script:
+    - python -V  # Verificar versión de Python
+    - python -m pip install --upgrade pip
+    - pip install poetry  # Instalar Poetry
+    - poetry config virtualenvs.create true  # Activada la creación de entornos virtuales
+    - poetry config virtualenvs.in-project true  # Crear el virtualenv en el directorio del proyecto
+    - poetry install  # Instalar dependencias con Poetry
+
+github_job:
+  stage: github
+  script:
+    - git checkout master  # Asegurarse de estar en la rama master
+    - git remote set-url origin "$GH_REMOTE_URL"  # Cambiar la URL para GitHub
+    - poetry run semantic-release version  # Generar nueva versión
+    - poetry run semantic-release publish  # Ejecutar el comando para publicar el release
+    - git push origin master  # Hacer push al repositorio de GitHub
+  allow_failure: true  # Opcional: evita que el pipeline falle completamente
+  only:
+    - master
+
+pypy_job:
+  stage: pypi
+  script:
+    - poetry publish --build -u "__token__" -p $PYPI_API_TOKEN  # Usar el token de API de PyPI
+  only:
+    - master
