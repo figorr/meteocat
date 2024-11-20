@@ -1,5 +1,6 @@
 import os
 import logging
+from homeassistant import core
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
@@ -12,9 +13,9 @@ DOMAIN = "meteocat"
 BASE_URL = "https://api.meteo.cat"
 
 
-async def async_setup(hass: HomeAssistant, config: dict) -> bool:
-    """Configura la integración de Meteocat."""
-    _LOGGER.info("Integración de Meteocat configurada.")
+async def async_setup(hass: core.HomeAssistant, config: dict) -> bool:
+    """Set up the Meteocat component."""
+    # @TODO: Add setup code.
     return True
 
 
