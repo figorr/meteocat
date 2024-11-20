@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v0.1.12 (2024-11-20)
+
+### Bug Fixes
+
+- Fix include
+  ([`56032ef`](https://github.com/figorr/meteocat/commit/56032ef488d2565e65421a556509f8e34b3fba10))
+
+- Fix file tree structure
+  ([`911ab32`](https://github.com/figorr/meteocat/commit/911ab32d625212a33e963464821b4502dfd036fa))
+
+
 ## v0.1.11 (2024-11-20)
 
 ### Bug Fixes
