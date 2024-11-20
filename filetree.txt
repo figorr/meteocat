@@ -5,16 +5,16 @@
 ├── AUTHORS.md
 ├── CHANGELOG.md
 ├── README.md
-└── custom_components/
-    ├── __init__.py
-    └── meteocat/
-        ├── __init__.py
-        ├── config_flow.py
-        ├── const.py
-        ├── manifest.json
-        ├── version.py
+├── filetree.py
+├── filetree.txt
 ├── hacs.json
 ├── locations.py
+└── meteocat/
+    ├── __init__.py
+    ├── config_flow.py
+    ├── const.py
+    ├── manifest.json
+    ├── version.py
 ├── municipi.py
 ├── package-lock.json
 ├── poetry.lock
