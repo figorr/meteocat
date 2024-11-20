@@ -35,3 +35,6 @@ next_version.txt
 
 # GITLAB JOBS
 .gitlab-ci.yml
+
+# ASSETS
+assets/
