@@ -13,6 +13,7 @@
 # Archivos de bytecode de Python
 *.pyc
 __pycache__/
+custom_components/meteocat/__pycache__/
 
 # Archivos de log
 *.log
@@ -21,7 +22,7 @@ __pycache__/
 dist/
 
 # Archivos en carpeta files
-meteocat/files/
+custom_components/meteocat/files/
 
 # Semantic-release print
 semantic_print.py
@@ -37,4 +38,7 @@ next_version.txt
 .gitlab-ci.yml
 
 # ASSETS
-assets/
+custom_components/meteocat/assets/
+
+# FILES
+custom_components/meteocat/files/
