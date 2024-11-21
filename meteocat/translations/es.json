@@ -1,0 +1,34 @@
+{
+    "config": {
+      "step": {
+        "user": {
+          "description": "{step_description}",
+          "title": "API Key"
+        },
+        "select_municipi": {
+          "description": "{step_description}",
+          "title": "Selección de municipio"
+        },
+        "final": {
+          "description": "{message}",
+          "title": "Estado de la integración"
+        }
+      },
+      "placeholders": {
+        "api_key_description": "Ingrese la API Key facilitada por Meteocat para poder iniciar el proceso de validación.",
+        "municipi_selection_description": "Seleccione el municipio de la lista.",
+        "final_confirmation": "Integración configurada satisfactoriamente.\nEl municipio configurado es {municipi_name} con código {municipi_code}."
+      },
+      "error": {
+        "bad_request": "Petición no válida. Revise su API Key.",
+        "forbidden": "Acceso denegado. Revise los permisos de su API Key.",
+        "rate_limit_exceeded": "Exceso del límite de peticiones. Por favor, inténtelo de nuevo más tarde.",
+        "server_error": "Error del servidor. Inténtelo de nuevo más tarde.",
+        "connection_error": "Error de conexión. Revise su conexión de red.",
+        "unknown_error": "Error desconocido."
+      },
+      "abort": {
+        "user_cancelled": "Configuración cancelada por el usuario."
+      }
+    }
+  }    
