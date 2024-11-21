@@ -26,6 +26,7 @@ semantic_print.py
 locations.py
 municipi.py
 update_version.py
+publish_version.py
 
 # TEST VARIABLES .ENV
 test_dotenv.py
