@@ -13,6 +13,7 @@
 # Archivos de bytecode de Python
 *.pyc
 __pycache__/
+meteocat/__pycache__/
 custom_components/meteocat/__pycache__/
 
 # Archivos de log
@@ -27,6 +28,7 @@ locations.py
 municipi.py
 update_version.py
 publish_version.py
+final_release.py
 
 # TEST VARIABLES .ENV
 test_dotenv.py
@@ -40,6 +42,8 @@ next_version.txt
 
 # ASSETS
 meteocat/assets/
+custom_components/meteocat/assets/
 
 # FILES
 meteocat/files/
+custom_components/meteocat/files/
