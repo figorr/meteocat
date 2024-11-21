@@ -5,13 +5,14 @@ import os
 import json
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.const import CONF_API_KEY
 from homeassistant.exceptions import ConfigEntryNotReady
+from .const import (
+    DOMAIN,
+    BASE_URL,
+    MUNICIPIS_LIST_URL
+)
 
 _LOGGER = logging.getLogger(__name__)
-DOMAIN = "meteocat"
-BASE_URL = "https://api.meteo.cat"
-
 
 class MeteocatConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Manejo del flujo de configuración para Meteocat."""
@@ -22,7 +23,7 @@ class MeteocatConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self.api_key = None
         self.municipis_list = []
         self.selected_municipi = None
-        self.path_municipis = "/referencia/v1/municipis"
+        self.path_municipis = MUNICIPIS_LIST_URL
 
     async def async_step_user(self, user_input=None):
         """Primer paso: Ingreso y validación de la API Key."""
@@ -47,7 +48,7 @@ class MeteocatConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema({
                 vol.Required("api_key"): str
             }),
-            description_placeholders={"step_description": "Ingresa tu API Key para validarla."},
+            description_placeholders={"step_description": "api_key_description"},
             errors=errors,
         )
 
@@ -76,7 +77,7 @@ class MeteocatConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema({
                 vol.Required("municipi"): vol.In(municipis_names)
             }),
-            description_placeholders={"step_description": "Selecciona un municipio de la lista."},
+            description_placeholders={"step_description": "municipi_selection_description"},
             errors=errors,
         )
 
@@ -98,15 +99,12 @@ class MeteocatConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="final",
             data_schema=vol.Schema({}),
             description_placeholders={
-                "message": (
-                    f"Integración configurada correctamente. "
-                    f"El municipio elegido es {self.selected_municipi['nom']} "
-                    f"con código {self.selected_municipi['codi']}."
-                )
+                "message": "final_confirmation",
+                "municipi_name": self.selected_municipi["nom"],
+                "municipi_code": self.selected_municipi["codi"]
             },
             errors={},
         )
-
 
     async def _validate_and_download_municipis(self, api_key):
         """Valida la API Key y descarga la lista de municipios."""
