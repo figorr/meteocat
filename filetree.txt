@@ -8,14 +8,17 @@
 ├── filetree.py
 ├── filetree.txt
 ├── hacs.json
-├── locations.py
 └── meteocat/
     ├── __init__.py
     ├── config_flow.py
     ├── const.py
     ├── manifest.json
+    ├── strings.json
+    └── translations/
+        ├── ca.json
+        ├── en.json
+        ├── es.json
     ├── version.py
-├── municipi.py
 ├── package-lock.json
 ├── poetry.lock
 ├── pyproject.toml
@@ -27,4 +30,3 @@
     ├── bandit.yaml
     ├── conftest.py
     ├── test_init.py
-├── update_version.py
