@@ -9,7 +9,7 @@ import aiohttp
 _LOGGER = logging.getLogger(__name__)
 
 # Version
-__version__ = "0.1.13"
+__version__ = "0.1.14"
 
 # Constantes
 DOMAIN = "meteocat"
