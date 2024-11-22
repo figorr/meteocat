@@ -1,6 +1,44 @@
 # CHANGELOG
 
 
+## v0.1.14 (2024-11-22)
+
+### Bug Fixes
+
+- 0.1.14
+  ([`aca7650`](https://github.com/figorr/meteocat/commit/aca76500f09c65e50f394a23cfe48e1b3491dfbc))
+
+- Add LICENSE
+  ([`9369498`](https://github.com/figorr/meteocat/commit/93694982ed4cc4960797c095610e78b24c8dc3be))
+
+- Ignore scripts
+  ([`47dc6c4`](https://github.com/figorr/meteocat/commit/47dc6c4d29ca7c7acfdb576ad248e65cda34b9b5))
+
+- Publish job
+  ([`7b830c6`](https://github.com/figorr/meteocat/commit/7b830c63f13f60bfbb8ad8d911a10638a74fb967))
+
+- Poetry update
+  ([`aaf27ae`](https://github.com/figorr/meteocat/commit/aaf27aed177c6b94be32550a31ae4909c2c43895))
+
+- Add aiofiles & voluptuous
+  ([`2786de5`](https://github.com/figorr/meteocat/commit/2786de5ada6567c57a290979064f40fa3464aba2))
+
+- Fix constants and placeholders
+  ([`bf89109`](https://github.com/figorr/meteocat/commit/bf89109a6ea0a5cae65f86d39f4c1c24b138174c))
+
+- Add municipis url
+  ([`4815daa`](https://github.com/figorr/meteocat/commit/4815daaedec0f47b02e484d1c4dd0cb520c0044b))
+
+- Fix repo structure
+  ([`b501cad`](https://github.com/figorr/meteocat/commit/b501cad9e80911d0d75aefed8a267c6da0e519af))
+
+- Add translations
+  ([`8e849b8`](https://github.com/figorr/meteocat/commit/8e849b8a6eb13f586c13c3c27aebd98cd486a929))
+
+- Local scripts
+  ([`d2a6b72`](https://github.com/figorr/meteocat/commit/d2a6b72cba2ee64c97792c0f05b0c2a1f750d8dd))
+
+
 ## v0.1.13 (2024-11-20)
 
 ### Bug Fixes
@@ -8,29 +46,14 @@
 - Add translations
   ([`119d539`](https://github.com/figorr/meteocat/commit/119d539d3334d4dbae8e4d13ae47639e7ccf0064))
 
-
-## v0.1.12 (2024-11-20)
-
-### Bug Fixes
-
 - Fix include
   ([`56032ef`](https://github.com/figorr/meteocat/commit/56032ef488d2565e65421a556509f8e34b3fba10))
 
 - Fix file tree structure
   ([`911ab32`](https://github.com/figorr/meteocat/commit/911ab32d625212a33e963464821b4502dfd036fa))
 
-
-## v0.1.11 (2024-11-20)
-
-### Bug Fixes
-
 - Version 0.1.10
   ([`688f86d`](https://github.com/figorr/meteocat/commit/688f86da987efe8b8d429a615578d2558efdc985))
-
-
-## v0.1.10 (2024-11-20)
-
-### Bug Fixes
 
 - Remove files folder
   ([`6f62ea4`](https://github.com/figorr/meteocat/commit/6f62ea48c679f5e61c93e989af86d12102185e01))
@@ -43,11 +66,6 @@
 
 - Fix async_setup
   ([`e0605c7`](https://github.com/figorr/meteocat/commit/e0605c7f3cc3fa7b0875867f6880185684a57778))
-
-
-## v0.1.9 (2024-11-18)
-
-### Bug Fixes
 
 - Jobs
   ([`43321f1`](https://github.com/figorr/meteocat/commit/43321f1f40c04d210ece3b6f3a53378d338971e5))
@@ -79,11 +97,6 @@
 - Locations list
   ([`1abe8dc`](https://github.com/figorr/meteocat/commit/1abe8dcb8ff3558be72d9b9bf124121f19d38829))
 
-
-## v0.1.8 (2024-11-17)
-
-### Bug Fixes
-
 - Semantic_job
   ([`d57c77c`](https://github.com/figorr/meteocat/commit/d57c77c8d25d09920a51f902af04ff4a95e4c7ce))
 
@@ -111,18 +124,8 @@
 - Disable gitlab_job
   ([`69ced63`](https://github.com/figorr/meteocat/commit/69ced63a2c5e100bc31120c29925575908f5143a))
 
-
-## v0.1.7 (2024-11-17)
-
-### Bug Fixes
-
 - Fix bugs
   ([`3fe3492`](https://github.com/figorr/meteocat/commit/3fe3492ed9fc347ab52a83cafd957a7a17c59e1c))
-
-
-## v0.1.6 (2024-11-17)
-
-### Bug Fixes
 
 - Fix jobs
   ([`d60ee29`](https://github.com/figorr/meteocat/commit/d60ee298a2f3efac0c253b3b1ee58ff3440974a2))
@@ -169,11 +172,6 @@
 - Add release file
   ([`66a7c42`](https://github.com/figorr/meteocat/commit/66a7c427da442233a2b27188336272f9ced41886))
 
-
-## v0.1.5 (2024-11-17)
-
-### Bug Fixes
-
 - Pypi API TOKEN
   ([`0a53bca`](https://github.com/figorr/meteocat/commit/0a53bcac4afa46f0a4b3847d8809aae75be4e31d))
 
@@ -198,21 +196,11 @@
 - Virtual env
   ([`62852bf`](https://github.com/figorr/meteocat/commit/62852bff62585b22744651515f58ded7ffa02515))
 
-
-## v0.1.4 (2024-11-17)
-
-### Bug Fixes
-
 - Fix Bugs
   ([`0dbd7dc`](https://github.com/figorr/meteocat/commit/0dbd7dc15ce12d100151dedf1ace7f8415f7a819))
 
 - 0.1.3
   ([`009e9b6`](https://github.com/figorr/meteocat/commit/009e9b62ce459334ad5aed1b36061e8a059577f3))
-
-
-## v0.1.3 (2024-11-16)
-
-### Bug Fixes
 
 - Fix Jobs
   ([`47ef9ae`](https://github.com/figorr/meteocat/commit/47ef9ae50c6a8f092afbff6b26cfb4bcd384a579))
@@ -298,29 +286,14 @@
 - Update release job
   ([`0070caf`](https://github.com/figorr/meteocat/commit/0070caff7cc1c9ddbf11b03d63380f6a3375cde4))
 
-
-## v0.1.2 (2024-11-16)
-
-### Bug Fixes
-
 - Delete deploy job
   ([`69b049c`](https://github.com/figorr/meteocat/commit/69b049cc53ab62ddd45636e0bc5f5886561093ee))
-
-
-## v0.1.1 (2024-11-16)
-
-### Bug Fixes
 
 - Fix Jobs
   ([`ff9ac05`](https://github.com/figorr/meteocat/commit/ff9ac05f34db29d0cfd69c25f82b2f7ad916bfd7))
 
 - Delete deploy_job
   ([`756f399`](https://github.com/figorr/meteocat/commit/756f399280bcf4a66c36bcc19bdceeeb25e25a60))
-
-
-## v0.1.0 (2024-11-16)
-
-### Bug Fixes
 
 - Fix release job
   ([`877ced7`](https://github.com/figorr/meteocat/commit/877ced7453d7656cc9f406efc73cffd10cb31d13))
