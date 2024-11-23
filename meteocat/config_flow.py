@@ -84,7 +84,7 @@ class MeteocatConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             # Crea la entrada de configuración
             return self.async_create_entry(
-                title="Meteocat",
+                title=f"Meteocat - {self.selected_municipi['nom']}",
                 data={
                     "api_key": self.api_key,  # Guardamos la API Key
                     "municipi": self.selected_municipi["nom"],  # Guardamos el nombre del municipio
