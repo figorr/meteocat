@@ -1,34 +1,29 @@
 {
-    "config": {
-      "step": {
-        "user": {
-          "description": "{step_description}",
-          "title": "API Key"
-        },
-        "select_municipi": {
-          "description": "{step_description}",
-          "title": "Selecció de municipi"
-        },
-        "final": {
-          "description": "{message}",
-          "title": "Estat de la integració"
-        }
+  "config": {
+    "step": {
+      "user": {
+        "description": "Introduïu la API Key subministrada per Meteocat per poder iniciar el procés de validació.",
+        "title": "API Key"
       },
-      "placeholders": {
-        "api_key_description": "Introduïu la API Key subministrada per Meteocat per poder iniciar el procés de validació.",
-        "municipi_selection_description": "Seleccioni el municipi de la llista.",
-        "final_confirmation": "Integració configurada satisfactoriament.\nEl municipi configurat és {municipi_name} amb codi {municipi_code}."
+      "select_municipi": {
+        "description": "Seleccioneu el municipi de la llista.",
+        "title": "Selecció de municipi"
       },
-      "error": {
-        "bad_request": "Petició no vàlida. Reviseu la vostra API Key.",
-        "forbidden": "Accés denegat. Reviseu els permisos de la vostra API Key.",
-        "rate_limit_exceeded": "Excés del límit de peticions. Si us plau, torneu-ho a provar més tard.",
-        "server_error": "Error del servidor. Torneu-ho a provar més tard.",
-        "connection_error": "Error de connexió. Reviseu la vostra connexió de xarxa.",
-        "unknown_error": "Error desconegut."
-      },
-      "abort": {
-        "user_cancelled": "Configuració cancel·lada per l'usuari."
+      "final": {
+        "description": "Integració configurada satisfactoriament.",
+        "title": "Estat de la integració"
       }
+    },
+    "error": {
+      "bad_request": "Petició no vàlida. Reviseu la vostra API Key.",
+      "forbidden": "Accés denegat. Reviseu els permisos de la vostra API Key.",
+      "rate_limit_exceeded": "Excés del límit de peticions. Si us plau, torneu-ho a provar més tard.",
+      "server_error": "Error del servidor. Torneu-ho a provar més tard.",
+      "connection_error": "Error de connexió. Reviseu la vostra connexió de xarxa.",
+      "unknown_error": "Error desconegut."
+    },
+    "abort": {
+      "user_cancelled": "Configuració cancel·lada per l'usuari."
     }
-  }    
+  }
+}    

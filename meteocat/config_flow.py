@@ -48,7 +48,6 @@ class MeteocatConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema({
                 vol.Required("api_key"): str
             }),
-            description_placeholders={"step_description": "api_key_description"},
             errors=errors,
         )
 
@@ -77,7 +76,6 @@ class MeteocatConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema({
                 vol.Required("municipi"): vol.In(municipis_names)
             }),
-            description_placeholders={"step_description": "municipi_selection_description"},
             errors=errors,
         )
 
@@ -91,18 +89,13 @@ class MeteocatConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     "api_key": self.api_key,  # Guardamos la API Key
                     "municipi": self.selected_municipi["nom"],  # Guardamos el nombre del municipio
                     "codi": self.selected_municipi["codi"],  # Guardamos el código del municipio
-                },
+                }
             )
 
         # Muestra el formulario para confirmar la configuración
         return self.async_show_form(
             step_id="final",
             data_schema=vol.Schema({}),
-            description_placeholders={
-                "message": "final_confirmation",
-                "municipi_name": self.selected_municipi["nom"],
-                "municipi_code": self.selected_municipi["codi"]
-            },
             errors={},
         )
 

@@ -1,34 +1,29 @@
 {
-    "config": {
-      "step": {
-        "user": {
-          "description": "{step_description}",
-          "title": "API Key"
-        },
-        "select_municipi": {
-          "description": "{step_description}",
-          "title": "Municipality Selection"
-        },
-        "final": {
-          "description": "{message}",
-          "title": "Integration Confirmation"
-        }
+  "config": {
+    "step": {
+      "user": {
+        "description": "Enter your Meteocat API Key to validate it.",
+        "title": "API Key"
       },
-      "placeholders": {
-        "api_key_description": "Enter your Meteocat API Key to validate it.",
-        "municipi_selection_description": "Select a municipality from the list.",
-        "final_confirmation": "Integration configured successfully.\nThe selected municipality is {municipi_name} with code {municipi_code}."
+      "select_municipi": {
+        "description": "Select a municipality from the list.",
+        "title": "Municipality Selection"
       },
-      "error": {
-        "bad_request": "Invalid request. Please check your API Key.",
-        "forbidden": "Access denied. Check your API Key permissions.",
-        "rate_limit_exceeded": "Rate limit exceeded. Please try again later.",
-        "server_error": "Server error. Please try again later.",
-        "connection_error": "Connection error. Please check your network.",
-        "unknown_error": "An unknown error occurred."
-      },
-      "abort": {
-        "user_cancelled": "Configuration cancelled by the user."
+      "final": {
+        "description": "Integration configured successfully.",
+        "title": "Integration Confirmation"
       }
+    },
+    "error": {
+      "bad_request": "Invalid request. Please check your API Key.",
+      "forbidden": "Access denied. Check your API Key permissions.",
+      "rate_limit_exceeded": "Rate limit exceeded. Please try again later.",
+      "server_error": "Server error. Please try again later.",
+      "connection_error": "Connection error. Please check your network.",
+      "unknown_error": "An unknown error occurred."
+    },
+    "abort": {
+      "user_cancelled": "Configuration cancelled by the user."
     }
-  }    
+  }
+}    

@@ -2,22 +2,17 @@
     "config": {
       "step": {
         "user": {
-          "description": "{step_description}",
+          "description": "Enter your Meteocat API Key to validate it.",
           "title": "API Key"
         },
         "select_municipi": {
-          "description": "{step_description}",
+          "description": "Select a municipality from the list.",
           "title": "Municipality Selection"
         },
         "final": {
-          "description": "{message}",
+          "description": "Integration configured successfully.",
           "title": "Integration Confirmation"
         }
-      },
-      "placeholders": {
-        "api_key_description": "Enter your Meteocat API Key to validate it.",
-        "municipi_selection_description": "Select a municipality from the list.",
-        "final_confirmation": "Integration configured successfully.\nThe selected municipality is {municipi_name} with code {municipi_code}."
       },
       "error": {
         "bad_request": "Invalid request. Please check your API Key.",
