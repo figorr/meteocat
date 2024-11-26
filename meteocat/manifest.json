@@ -1,16 +1,12 @@
 {
     "domain": "meteocat",
     "name": "Meteocat",
-    "version": "0.1.14",
-    "documentation": "https://gitlab.com/figorr/meteocat",
-    "requirements": [
-        "aiohttp",
-        "aiofiles",
-        "python-dotenv",
-        "voluptuous"
-    ],
-    "config_flow": true,
-    "dependencies": [],
     "codeowners": ["@figorr"],
-    "iot_class": "cloud_polling"
+    "config_flow": true,
+    "dependencies": ["persistent_notification", "http"],
+    "iot_class": "cloud_polling",
+    "documentation": "https://gitlab.com/figorr/meteocat",
+    "loggers": ["meteocatpy"],
+    "requirements": ["meteocatpy==0.0.1", "packaging>=20.3", "wrapt>=1.14.0"],
+    "version": "0.1.14"
 }
