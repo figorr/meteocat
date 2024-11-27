@@ -9,9 +9,9 @@
         "description": "Seleccioneu el municipi de la llista.",
         "title": "Selecció de municipi"
       },
-      "final": {
-        "description": "Integració configurada satisfactoriament.",
-        "title": "Estat de la integració"
+      "select_station": {
+        "description": "Seleccioneu l'estació de la llista.",
+        "title": "Selecció d'estació"
       }
     },
     "error": {
@@ -21,9 +21,6 @@
       "server_error": "Error del servidor. Torneu-ho a provar més tard.",
       "connection_error": "Error de connexió. Reviseu la vostra connexió de xarxa.",
       "unknown_error": "Error desconegut."
-    },
-    "abort": {
-      "user_cancelled": "Configuració cancel·lada per l'usuari."
     }
   }
 }    

@@ -9,9 +9,9 @@
         "description": "Seleccione el municipio de la lista.",
         "title": "Selección de municipio"
       },
-      "final": {
-        "description": "Integración configurada satisfactoriamente.",
-        "title": "Estado de la integración"
+      "select_station": {
+        "description": "Seleccione la estación de la lista.",
+        "title": "Selección de estación"
       }
     },
     "error": {
@@ -21,9 +21,6 @@
       "server_error": "Error del servidor. Inténtelo de nuevo más tarde.",
       "connection_error": "Error de conexión. Revise su conexión de red.",
       "unknown_error": "Error desconocido."
-    },
-    "abort": {
-      "user_cancelled": "Configuración cancelada por el usuario."
     }
   }
 }    

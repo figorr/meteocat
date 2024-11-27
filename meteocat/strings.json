@@ -9,9 +9,9 @@
           "description": "Select a municipality from the list.",
           "title": "Municipality Selection"
         },
-        "final": {
-          "description": "Integration configured successfully.",
-          "title": "Integration Confirmation"
+        "select_station": {
+          "description": "Select a station.",
+          "title": "Station Selection"
         }
       },
       "error": {
@@ -21,9 +21,6 @@
         "server_error": "Server error. Please try again later.",
         "connection_error": "Connection error. Please check your network.",
         "unknown_error": "An unknown error occurred."
-      },
-      "abort": {
-        "user_cancelled": "Configuration cancelled by the user."
       }
     }
   }    
