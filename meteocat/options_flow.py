@@ -116,4 +116,3 @@ class MeteocatOptionsFlowHandler:
         except (BadRequestError, ForbiddenError, TooManyRequestsError, InternalServerError, UnknownAPIError) as ex:
             _LOGGER.error("Error al obtener las variables: %s", ex)
             return []
-
