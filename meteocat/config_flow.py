@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import json
 import logging
+import os
+from pathlib import Path
 from typing import Any
 
 import voluptuous as vol
@@ -9,10 +12,17 @@ from aiohttp import ClientError
 from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_API_KEY, CONF_NAME
 from homeassistant.core import callback
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import aiohttp_client, config_validation as cv
 
 from .const import DEFAULT_NAME, DOMAIN
-from .client import MeteocatClient
+from meteocatpy.town import MeteocatTown
+from meteocatpy.symbols import MeteocatSymbols
+from meteocatpy.variables import MeteocatVariables
+from meteocatpy.townstations import MeteocatTownStations
+from meteocatpy.exceptions import BadRequestError, ForbiddenError, TooManyRequestsError, InternalServerError, UnknownAPIError
+from .options_flow import MeteocatOptionsFlowHandler
+
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -25,6 +35,9 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
         self.api_key: str | None = None
         self.municipis: list[dict[str, Any]] = []
         self.selected_municipi: dict[str, Any] | None = None
+        self.variable_id: str | None = None
+        self.station_id: str | None = None
+        self.station_name: str | None = None
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -35,18 +48,17 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             self.api_key = user_input[CONF_API_KEY]
 
-            client = MeteocatClient(
-                aiohttp_client.async_get_clientsession(self.hass), self.api_key
-            )
+            # Crear una instancia de MeteocatTown con la API Key
+            town_client = MeteocatTown(self.api_key)
 
             try:
                 # Valida la API Key obteniendo la lista de municipios
-                self.municipis = await client.get_municipis()
-            except ClientError:
-                _LOGGER.error("Error al conectar con la API de Meteocat")
+                self.municipis = await town_client.get_municipis()
+            except (BadRequestError, ForbiddenError, TooManyRequestsError, InternalServerError, UnknownAPIError) as ex:
+                _LOGGER.error("Error al conectar con la API de Meteocat: %s", ex)
                 errors["base"] = "cannot_connect"
             except Exception as ex:
-                _LOGGER.error("Error inesperado: %s", ex)
+                _LOGGER.error("Error inesperado al validar la API Key: %s", ex)
                 errors["base"] = "unknown"
 
             if not errors:
@@ -71,17 +83,12 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
             )
 
             if self.selected_municipi:
-                # Crea la entrada con la API Key y el municipio seleccionado
-                return self.async_create_entry(
-                    title=self.selected_municipi["nom"],
-                    data={
-                        CONF_API_KEY: self.api_key,
-                        "municipi": self.selected_municipi["nom"],
-                        "codi": self.selected_municipi["codi"],
-                    },
-                )
-            else:
-                errors["base"] = "municipi_not_found"
+                # Si municipio válido, descargar símbolos y variables
+                await self.fetch_symbols_and_variables()
+
+        # Si no hay errores, pasa al siguiente paso
+        if not errors:
+            return await self.async_step_select_station()
 
         # Crear un esquema dinámico con los municipios disponibles
         schema = vol.Schema(
@@ -95,6 +102,101 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="select_municipi", data_schema=schema, errors=errors
         )
+    
+    async def fetch_symbols_and_variables(self):
+        """Descarga los símbolos y las variables después de seleccionar el municipio."""
+
+        errors = {}
+
+        # Descargar y guardar los símbolos
+        assets_dir = Path(__file__).parent / "assets"
+        assets_dir.mkdir(parents=True, exist_ok=True)
+        symbols_file = assets_dir / "symbols.json"
+        symbols_client = MeteocatSymbols(self.api_key)
+
+        try:
+            # Descargamos los símbolos y los guardamos en el archivo
+            symbols_data = await symbols_client.fetch_symbols()
+            with symbols_file.open("w", encoding="utf-8") as file:
+                json.dump({"symbols": symbols_data}, file, ensure_ascii=False, indent=4)
+        except (BadRequestError, ForbiddenError, TooManyRequestsError, InternalServerError, UnknownAPIError) as ex:
+            _LOGGER.error("Error al descargar o guardar los símbolos: %s", ex)
+            errors["base"] = "symbols_download_failed"
+
+        # Recuperar las variables (temperatura)
+        if not errors:
+            variables_client = MeteocatVariables(self.api_key)
+            try:
+                variables_data = await variables_client.get_variables()
+                self.variable_id = next(
+                    (v["codi"] for v in variables_data if v["nom"].lower() == "temperatura"), None
+                )
+                if not self.variable_id:
+                    _LOGGER.error("No se encontró la variable 'Temperatura'")
+                    errors["base"] = "variable_not_found"
+            except (BadRequestError, ForbiddenError, TooManyRequestsError, InternalServerError, UnknownAPIError) as ex:
+                _LOGGER.error("Error al obtener las variables: %s", ex)
+                errors["base"] = "variables_fetch_failed"
+
+        if not errors:
+            return await self.async_step_select_station()
+
+    async def async_step_select_station(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Tercer paso: Seleccionar la estación para la variable seleccionada."""
+        errors = {}
+
+        if user_input is not None:
+            # Obtener las estaciones asociadas a la ciudad y la variable
+            townstations_client = MeteocatTownStations(self.api_key)
+            try:
+                stations_data = await townstations_client.get_town_stations(
+                    self.selected_municipi["codi"], self.variable_id
+                )
+
+                # Mostrar las estaciones en el formulario
+                selected_station_codi = user_input["station"]
+                selected_station = next(
+                    (station for station in stations_data[0]["variables"][0]["estacions"] if station["codi"] == selected_station_codi),
+                    None
+                )
+
+                if selected_station:
+                    self.station_id = selected_station["codi"]
+                    self.station_name = selected_station["nom"]
+
+                    return self.async_create_entry(
+                        title=self.selected_municipi["nom"],
+                        data={
+                            CONF_API_KEY: self.api_key,
+                            "town_name": self.selected_municipi["nom"],
+                            "town_id": self.selected_municipi["codi"],
+                            "variable_name": "Temperatura",
+                            "variable_id": self.variable_id,
+                            "station_name": self.station_name,
+                            "station_id": self.station_id
+                        },
+                    )
+                else:
+                    errors["base"] = "station_not_found"
+
+            except Exception as ex:
+                _LOGGER.error("Error al obtener las estaciones: %s", ex)
+                errors["base"] = "stations_fetch_failed"
+
+        # Crear un esquema dinámico con las estaciones disponibles
+        schema = vol.Schema(
+            {
+                vol.Required("station"): vol.In(
+                    {station["codi"]: station["nom"] for station in stations_data[0]["variables"][0]["estacions"]}
+                )
+            }
+        )
+
+        return self.async_show_form(
+            step_id="select_station", data_schema=schema, errors=errors
+        )
 
     @staticmethod
     @callback
@@ -103,24 +205,3 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Devuelve el flujo de opciones para esta configuración."""
         return MeteocatOptionsFlowHandler(config_entry)
-
-
-class MeteocatOptionsFlowHandler(ConfigFlow):
-    """Flujo de opciones para Meteocat."""
-
-    def __init__(self, config_entry: ConfigEntry):
-        self.config_entry = config_entry
-
-    async def async_step_init(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
-        """Gestiona las opciones de configuración."""
-        return await self.async_step_user(user_input)
-
-    async def async_step_user(
-        self, user_input: dict[str, Any] | None = None
-    ) -> ConfigFlowResult:
-        """Manejo de las opciones del usuario."""
-        return self.async_show_form(
-            step_id="user", data_schema=vol.Schema({}), errors={}
-        )
