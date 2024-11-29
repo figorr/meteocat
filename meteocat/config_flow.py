@@ -16,6 +16,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import aiohttp_client, config_validation as cv
 
 from .const import DEFAULT_NAME, DOMAIN
+from .options_flow import MeteocatOptionsFlowHandler
 from meteocatpy.town import MeteocatTown
 from meteocatpy.symbols import MeteocatSymbols
 from meteocatpy.variables import MeteocatVariables
@@ -177,8 +178,6 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
 
     @staticmethod
     @callback
-    def async_get_options_flow(
-        config_entry: ConfigEntry,
-    ) -> ConfigFlowResult:
+    def async_get_options_flow(config_entry: ConfigEntry) -> MeteocatOptionsFlowHandler:
         """Devuelve el flujo de opciones para esta configuración."""
         return MeteocatOptionsFlowHandler(config_entry)
