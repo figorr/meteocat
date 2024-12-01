@@ -15,7 +15,7 @@ from homeassistant.core import callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import aiohttp_client, config_validation as cv
 
-from .const import DEFAULT_NAME, DOMAIN
+from .const import DOMAIN
 from .options_flow import MeteocatOptionsFlowHandler
 from meteocatpy.town import MeteocatTown
 from meteocatpy.symbols import MeteocatSymbols
