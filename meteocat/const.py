@@ -1,9 +1,13 @@
 # Constantes generales
 DOMAIN = "meteocat"
 BASE_URL = "https://api.meteo.cat"
-MUNICIPIS_LIST_URL = "/referencia/v1/municipis"
-MUNICIPIS_HORA_URL = "/pronostic/v1/municipalHoraria/{codi}"
-MUNICIPIS_DIA_URL = "/pronostic/v1/municipal/{codi}"
+CONF_API_KEY = "api_key"
+TOWN_NAME = "town_name"
+TOWN_ID = "town_id"
+VARIABLE_NAME = "variable_name"
+VARIABLE_ID = "variable_id"
+STATION_NAME = "station_name"
+STATION_ID = "station_id"
 
 # Códigos de sensores de la API
 WIND_SPEED = "30"  # Velocidad del viento
@@ -25,3 +29,6 @@ HUMIDITY_UNIT = "%"
 PRESSURE_UNIT = "hPa"
 PRECIPITATION_UNIT = "mm"
 UV_INDEX_UNIT = "UV"
+
+# Updates interval
+STATION_DATA_UPDATE_INTERVAL = timedelta(minutes=90)
