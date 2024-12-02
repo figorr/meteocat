@@ -29,6 +29,3 @@ HUMIDITY_UNIT = "%"
 PRESSURE_UNIT = "hPa"
 PRECIPITATION_UNIT = "mm"
 UV_INDEX_UNIT = "UV"
-
-# Updates interval
-STATION_DATA_UPDATE_INTERVAL = timedelta(minutes=90)
