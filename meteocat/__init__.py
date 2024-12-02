@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import logging
 from homeassistant import core
 from homeassistant.config_entries import ConfigEntry
@@ -71,3 +72,21 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Desinstalar plataformas
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
+async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Limpia cualquier dato adicional al desinstalar la integración."""
+    _LOGGER.info(f"Eliminando datos residuales de la integración: {entry.entry_id}")
+
+    # Definir la ruta de la carpeta 'assets' dentro del directorio de la integración
+    assets_folder = hass.config.path("custom_components", DOMAIN, "assets")
+    symbols_file = os.path.join(assets_folder, "symbols.json")
+
+    try:
+        # Verificar si el archivo existe antes de intentar eliminarlo
+        if os.path.exists(symbols_file):
+            os.remove(symbols_file)
+            _LOGGER.info("Archivo symbols.json eliminado correctamente.")
+        else:
+            _LOGGER.info("El archivo symbols.json no se encontró.")
+    except OSError as e:
+        _LOGGER.error(f"Error al intentar eliminar el archivo symbols.json: {e}")
