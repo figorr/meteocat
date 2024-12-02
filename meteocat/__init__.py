@@ -1,95 +1,65 @@
-import os
 import logging
 from homeassistant import core
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryNotReady
-import aiohttp
 
 _LOGGER = logging.getLogger(__name__)
 
-# Version
+# Versión
 __version__ = "0.1.15"
 
 # Constantes
 DOMAIN = "meteocat"
-BASE_URL = "https://api.meteo.cat"
+PLATFORMS = ["sensor"]  # Define las plataformas a cargar
 
 
 async def async_setup(hass: core.HomeAssistant, config: dict) -> bool:
-    """Set up the Meteocat component."""
-    # @TODO: Add setup code.
+    """Configuración inicial del componente Meteocat."""
     return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Configura una entrada de configuración de Meteocat."""
-    # Obtener todas las entradas para el dominio meteocat
-    entries = hass.config_entries.async_entries(DOMAIN)
-    found = False
+    """Configura una entrada de configuración para Meteocat."""
+    _LOGGER.info("Configurando la integración de Meteocat...")
 
-    for entry in entries:
-        # Verifica si la entrada corresponde al municipio específico
-        if entry.data.get("municipi") == entry.data.get("municipi"):  # Ajustar la lógica según sea necesario
-            api_key = entry.data.get("api_key")
-            municipi = entry.data.get("municipi")
-            codi = entry.data.get("codi")
-            
-            if not api_key:
-                _LOGGER.error("No se encontró una API Key guardada. Configura la integración desde el flujo de configuración.")
-                return False
-            
-            # Validar la API Key
-            is_valid, error_message = await _validate_api_key(api_key)
-            if not is_valid:
-                _LOGGER.error(f"API Key no válida: {error_message}. Reconfigura la integración.")
-                raise ConfigEntryNotReady("API Key no válida. Por favor, reconfigura la integración.")
-            
-            _LOGGER.info(f"Integración configurada correctamente. Municipio: {municipi}, Código: {codi}")
-            found = True
-            break
+    # Verificar los datos guardados en la entrada
+    api_key = entry.data.get("api_key")
+    town_name = entry.data.get("town_name")
+    town_id = entry.data.get("town_id")
+    variable_id = entry.data.get("variable_id")
+    station_name = entry.data.get("station_name")
+    station_id = entry.data.get("station_id")
 
-    if not found:
-        _LOGGER.error("No se encontró ninguna entrada de configuración para el municipio solicitado.")
+    if not all([api_key, town_name, town_id, variable_id, station_id]):
+        _LOGGER.error("Faltan datos en la configuración. Por favor, reconfigura la integración.")
         return False
-    
+
+    _LOGGER.info(
+        f"Integración configurada para el municipio '{town_name}' (ID: {town_id}), "
+        f"variable 'Temperatura' (ID: {variable_id}), estación {station_name} con '{station_id}'."
+    )
+
+    # Agregar datos de configuración al hass.data
+    hass.data.setdefault(DOMAIN, {})
+    hass.data[DOMAIN][entry.entry_id] = {
+        "api_key": api_key,
+        "town_name": town_name,
+        "town_id": town_id,
+        "variable_id": variable_id,
+        "station_name": station_name,
+        "station_id": station_id,
+    }
+
+    # Configurar plataformas
+    hass.config_entries.async_setup_platforms(entry, PLATFORMS)
+
     return True
-
-
-async def _validate_api_key(api_key: str) -> tuple[bool, str]:
-    """Valida la API Key haciendo una solicitud a la API de Meteocat."""
-    path_municipis = "/referencia/v1/municipis"
-    url = f"{BASE_URL}{path_municipis}"
-    headers = {"X-Api-Key": api_key}
-
-    async with aiohttp.ClientSession() as session:
-        try:
-            async with session.get(url, headers=headers) as response:
-                if response.status == 200:
-                    return True, ""
-                return False, f"Código de error {response.status}: {await response.text()}"
-        except aiohttp.ClientError as e:
-            _LOGGER.error(f"Error en la validación de la API Key: {e}")
-            return False, "Error de conexión con la API"
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Elimina una entrada de configuración de Meteocat."""
-    _LOGGER.info("Eliminando la integración de Meteocat.")
-    # Limpia cualquier recurso o tarea creada durante async_setup_entry
-    return True
+    """Desactiva una entrada de configuración para Meteocat."""
+    if entry.entry_id in hass.data.get(DOMAIN, {}):
+        hass.data[DOMAIN].pop(entry.entry_id)
 
-
-async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Limpia cualquier dato adicional al desinstalar la integración."""
-    _LOGGER.info(f"Eliminando datos residuales de la integración: {entry.entry_id}")
-
-    carpeta_files = hass.config.path("custom_components", DOMAIN, "files")
-    archivo_municipis = os.path.join(carpeta_files, "municipis_list.json")
-
-    try:
-        if os.path.exists(archivo_municipis):
-            os.remove(archivo_municipis)
-            _LOGGER.info("Archivo municipios_list.json eliminado correctamente.")
-    except OSError as e:
-        _LOGGER.error(f"Error al intentar eliminar el archivo municipios_list.json: {e}")
+    # Desinstalar plataformas
+    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
