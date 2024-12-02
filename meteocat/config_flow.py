@@ -10,12 +10,21 @@ from aiohttp import ClientError
 import aiofiles
 
 from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResult
-from homeassistant.const import CONF_API_KEY, CONF_NAME
 from homeassistant.core import callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import aiohttp_client, config_validation as cv
 
-from .const import DOMAIN
+from .const import (
+    DOMAIN,
+    CONF_API_KEY,
+    TOWN_NAME,
+    TOWN_ID,
+    VARIABLE_NAME,
+    VARIABLE_ID,
+    STATION_NAME,
+    STATION_ID
+)
+    
 from .options_flow import MeteocatOptionsFlowHandler
 from meteocatpy.town import MeteocatTown
 from meteocatpy.symbols import MeteocatSymbols
@@ -153,12 +162,12 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
                     title=self.selected_municipi["nom"],
                     data={
                         CONF_API_KEY: self.api_key,
-                        "town_name": self.selected_municipi["nom"],
-                        "town_id": self.selected_municipi["codi"],
-                        "variable_name": "Temperatura",
-                        "variable_id": self.variable_id,
-                        "station_name": self.station_name,
-                        "station_id": self.station_id
+                        TOWN_NAME: self.selected_municipi["nom"],
+                        TOWN_ID: self.selected_municipi["codi"],
+                        VARIABLE_NAME: "Temperatura",
+                        VARIABLE_ID: self.variable_id,
+                        STATION_NAME: self.station_name,
+                        STATION_ID: self.station_id
                     },
                 )
             else:
