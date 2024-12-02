@@ -1,17 +1,25 @@
+from __future__ import annotations
+
 import logging
 from homeassistant import core
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from .const import (
+    DOMAIN,
+    CONF_API_KEY,
+    TOWN_NAME,
+    TOWN_ID,
+    VARIABLE_ID,
+    STATION_NAME,
+    STATION_ID,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
 # Versión
 __version__ = "0.1.15"
 
-# Constantes
-DOMAIN = "meteocat"
 PLATFORMS = ["sensor"]  # Define las plataformas a cargar
-
 
 async def async_setup(hass: core.HomeAssistant, config: dict) -> bool:
     """Configuración inicial del componente Meteocat."""
@@ -23,12 +31,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     _LOGGER.info("Configurando la integración de Meteocat...")
 
     # Verificar los datos guardados en la entrada
-    api_key = entry.data.get("api_key")
-    town_name = entry.data.get("town_name")
-    town_id = entry.data.get("town_id")
-    variable_id = entry.data.get("variable_id")
-    station_name = entry.data.get("station_name")
-    station_id = entry.data.get("station_id")
+    api_key = entry.data.get(CONF_API_KEY)
+    town_name = entry.data.get(TOWN_NAME)
+    town_id = entry.data.get(TOWN_ID)
+    variable_id = entry.data.get(VARIABLE_ID)
+    station_name = entry.data.get(STATION_NAME)
+    station_id = entry.data.get(STATION_ID)
 
     if not all([api_key, town_name, town_id, variable_id, station_id]):
         _LOGGER.error("Faltan datos en la configuración. Por favor, reconfigura la integración.")
@@ -42,12 +50,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Agregar datos de configuración al hass.data
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = {
-        "api_key": api_key,
-        "town_name": town_name,
-        "town_id": town_id,
-        "variable_id": variable_id,
-        "station_name": station_name,
-        "station_id": station_id,
+        CONF_API_KEY: api_key,
+        TOWN_NAME: town_name,
+        TOWN_ID: town_id,
+        VARIABLE_ID: variable_id,
+        STATION_NAME: station_name,
+        STATION_ID: station_id,
     }
 
     # Configurar plataformas
