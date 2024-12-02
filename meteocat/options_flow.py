@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import logging
 from homeassistant.config_entries import ConfigEntry, OptionsFlow
-from homeassistant.const import CONF_API_KEY
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 import voluptuous as vol
 
-from .const import DOMAIN
+from .const import (
+    CONF_API_KEY
+)
 from meteocatpy.town import MeteocatTown
 from meteocatpy.exceptions import (
     BadRequestError,
@@ -18,7 +19,6 @@ from meteocatpy.exceptions import (
 )
 
 _LOGGER = logging.getLogger(__name__)
-
 
 class MeteocatOptionsFlowHandler(OptionsFlow):
     """Manejo del flujo de opciones para Meteocat."""
