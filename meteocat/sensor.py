@@ -17,6 +17,11 @@ from homeassistant.const import PERCENTAGE, UnitOfTemperature
 
 from .const import (
     DOMAIN,
+    TOWN_NAME,
+    TOWN_ID,
+    STATION_NAME,
+    STATION_ID,
+    CONF_API_KEY,
     WIND_SPEED,
     WIND_DIRECTION,
     TEMPERATURE,
@@ -34,7 +39,7 @@ from .const import (
     WIND_DIRECTION_UNIT
 )
 
-from .coordinator import MeteocatDataCoordinator
+from .coordinator import MeteocatSensorCoordinator
 
 @dataclass
 class MeteocatSensorEntityDescription(SensorEntityDescription):
@@ -132,21 +137,21 @@ async def async_setup_entry(
     if config_entry.options:
         config.update(config_entry.options)
 
-    coordinator = MeteocatDataCoordinator(hass, config['api_key'], config['municipality'])
+    coordinator = MeteocatSensorCoordinator(hass, config[CONF_API_KEY], config[TOWN_ID])
 
     await coordinator.async_config_entry_first_refresh()
 
     # Obtener el town_name desde los datos guardados en config_entry
-    town_name = config_entry.data.get("town_name")  # 'town_name' es el nombre del municipio guardado en config_flow.py
+    town_name = config_entry.data.get(TOWN_NAME)  # 'town_name' es el nombre del municipio guardado en config_flow.py
 
     # Obtener el town_id desde los datos guardados en config_entry
-    town_id = config_entry.data.get("town_id")  # 'town_id' es el código del municipio guardado en config_flow.py
+    town_id = config_entry.data.get(TOWN_ID)  # 'town_id' es el código del municipio guardado en config_flow.py
 
     # Obtener el station_name desde los datos guardados en config_entry
-    station_name = config_entry.data.get("station_name")  # 'station_name_id' es el nombre de la estación guardada en config_flow.py
+    station_name = config_entry.data.get(STATION_NAME)  # 'station_name_id' es el nombre de la estación guardada en config_flow.py
 
     # Obtener el station_id desde los datos guardados en config_entry
-    station_id = config_entry.data.get("station_id")  # 'station_id' es el código de la estación guardada en config_flow.py
+    station_id = config_entry.data.get(STATION_ID)  # 'station_id' es el código de la estación guardada en config_flow.py
 
     async_add_entities(
         MeteocatSensor(coordinator, description, town_name, town_id, station_name, station_id)
@@ -154,7 +159,7 @@ async def async_setup_entry(
     )
 
 class MeteocatSensor(
-    CoordinatorEntity[MeteocatDataCoordinator],
+    CoordinatorEntity[MeteocatSensorCoordinator],
     SensorEntity,
 ):
     """Implementation of a Meteocat sensor."""
@@ -164,7 +169,7 @@ class MeteocatSensor(
 
     def __init__(
         self,
-        coordinator: MeteocatDataCoordinator,
+        coordinator: MeteocatSensorCoordinator,
         description: MeteocatSensorEntityDescription,
         town_name: str,
         town_id: str,
@@ -232,4 +237,3 @@ class MeteocatSensor(
                 "ID Estación": self._station_id,
             },
         )
-
