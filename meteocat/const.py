@@ -29,3 +29,18 @@ HUMIDITY_UNIT = "%"
 PRESSURE_UNIT = "hPa"
 PRECIPITATION_UNIT = "mm"
 UV_INDEX_UNIT = "UV"
+
+# Mapeo de códigos 'estatCel' a condiciones de Home Assistant
+CONDITION_MAPPING = {
+    "sunny": [1],
+    "clear-night": [1],
+    "partlycloudy": [2, 3],
+    "cloudy": [4, 20, 21, 22],
+    "rainy": [5, 6, 23],
+    "pouring": [7, 8, 25],
+    "lightning-rainy": [8, 24],
+    "hail": [9],
+    "snowy": [10, 26, 27, 28],
+    "fog": [11, 12],
+    "snow-rainy": [27, 29, 30],
+}
