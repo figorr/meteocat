@@ -21,6 +21,8 @@ from .const import (
     TOWN_ID,
     STATION_NAME,
     STATION_ID,
+    VARIABLE_NAME,
+    VARIABLE_ID,
     CONF_API_KEY,
     WIND_SPEED,
     WIND_DIRECTION,
@@ -58,8 +60,7 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         key=WIND_DIRECTION,
         name="Wind Direction",
         icon="mdi:compass",
-        device_class=SensorDeviceClass.DIRECTION,
-        state_class=SensorStateClass.MEASUREMENT,
+        device_class=None,
         native_unit_of_measurement=WIND_DIRECTION_UNIT
     ),
     MeteocatSensorEntityDescription(
@@ -127,17 +128,19 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
     ),
 )
 
-async def async_setup_entry(
-    hass: HomeAssistant,
-    config_entry: config_entries.ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
-) -> None:
-    """Set up the Meteocat sensor."""
-    config = hass.data[DOMAIN][config_entry.entry_id]
-    if config_entry.options:
-        config.update(config_entry.options)
+async def async_setup_entry(hass, config_entry, async_add_entities):
+    """Configura los sensores de Meteocat."""
+    config = config_entry.data
 
-    coordinator = MeteocatSensorCoordinator(hass, config[CONF_API_KEY], config[TOWN_ID])
+    coordinator = MeteocatSensorCoordinator(
+        hass,
+        config[CONF_API_KEY],
+        config[TOWN_ID],
+        config[STATION_NAME],
+        config[STATION_ID],
+        config[VARIABLE_NAME],
+        config[VARIABLE_ID],
+    )
 
     await coordinator.async_config_entry_first_refresh()
 
@@ -153,8 +156,14 @@ async def async_setup_entry(
     # Obtener el station_id desde los datos guardados en config_entry
     station_id = config_entry.data.get(STATION_ID)  # 'station_id' es el código de la estación guardada en config_flow.py
 
+    # Obtener el variable_id desde los datos guardados en config_entry
+    variable_name = config_entry.data.get(VARIABLE_NAME)  # 'variable_name' es el nombre de la variable guardada en config_flow.py
+    
+    # Obtener el variable_id desde los datos guardados en config_entry
+    variable_id = config_entry.data.get(VARIABLE_ID)  # 'variable' es el código de la variable guardada en config_flow.py
+
     async_add_entities(
-        MeteocatSensor(coordinator, description, town_name, town_id, station_name, station_id)
+        MeteocatSensor(coordinator, description, town_name, town_id, station_name, station_id, variable_name, variable_id)
         for description in SENSOR_TYPES
     )
 
