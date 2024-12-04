@@ -18,7 +18,7 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 # Versión
-__version__ = "0.1.16"
+__version__ = "0.1.17"
 
 PLATFORMS = ["sensor"]  # Define las plataformas a cargar
 
