@@ -6,24 +6,15 @@ from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
     SensorEntityDescription,
-    SensorStateClass
+    SensorStateClass,
 )
-from homeassistant import config_entries
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.const import PERCENTAGE, UnitOfTemperature
 
 from .const import (
     DOMAIN,
-    TOWN_NAME,
-    TOWN_ID,
-    STATION_NAME,
-    STATION_ID,
-    VARIABLE_NAME,
-    VARIABLE_ID,
-    CONF_API_KEY,
     WIND_SPEED,
     WIND_DIRECTION,
     TEMPERATURE,
@@ -38,14 +29,16 @@ from .const import (
     PRESSURE_UNIT,
     PRECIPITATION_UNIT,
     UV_INDEX_UNIT,
-    WIND_DIRECTION_UNIT
+    WIND_DIRECTION_UNIT,
 )
 
 from .coordinator import MeteocatSensorCoordinator
 
+
 @dataclass
 class MeteocatSensorEntityDescription(SensorEntityDescription):
-    """A class that describes sensor entities"""
+    """A class that describes Meteocat sensor entities."""
+
 
 SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
     MeteocatSensorEntityDescription(
@@ -54,14 +47,14 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         icon="mdi:weather-windy",
         device_class=SensorDeviceClass.WIND_SPEED,
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=WIND_SPEED_UNIT
+        native_unit_of_measurement=WIND_SPEED_UNIT,
     ),
     MeteocatSensorEntityDescription(
         key=WIND_DIRECTION,
         name="Wind Direction",
         icon="mdi:compass",
         device_class=None,
-        native_unit_of_measurement=WIND_DIRECTION_UNIT
+        native_unit_of_measurement=WIND_DIRECTION_UNIT,
     ),
     MeteocatSensorEntityDescription(
         key=TEMPERATURE,
@@ -69,7 +62,7 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         icon="mdi:thermometer",
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=UnitOfTemperature
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
     ),
     MeteocatSensorEntityDescription(
         key=HUMIDITY,
@@ -77,7 +70,7 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         icon="mdi:water-percent",
         device_class=SensorDeviceClass.HUMIDITY,
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=PERCENTAGE
+        native_unit_of_measurement=PERCENTAGE,
     ),
     MeteocatSensorEntityDescription(
         key=PRESSURE,
@@ -85,22 +78,22 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         icon="mdi:gauge",
         device_class=SensorDeviceClass.ATMOSPHERIC_PRESSURE,
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=PRESSURE_UNIT
+        native_unit_of_measurement=PRESSURE_UNIT,
     ),
     MeteocatSensorEntityDescription(
         key=PRECIPITATION,
         name="Precipitation",
         icon="mdi:weather-rainy",
-        device_class=SensorDeviceClass.PRECIPITATION,
+        device_class=None,
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=PRECIPITATION_UNIT
+        native_unit_of_measurement=PRECIPITATION_UNIT,
     ),
     MeteocatSensorEntityDescription(
         key=UV_INDEX,
         name="UV Index",
         icon="mdi:sun",
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=UV_INDEX_UNIT
+        native_unit_of_measurement=UV_INDEX_UNIT,
     ),
     MeteocatSensorEntityDescription(
         key=MAX_TEMPERATURE,
@@ -108,7 +101,7 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         icon="mdi:thermometer-plus",
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=UnitOfTemperature
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
     ),
     MeteocatSensorEntityDescription(
         key=MIN_TEMPERATURE,
@@ -116,7 +109,7 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         icon="mdi:thermometer-minus",
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=UnitOfTemperature
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
     ),
     MeteocatSensorEntityDescription(
         key=WIND_GUST,
@@ -124,125 +117,74 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         icon="mdi:weather-windy",
         device_class=SensorDeviceClass.WIND_SPEED,
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=WIND_SPEED
+        native_unit_of_measurement=WIND_SPEED_UNIT,
     ),
 )
 
-async def async_setup_entry(hass, config_entry, async_add_entities):
-    """Configura los sensores de Meteocat."""
-    config = config_entry.data
 
-    coordinator = MeteocatSensorCoordinator(
-        hass,
-        config[CONF_API_KEY],
-        config[TOWN_ID],
-        config[STATION_NAME],
-        config[STATION_ID],
-        config[VARIABLE_NAME],
-        config[VARIABLE_ID],
-    )
-
-    await coordinator.async_config_entry_first_refresh()
-
-    # Obtener el town_name desde los datos guardados en config_entry
-    town_name = config_entry.data.get(TOWN_NAME)  # 'town_name' es el nombre del municipio guardado en config_flow.py
-
-    # Obtener el town_id desde los datos guardados en config_entry
-    town_id = config_entry.data.get(TOWN_ID)  # 'town_id' es el código del municipio guardado en config_flow.py
-
-    # Obtener el station_name desde los datos guardados en config_entry
-    station_name = config_entry.data.get(STATION_NAME)  # 'station_name_id' es el nombre de la estación guardada en config_flow.py
-
-    # Obtener el station_id desde los datos guardados en config_entry
-    station_id = config_entry.data.get(STATION_ID)  # 'station_id' es el código de la estación guardada en config_flow.py
-
-    # Obtener el variable_id desde los datos guardados en config_entry
-    variable_name = config_entry.data.get(VARIABLE_NAME)  # 'variable_name' es el nombre de la variable guardada en config_flow.py
-    
-    # Obtener el variable_id desde los datos guardados en config_entry
-    variable_id = config_entry.data.get(VARIABLE_ID)  # 'variable' es el código de la variable guardada en config_flow.py
+@callback
+async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback) -> None:
+    """Set up Meteocat sensors from a config entry."""
+    entry_data = hass.data[DOMAIN][entry.entry_id]
+    coordinator = entry_data["sensor_coordinator"]
 
     async_add_entities(
-        MeteocatSensor(coordinator, description, town_name, town_id, station_name, station_id, variable_name, variable_id)
+        MeteocatSensor(coordinator, description, entry_data)
         for description in SENSOR_TYPES
     )
 
-class MeteocatSensor(
-    CoordinatorEntity[MeteocatSensorCoordinator],
-    SensorEntity,
-):
-    """Implementation of a Meteocat sensor."""
 
-    _attr_has_entity_name = True
-    entity_description: MeteocatSensorEntityDescription
+class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity):
+    """Representation of a Meteocat sensor."""
 
-    def __init__(
-        self,
-        coordinator: MeteocatSensorCoordinator,
-        description: MeteocatSensorEntityDescription,
-        town_name: str,
-        town_id: str,
-        station_name: str,
-        station_id: str,
-    ) -> None:
-        """Initialize the Meteocat sensor."""
+    def __init__(self, coordinator, description, entry_data):
+        """Initialize the sensor."""
         super().__init__(coordinator)
         self.entity_description = description
-        self._town_name = town_name
-        self._town_id = town_id
-        self._station_name = station_name
-        self._station_id = station_id
-        # Crear unique_id utilizando town_id y key del sensor
-        self._attr_unique_id = f"{self._town_name}_{self.entity_description.key}"
-        self._attr_native_value = getattr(self.coordinator.data, self.entity_description.key)
+        self.api_key = entry_data["api_key"]  # Usamos la API key de la configuración
+        self._town_name = entry_data["town_name"]  # Usamos el nombre del municipio
+        self._town_id = entry_data["town_id"]  # Usamos el ID del municipio
+        self._variable_name = entry_data["variable_name"]  # Usamos el nombre de la variable
+        self._variable_id = entry_data["variable_id"]  # Usamos el ID de la variable
+        self._station_name = entry_data["station_name"]  # Usamos el nombre de la estación
+        self._station_id = entry_data["station_id"]  # Usamos el ID de la estación
+
+        # Unique ID for the entity
+        self._attr_unique_id = f"{self._town_id}_{self.entity_description.key}"
 
     @property
-    def native_value(self) -> StateType:
-        """Return the sensor value."""
-        # Si es el sensor de dirección del viento, convertir grados a dirección cardinal
-        if self.entity_description.key == WIND_DIRECTION:
-            return self._convert_degrees_to_cardinal(self._attr_native_value)
+    def native_value(self):
+        """Return the state of the sensor."""
+        value = getattr(self.coordinator.data, self.entity_description.key, None)
 
-        # Para los demás sensores, devolver el valor normal
-        return self._attr_native_value
+        if self.entity_description.key == WIND_DIRECTION:
+            return self._convert_degrees_to_cardinal(value)
+
+        return value
 
     @staticmethod
     def _convert_degrees_to_cardinal(degree: float | None) -> str | None:
         """Convert degrees to cardinal direction."""
         if degree is None:
             return None
-
-        # Lista de direcciones cardinales
         directions = [
-            "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", 
-            "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW", "N"
+            "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
+            "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW", "N",
         ]
-
-        # Cálculo del índice de la dirección
         index = int(((degree + 11.25) / 22.5)) % 16
         return directions[index]
-
-    @property
-    def native_unit_of_measurement(self) -> StateType:
-        return self.entity_description.native_unit_of_measurement
-
-    @callback
-    def _handle_coordinator_update(self) -> None:
-        """Handle updated data from the coordinator."""
-        self._attr_native_value = getattr(self.coordinator.data, self.entity_description.key)
-        self.async_write_ha_state()
 
     @property
     def device_info(self) -> DeviceInfo:
         """Return the device info."""
         return DeviceInfo(
-            identifiers={(DOMAIN, self._town_id)},  # Usar town_id como identificador único
-            name=f"{self._town_name}",  # Mostrar el nombre del municipio
+            identifiers={(DOMAIN, self._town_id)},
+            name=self._town_name,
             manufacturer="Meteocat",
             model="Meteocat API",
-            additional_properties={  # Detalles adicionales visibles en configuración avanzada
-                "ID Municipio": self._town_id,
-                "Estación": self._station_name,
-                "ID Estación": self._station_id,
+            additional_properties={
+                "Town ID": self._town_id,
+                "Station Name": self._station_name,
+                "Station ID": self._station_id,
             },
         )
