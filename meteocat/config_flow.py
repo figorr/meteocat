@@ -165,7 +165,7 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
                         TOWN_NAME: self.selected_municipi["nom"],
                         TOWN_ID: self.selected_municipi["codi"],
                         VARIABLE_NAME: "Temperatura",
-                        VARIABLE_ID: self.variable_id,
+                        VARIABLE_ID: str(self.variable_id),
                         STATION_NAME: self.station_name,
                         STATION_ID: self.station_id
                     },
