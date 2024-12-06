@@ -38,9 +38,9 @@ github_job:
   only:
     - master
 
-pypy_job:
-  stage: pypi
-  script:
-    - poetry publish --build -u "__token__" -p $PYPI_API_TOKEN  # Usar el token de API de PyPI
-  only:
-    - master
+# pypy_job:
+#   stage: pypi
+#   script:
+#     - poetry publish --build -u "__token__" -p $PYPI_API_TOKEN  # Usar el token de API de PyPI
+#   only:
+#     - master
