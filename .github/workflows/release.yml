@@ -19,7 +19,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18 # Asegúrate de usar una versión compatible con semantic-release
+          node-version: 20.8.1 # Versión compatible con semantic-release
 
       # Paso 3: Instalar dependencias necesarias
       - name: Install dependencies
@@ -28,5 +28,5 @@ jobs:
       # Paso 4: Ejecutar semantic-release
       - name: Run semantic-release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Token automático para crear releases en GitHub
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx semantic-release
