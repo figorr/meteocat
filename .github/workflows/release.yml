@@ -1,4 +1,4 @@
-name: Python Release
+name: Release
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   release:
-    name: Publish Release
+    name: Create Release
     runs-on: ubuntu-latest
 
     steps:
@@ -15,22 +15,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Paso 2: Configurar Python
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      # Paso 2: Configurar Node.js (requerido para semantic-release)
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
         with:
-          python-version: 3.12  # Cambia según tu versión
+          node-version: 18 # Asegúrate de usar una versión compatible con semantic-release
 
-      # Paso 3: Instalar dependencias
+      # Paso 3: Instalar dependencias necesarias
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install python-semantic-release
+        run: npm ci
 
-      # Paso 4: Ejecutar python-semantic-release
-      - name: Run python-semantic-release
+      # Paso 4: Ejecutar semantic-release
+      - name: Run semantic-release
         env:
-          PYPI_USERNAME: ${{ secrets.PYPI_USERNAME }}
-          PYPI_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: semantic-release publish
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Token automático para crear releases en GitHub
+        run: npx semantic-release
