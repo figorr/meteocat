@@ -33,6 +33,10 @@ final_release.py
 # TEST VARIABLES .ENV
 test_dotenv.py
 
+# TESTS
+tests/coordinator_error_test.py
+tests/sensor_error_test.py
+
 # VERSIONS
 current_version.txt
 next_version.txt
