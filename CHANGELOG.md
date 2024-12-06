@@ -8,8 +8,6 @@
 * new repo file structure ([7ef2dbe](https://github.com/figorr/meteocat/commit/7ef2dbe67bc41c77e0f931d833578540dafe0ca8))
 * semantic-release job ([a78eb5c](https://github.com/figorr/meteocat/commit/a78eb5c6dbbaef556a40053f98257906adeeecaa))
 
-# CHANGELOG
-
 
 ## v0.1.14 (2024-11-22)
 
