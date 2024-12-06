@@ -16,9 +16,18 @@
           "patch": "+1",
           "major": "+1"
         }
-      },
+      }
+    ],
+    [
+      "@semantic-release/python",
       {
-        "versionFile": "./__init__.py"
+        "versionFile": "./__init__.py",
+        "increment": {
+          "build": "+1",
+          "minor": "+1",
+          "patch": "+1",
+          "major": "+1"
+        }
       }
     ]
   ],
