@@ -6,26 +6,27 @@
 ├── CHANGELOG.md
 ├── LICENSE
 ├── README.md
+└── custom_components/
+    └── meteocat/
+        ├── __init__.py
+        ├── condition.py
+        ├── config_flow.py
+        ├── const.py
+        ├── coordinator.py
+        ├── entity.py
+        ├── helpers.py
+        ├── manifest.json
+        ├── options_flow.py
+        ├── sensor.py
+        ├── strings.json
+        └── translations/
+            ├── ca.json
+            ├── en.json
+            ├── es.json
+        ├── version.py
 ├── filetree.py
 ├── filetree.txt
 ├── hacs.json
-└── meteocat/
-    ├── __init__.py
-    ├── condition.py
-    ├── config_flow.py
-    ├── const.py
-    ├── coordinator.py
-    ├── entity.py
-    ├── helpers.py
-    ├── manifest.json
-    ├── options_flow.py
-    ├── sensor.py
-    ├── strings.json
-    └── translations/
-        ├── ca.json
-        ├── en.json
-        ├── es.json
-    ├── version.py
 ├── package-lock.json
 ├── poetry.lock
 ├── pyproject.toml
