@@ -16,6 +16,12 @@ __pycache__/
 meteocat/__pycache__/
 custom_components/meteocat/__pycache__/
 
+# Cache
+.meteocat_cache/
+
+# .coverage
+.coverage
+
 # Archivos de log
 *.log
 
