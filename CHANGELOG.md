@@ -1,3 +1,13 @@
+## [0.1.21](https://github.com/figorr/meteocat/compare/v0.1.20...v0.1.21) (2024-12-06)
+
+
+### Bug Fixes
+
+* 0.1.21 ([a4df744](https://github.com/figorr/meteocat/commit/a4df7445f5dc05fe0a74c9d949fa551a77af6cf0))
+* delete node_modules ([3b817a5](https://github.com/figorr/meteocat/commit/3b817a53c5fd6dcc44f17865f6fb39bb79c032ab))
+* new repo file structure ([7ef2dbe](https://github.com/figorr/meteocat/commit/7ef2dbe67bc41c77e0f931d833578540dafe0ca8))
+* semantic-release job ([a78eb5c](https://github.com/figorr/meteocat/commit/a78eb5c6dbbaef556a40053f98257906adeeecaa))
+
 # CHANGELOG
 
 
