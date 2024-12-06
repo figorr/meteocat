@@ -5,7 +5,22 @@
     "@semantic-release/release-notes-generator",
     "@semantic-release/changelog",
     "@semantic-release/npm",
-    "@semantic-release/github"
+    "@semantic-release/github",
+    [
+      "@semantic-release/python",
+      {
+        "versionFile": "./version.py",
+        "increment": {
+          "build": "+1",
+          "minor": "+1",
+          "patch": "+1",
+          "major": "+1"
+        }
+      },
+      {
+        "versionFile": "./__init__.py"
+      }
+    ]
   ],
   "repositoryUrl": "https://github.com/figorr/meteocat"
 }
