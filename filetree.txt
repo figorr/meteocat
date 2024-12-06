@@ -4,6 +4,7 @@
 ├── .gitignore
 ├── .gitlab-ci.yml
 ├── .pre-commit-config.yaml
+├── .releaserc
 ├── .releaserc.toml
 ├── AUTHORS.md
 ├── CHANGELOG.md
@@ -31,8 +32,10 @@
 ├── filetree.txt
 ├── hacs.json
 ├── package-lock.json
+├── package.json
 ├── poetry.lock
 ├── pyproject.toml
+├── releaserc.json
 ├── requirements.test.txt
 ├── setup.cfg
 ├── setup.py
