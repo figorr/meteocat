@@ -19,6 +19,9 @@ custom_components/meteocat/__pycache__/
 # Cache
 .meteocat_cache/
 
+# Node Modules
+node_modules/
+
 # .coverage
 .coverage
 
