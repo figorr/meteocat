@@ -21,7 +21,7 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 # Versión
-__version__ = "0.1.18"
+__version__ = "0.1.20"
 
 # Plataformas soportadas por la integración
 PLATFORMS = ["sensor", "entity"]
