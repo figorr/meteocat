@@ -1,3 +1,12 @@
+## [0.1.23](https://github.com/figorr/meteocat/compare/v0.1.22...v0.1.23) (2024-12-07)
+
+
+### Bug Fixes
+
+* 0.1.23 ([dda17ae](https://github.com/figorr/meteocat/commit/dda17ae1d73d31879d029d4c7a8f12a1a74f2379))
+* fix sensor data recovery ([564ceb7](https://github.com/figorr/meteocat/commit/564ceb7ff372acd7d2d035272e9784ad583ccece))
+* fix unis of measurement ([c65bce2](https://github.com/figorr/meteocat/commit/c65bce26add578bc32ebb05b82381aa72dfbf9a6))
+
 ## [0.1.22](https://github.com/figorr/meteocat/compare/v0.1.21...v0.1.22) (2024-12-07)
 
 
