@@ -44,3 +44,9 @@ CONDITION_MAPPING = {
     "fog": [11, 12],
     "snow-rainy": [27, 29, 30],
 }
+
+# Platforms
+PLATFORMS = {
+    "sensor", 
+    "entity",
+}
