@@ -91,7 +91,7 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
     MeteocatSensorEntityDescription(
         key=UV_INDEX,
         name="UV Index",
-        icon="mdi:sun",
+        icon="mdi:weather-sunny",
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UV_INDEX_UNIT,
     ),
@@ -181,10 +181,5 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
             identifiers={(DOMAIN, self._town_id)},
             name=self._town_name,
             manufacturer="Meteocat",
-            model="Meteocat API",
-            additional_properties={
-                "Town ID": self._town_id,
-                "Station Name": self._station_name,
-                "Station ID": self._station_id,
-            },
+            model="Meteocat API"
         )
