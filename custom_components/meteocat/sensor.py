@@ -32,6 +32,7 @@ from .const import (
     MAX_TEMPERATURE,
     MIN_TEMPERATURE,
     WIND_GUST,
+    VARIABLE_CODE_MAPPING,
 )
 
 from .coordinator import MeteocatSensorCoordinator
@@ -56,7 +57,6 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         name="Wind Direction",
         icon="mdi:compass",
         device_class=None,
-        native_unit_of_measurement=DEGREE,
     ),
     MeteocatSensorEntityDescription(
         key=TEMPERATURE,
@@ -155,24 +155,39 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
     @property
     def native_value(self):
         """Return the state of the sensor."""
-        value = getattr(self.coordinator.data, self.entity_description.key, None)
+        sensor_code = next(
+            (code for code, key in VARIABLE_CODE_MAPPING.items() if key == self.entity_description.key),
+            None,
+        )
+        
+        if sensor_code is not None:
+            variable_data = next(
+                (var for var in self.coordinator.data.get("variables", []) if var["codi"] == sensor_code),
+                None,
+            )
+            if variable_data:
+                # Asume que quieres el último valor registrado
+                latest_reading = variable_data["lectures"][-1]
+                value = latest_reading.get("valor")
 
-        if self.entity_description.key == WIND_DIRECTION:
-            return self._convert_degrees_to_cardinal(value)
+                # Convertir grados a direcciones cardinales para WIND_DIRECTION
+                if self.entity_description.key == WIND_DIRECTION and isinstance(value, (int, float)):
+                    return self._convert_degrees_to_cardinal(value)
 
-        return value
+                return value
+
+        return None
 
     @staticmethod
-    def _convert_degrees_to_cardinal(degree: float | None) -> str | None:
+    def _convert_degrees_to_cardinal(degree: float) -> str:
         """Convert degrees to cardinal direction."""
-        if degree is None:
-            return None
         directions = [
             "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
             "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW", "N",
         ]
-        index = int(((degree + 11.25) / 22.5)) % 16
+        index = round(degree / 22.5) % 16
         return directions[index]
+
 
     @property
     def device_info(self) -> DeviceInfo:
