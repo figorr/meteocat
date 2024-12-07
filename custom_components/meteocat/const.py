@@ -10,25 +10,16 @@ STATION_NAME = "station_name"
 STATION_ID = "station_id"
 
 # Códigos de sensores de la API
-WIND_SPEED = "30"  # Velocidad del viento
-WIND_DIRECTION = "31"  # Dirección del viento
-TEMPERATURE = "32"  # Temperatura
-HUMIDITY = "33"  # Humedad relativa
-PRESSURE = "34"  # Presión atmosférica
-PRECIPITATION = "35"  # Precipitación
-UV_INDEX = "39"  # UV
-MAX_TEMPERATURE = "40"  # Temperatura máxima
-MIN_TEMPERATURE = "42"  # Temperatura mínima
-WIND_GUST = "50"  # Racha de viento
-
-# Unidades de medida de los sensores
-WIND_SPEED_UNIT = "m/s"
-WIND_DIRECTION_UNIT = "°"
-TEMPERATURE_UNIT = "°C"
-HUMIDITY_UNIT = "%"
-PRESSURE_UNIT = "hPa"
-PRECIPITATION_UNIT = "mm"
-UV_INDEX_UNIT = "UV"
+WIND_SPEED = "wind_speed"  # Velocidad del viento
+WIND_DIRECTION = "wind_direction"  # Dirección del viento
+TEMPERATURE = "temperature"  # Temperatura
+HUMIDITY = "humidity"  # Humedad relativa
+PRESSURE = "pressure"  # Presión atmosférica
+PRECIPITATION = "precipitation"  # Precipitación
+UV_INDEX = "uv_index"  # UV
+MAX_TEMPERATURE = "max_temperature"  # Temperatura máxima
+MIN_TEMPERATURE = "min_temperature"  # Temperatura mínima
+WIND_GUST = "wind_gust"  # Racha de viento
 
 # Mapeo de códigos 'estatCel' a condiciones de Home Assistant
 CONDITION_MAPPING = {
@@ -45,8 +36,19 @@ CONDITION_MAPPING = {
     "snow-rainy": [27, 29, 30],
 }
 
-# Platforms
-PLATFORMS = {
-    "sensor", 
-    "entity",
+# Mapeo de códigos a claves de sensores
+VARIABLE_CODE_MAPPING = {
+    30: WIND_SPEED,
+    31: WIND_DIRECTION,
+    32: TEMPERATURE,
+    33: HUMIDITY,
+    34: PRESSURE,
+    35: PRECIPITATION,
+    39: UV_INDEX,
+    40: MAX_TEMPERATURE,
+    42: MIN_TEMPERATURE,
+    50: WIND_GUST,
 }
+
+# Platforms
+PLATFORMS = ["sensor"]

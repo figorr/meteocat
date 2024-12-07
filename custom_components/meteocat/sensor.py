@@ -11,7 +11,14 @@ from homeassistant.components.sensor import (
 from homeassistant.core import callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.const import PERCENTAGE, UnitOfTemperature
+from homeassistant.const import (
+    DEGREE,
+    PERCENTAGE,
+    UnitOfPressure,
+    UnitOfSpeed,
+    UnitOfTemperature,
+    UnitOfVolumetricFlux,
+)
 
 from .const import (
     DOMAIN,
@@ -25,11 +32,6 @@ from .const import (
     MAX_TEMPERATURE,
     MIN_TEMPERATURE,
     WIND_GUST,
-    WIND_SPEED_UNIT,
-    PRESSURE_UNIT,
-    PRECIPITATION_UNIT,
-    UV_INDEX_UNIT,
-    WIND_DIRECTION_UNIT,
 )
 
 from .coordinator import MeteocatSensorCoordinator
@@ -47,14 +49,14 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         icon="mdi:weather-windy",
         device_class=SensorDeviceClass.WIND_SPEED,
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=WIND_SPEED_UNIT,
+        native_unit_of_measurement=UnitOfSpeed.METERS_PER_SECOND,
     ),
     MeteocatSensorEntityDescription(
         key=WIND_DIRECTION,
         name="Wind Direction",
         icon="mdi:compass",
         device_class=None,
-        native_unit_of_measurement=WIND_DIRECTION_UNIT,
+        native_unit_of_measurement=DEGREE,
     ),
     MeteocatSensorEntityDescription(
         key=TEMPERATURE,
@@ -78,7 +80,7 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         icon="mdi:gauge",
         device_class=SensorDeviceClass.ATMOSPHERIC_PRESSURE,
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=PRESSURE_UNIT,
+        native_unit_of_measurement=UnitOfPressure.HPA,
     ),
     MeteocatSensorEntityDescription(
         key=PRECIPITATION,
@@ -86,14 +88,12 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         icon="mdi:weather-rainy",
         device_class=None,
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=PRECIPITATION_UNIT,
+        native_unit_of_measurement=UnitOfVolumetricFlux.MILLIMETERS_PER_HOUR,
     ),
     MeteocatSensorEntityDescription(
         key=UV_INDEX,
         name="UV Index",
         icon="mdi:weather-sunny",
-        state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=UV_INDEX_UNIT,
     ),
     MeteocatSensorEntityDescription(
         key=MAX_TEMPERATURE,
@@ -117,7 +117,7 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         icon="mdi:weather-windy",
         device_class=SensorDeviceClass.WIND_SPEED,
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=WIND_SPEED_UNIT,
+        native_unit_of_measurement=UnitOfSpeed.METERS_PER_SECOND,
     ),
 )
 

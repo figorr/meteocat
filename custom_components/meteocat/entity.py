@@ -3,7 +3,14 @@ from __future__ import annotations
 import asyncio
 import logging
 from homeassistant.components.weather import WeatherEntity
-from homeassistant.const import TEMP_CELSIUS, TEMP_FAHRENHEIT
+from homeassistant.const import (
+    DEGREE,
+    PERCENTAGE,
+    UnitOfPressure,
+    UnitOfSpeed,
+    UnitOfTemperature,
+    UnitOfVolumetricFlux,
+)
 
 from .const import (
     DOMAIN,
@@ -38,7 +45,7 @@ class MeteocatWeatherEntity(WeatherEntity):
     def __init__(self, coordinator: MeteocatEntityCoordinator):
         """Inicializa la entidad MeteocatWeather."""
         self._coordinator = coordinator
-        self._attr_temperature_unit = TEMP_CELSIUS
+        self._attr_temperature_unit = UnitOfTemperature.CELSIUS
         self._data = {}
 
     async def async_update(self):
