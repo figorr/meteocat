@@ -1,3 +1,14 @@
+## [0.1.22](https://github.com/figorr/meteocat/compare/v0.1.21...v0.1.22) (2024-12-07)
+
+
+### Bug Fixes
+
+* 0.1.22 ([54b39fa](https://github.com/figorr/meteocat/commit/54b39fad5e645673c2d46ca3209e82d92db03b95))
+* add platforms ([fbbad49](https://github.com/figorr/meteocat/commit/fbbad49a6de960719d0c4f6a734c6dd1e0f3dfb5))
+* bump meteocatpy to 0.0.7 ([f00b48d](https://github.com/figorr/meteocat/commit/f00b48da53e0f309686fa7214c60647bb0965495))
+* fix coordinator to use entry_data ([5ca5050](https://github.com/figorr/meteocat/commit/5ca50501e04e8b3f6cb222f0f183dea1cc726242))
+* fix UV icon ([f2c86e3](https://github.com/figorr/meteocat/commit/f2c86e3e03df987e40bdf955113f2235db347229))
+
 ## [0.1.21](https://github.com/figorr/meteocat/compare/v0.1.20...v0.1.21) (2024-12-06)
 
 
