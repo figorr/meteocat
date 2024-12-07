@@ -33,24 +33,26 @@ class MeteocatSensorCoordinator(DataUpdateCoordinator):
     def __init__(
         self,
         hass: HomeAssistant,
-        api_key: str,
-        town_name: str,
-        town_id: str,
-        station_name: str,
-        station_id: str,
-        variable_name: str,
-        variable_id: str,
+        entry_data: dict,
         update_interval: timedelta = DEFAULT_SENSOR_UPDATE_INTERVAL,
     ):
-        """Inicializa el coordinador de sensores de Meteocat."""
-        self.api_key = api_key
-        self.town_name = town_name
-        self.town_id = town_id
-        self.station_name = station_name
-        self.station_id = station_id
-        self.variable_name = variable_name
-        self.variable_id = variable_id
-        self.meteocat_station_data = MeteocatStationData(api_key)
+        """
+        Inicializa el coordinador de sensores de Meteocat.
+
+        Args:
+            hass (HomeAssistant): Instancia de Home Assistant.
+            entry_data (dict): Datos de configuración obtenidos de core.config_entries.
+            update_interval (timedelta): Intervalo de actualización.
+        """
+        self.api_key = entry_data["api_key"]  # Usamos la API key de la configuración
+        self.town_name = entry_data["town_name"]  # Usamos el nombre del municipio
+        self.town_id = entry_data["town_id"]  # Usamos el ID del municipio
+        self.station_name = entry_data["station_name"]  # Usamos el nombre de la estación
+        self.station_id = entry_data["station_id"]  # Usamos el ID de la estación
+        self.variable_name = entry_data["variable_name"]  # Usamos el nombre de la variable
+        self.variable_id = entry_data["variable_id"]  # Usamos el ID de la variable
+        self.meteocat_station_data = MeteocatStationData(self.api_key)
+
         super().__init__(
             hass,
             _LOGGER,
@@ -59,12 +61,7 @@ class MeteocatSensorCoordinator(DataUpdateCoordinator):
         )
 
     async def _async_update_data(self) -> Dict:
-        """
-        Actualiza los datos de los sensores desde la API de Meteocat.
-
-        Returns:
-            dict: Datos actualizados de los sensores.
-        """
+        """Actualiza los datos de los sensores desde la API de Meteocat."""
         try:
             data = await self.meteocat_station_data.get_station_data_with_variables(self.station_id)
             _LOGGER.debug("Datos de sensores actualizados exitosamente: %s", data)
@@ -105,24 +102,26 @@ class MeteocatEntityCoordinator(DataUpdateCoordinator):
     def __init__(
         self,
         hass: HomeAssistant,
-        api_key: str,
-        town_name: str,
-        town_id: str,
-        station_name: str,
-        station_id: str,
-        variable_name: str,
-        variable_id: str,
+        entry_data: dict,
         update_interval: timedelta = DEFAULT_ENTITY_UPDATE_INTERVAL,
     ):
-        """Inicializa el coordinador de datos para entidades de predicción."""
-        self.api_key = api_key
-        self.town_name = town_name
-        self.town_id = town_id
-        self.station_name = station_name
-        self.station_id = station_id
-        self.variable_name = variable_name
-        self.variable_id = variable_id
-        self.meteocat_forecast = MeteocatForecast(api_key)
+        """
+        Inicializa el coordinador de datos para entidades de predicción.
+
+        Args:
+            hass (HomeAssistant): Instancia de Home Assistant.
+            entry_data (dict): Datos de configuración obtenidos de core.config_entries.
+            update_interval (timedelta): Intervalo de actualización.
+        """
+        self.api_key = entry_data["api_key"]
+        self.town_name = entry_data["town_name"]
+        self.town_id = entry_data["town_id"]
+        self.station_name = entry_data["station_name"]
+        self.station_id = entry_data["station_id"]
+        self.variable_name = entry_data["variable_name"]
+        self.variable_id = entry_data["variable_id"]
+        self.meteocat_forecast = MeteocatForecast(self.api_key)
+
         super().__init__(
             hass,
             _LOGGER,
@@ -131,12 +130,7 @@ class MeteocatEntityCoordinator(DataUpdateCoordinator):
         )
 
     async def _async_update_data(self) -> Dict:
-        """
-        Actualiza los datos de las entidades de predicción desde la API de Meteocat.
-
-        Returns:
-            dict: Datos actualizados de predicción horaria y diaria.
-        """
+        """Actualiza los datos de las entidades de predicción desde la API de Meteocat."""
         try:
             hourly_forecast = await self.meteocat_forecast.get_prediccion_horaria(self.town_id)
             daily_forecast = await self.meteocat_forecast.get_prediccion_diaria(self.town_id)
