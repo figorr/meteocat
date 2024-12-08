@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+import json
 import logging
 from datetime import timedelta
 from typing import Dict
@@ -26,6 +28,23 @@ _LOGGER = logging.getLogger(__name__)
 DEFAULT_SENSOR_UPDATE_INTERVAL = timedelta(minutes=90)
 DEFAULT_ENTITY_UPDATE_INTERVAL = timedelta(hours=12)
 
+def save_json_to_file(data: dict, filename="station_data.json"):
+    """Guardar datos JSON en un archivo para análisis."""
+    try:
+        # Crear la carpeta 'files' si no existe
+        output_folder = os.path.join(os.path.dirname(__file__), "files")
+        os.makedirs(output_folder, exist_ok=True)
+
+        # Ruta completa del archivo
+        output_file = os.path.join(output_folder, filename)
+
+        # Guardar los datos en el archivo
+        with open(output_file, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=4)
+
+        _LOGGER.info(f"Archivo JSON guardado en: {output_file}")
+    except Exception as e:
+        _LOGGER.error(f"Error al guardar el archivo JSON: {e}")
 
 class MeteocatSensorCoordinator(DataUpdateCoordinator):
     """Coordinator para manejar la actualización de datos de los sensores."""
@@ -63,8 +82,13 @@ class MeteocatSensorCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self) -> Dict:
         """Actualiza los datos de los sensores desde la API de Meteocat."""
         try:
-            data = await self.meteocat_station_data.get_station_data_with_variables(self.station_id)
+            # Obtener datos desde la API
+            data = await self.meteocat_station_data.get_station_data(self.station_id)
             _LOGGER.debug("Datos de sensores actualizados exitosamente: %s", data)
+
+            # Guardar los datos en un archivo JSON
+            save_json_to_file(data)
+
             return data
         except ForbiddenError as err:
             _LOGGER.error(
