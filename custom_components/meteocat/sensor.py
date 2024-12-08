@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -38,6 +39,7 @@ from .const import (
     MAX_TEMPERATURE,
     MIN_TEMPERATURE,
     WIND_GUST,
+    STATION_TIMESTAMP,
     WIND_SPEED_CODE,
     WIND_DIRECTION_CODE,
     TEMPERATURE_CODE,
@@ -163,6 +165,12 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         name="Station ID",
         icon="mdi:identifier",
     ),
+    MeteocatSensorEntityDescription(
+    key=STATION_TIMESTAMP,
+    name="Station Timestamp",
+    icon="mdi:calendar-clock",
+    device_class=SensorDeviceClass.TIMESTAMP,
+    )
 )
 
 
@@ -249,6 +257,25 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
                             return self._convert_degrees_to_cardinal(value)
 
                         return value
+          # Lógica específica para el sensor de timestamp
+        if self.entity_description.key == "station_timestamp":
+            stations = self.coordinator.data or []
+            for station in stations:
+                variables = station.get("variables", [])
+                for variable in variables:
+                    lectures = variable.get("lectures", [])
+                    if lectures:
+                        # Obtenemos el campo `data` de la última lectura
+                        latest_reading = lectures[-1]
+                        raw_timestamp = latest_reading.get("data")
+
+                        if raw_timestamp:
+                            # Convertir el timestamp a un objeto datetime
+                            try:
+                                return datetime.fromisoformat(raw_timestamp.replace("Z", "+00:00"))
+                            except ValueError:
+                                # Manejo de errores si el formato no es válido
+                                return None
 
         return None
 
@@ -260,7 +287,7 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
 
         directions = [
             "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
-            "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW", "N",
+            "S", "SSO", "SO", "OSO", "O", "ONO", "NO", "NNO", "N",
         ]
         index = round(degree / 22.5) % 16
         return directions[index]
