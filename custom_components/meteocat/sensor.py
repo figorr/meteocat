@@ -187,6 +187,11 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
 
 class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity):
     """Representation of a Meteocat sensor."""
+    """Implementation of an ecowater sensor."""
+
+    _attr_has_entity_name = True
+    entity_description: MeteocatSensorEntityDescription
+
     STATIC_KEYS = {TOWN_NAME, TOWN_ID, STATION_NAME, STATION_ID}
 
     CODE_MAPPING = {
@@ -203,7 +208,12 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
         WIND_GUST: WIND_GUST_CODE,
     }
 
-    def __init__(self, coordinator, description, entry_data):
+    def __init__(
+            self,
+            coordinator: MeteocatSensorCoordinator,
+            description: MeteocatSensorEntityDescription,
+            entry_data
+        ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)
         self.entity_description = description
@@ -214,7 +224,8 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
         self._station_id = entry_data["station_id"]
 
         # Unique ID for the entity
-        self._attr_unique_id = f"{self._town_id}_{self.entity_description.key}"
+        self._attr_unique_id = "meteocat_" + self._town_id + "_" + self.entity_description.key
+        self._attr_native_value = getattr(self.coordinator.data, self.entity_description.key)
 
     @property
     def native_value(self):
