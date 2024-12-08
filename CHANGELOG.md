@@ -1,3 +1,11 @@
+## [0.1.25](https://github.com/figorr/meteocat/compare/v0.1.24...v0.1.25) (2024-12-08)
+
+
+### Bug Fixes
+
+* 0.1.25 ([5ba0823](https://github.com/figorr/meteocat/commit/5ba0823db1da999d61c5a4d43733dff5db238ea4))
+* add town and station sensors ([372383f](https://github.com/figorr/meteocat/commit/372383f1bd17ba8e385fef638cf3c1f58515dbaf))
+
 ## [0.1.24](https://github.com/figorr/meteocat/compare/v0.1.23...v0.1.24) (2024-12-08)
 
 
