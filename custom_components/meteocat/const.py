@@ -21,6 +21,7 @@ UV_INDEX = "uv_index"  # UV
 MAX_TEMPERATURE = "max_temperature"  # Temperatura máxima
 MIN_TEMPERATURE = "min_temperature"  # Temperatura mínima
 WIND_GUST = "wind_gust"  # Racha de viento
+STATION_TIMESTAMP = "station_timestamp"  # Código de tiempo de la estación
 
 # Definición de códigos para variables
 WIND_SPEED_CODE = 30
