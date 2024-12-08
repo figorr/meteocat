@@ -1,3 +1,15 @@
+## [0.1.24](https://github.com/figorr/meteocat/compare/v0.1.23...v0.1.24) (2024-12-08)
+
+
+### Bug Fixes
+
+* 0.1.24 ([87b8b51](https://github.com/figorr/meteocat/commit/87b8b519f78ba97a3e9fe01ac1ee85c0efd0a879))
+* add function to save station_data.json ([e78d872](https://github.com/figorr/meteocat/commit/e78d872938c002fe363c2634b1d8d171ea1e2d6e))
+* add solar global irradiance ([dc757b0](https://github.com/figorr/meteocat/commit/dc757b0a8df6ee971c01e290568730cdf3eb54b0))
+* add solar global irradiance sensor ([d0e7373](https://github.com/figorr/meteocat/commit/d0e737302f9d7889a698468ba6ffb881d8da17c2))
+* bump meteocatpy to 0.0.8 ([c280c06](https://github.com/figorr/meteocat/commit/c280c06c7c3c0703e12e94b19108537bbd03baa0))
+* fix constants ([5d4e0b7](https://github.com/figorr/meteocat/commit/5d4e0b77336f1e051a04a45ccaace40ada3ed33a))
+
 ## [0.1.23](https://github.com/figorr/meteocat/compare/v0.1.22...v0.1.23) (2024-12-07)
 
 
