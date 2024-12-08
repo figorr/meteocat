@@ -23,6 +23,10 @@ from homeassistant.const import (
 
 from .const import (
     DOMAIN,
+    TOWN_NAME,
+    TOWN_ID,
+    STATION_NAME,
+    STATION_ID,
     WIND_SPEED,
     WIND_DIRECTION,
     TEMPERATURE,
@@ -54,6 +58,7 @@ class MeteocatSensorEntityDescription(SensorEntityDescription):
     """A class that describes Meteocat sensor entities."""
 
 SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
+    # Sensores dinámicos
     MeteocatSensorEntityDescription(
         key=WIND_SPEED,
         name="Wind Speed",
@@ -137,6 +142,27 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfSpeed.KILOMETERS_PER_HOUR,
     ),
+    # Sensores estáticos
+    MeteocatSensorEntityDescription(
+        key=TOWN_NAME,
+        name="Town Name",
+        icon="mdi:home-city",
+    ),
+    MeteocatSensorEntityDescription(
+        key=TOWN_ID,
+        name="Town ID",
+        icon="mdi:identifier",
+    ),
+    MeteocatSensorEntityDescription(
+        key=STATION_NAME,
+        name="Station Name",
+        icon="mdi:broadcast",
+    ),
+    MeteocatSensorEntityDescription(
+        key=STATION_ID,
+        name="Station ID",
+        icon="mdi:identifier",
+    ),
 )
 
 
@@ -153,6 +179,7 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
 
 class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity):
     """Representation of a Meteocat sensor."""
+    STATIC_KEYS = {TOWN_NAME, TOWN_ID, STATION_NAME, STATION_ID}
 
     CODE_MAPPING = {
         WIND_SPEED: WIND_SPEED_CODE,
@@ -175,6 +202,8 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
         self.api_key = entry_data["api_key"]
         self._town_name = entry_data["town_name"]
         self._town_id = entry_data["town_id"]
+        self._station_name = entry_data["station_name"]
+        self._station_id = entry_data["station_id"]
 
         # Unique ID for the entity
         self._attr_unique_id = f"{self._town_id}_{self.entity_description.key}"
@@ -182,6 +211,18 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
     @property
     def native_value(self):
         """Return the state of the sensor."""
+        # Información estática
+        if self.entity_description.key in self.STATIC_KEYS:
+            # Información estática del `entry_data`
+            if self.entity_description.key == TOWN_NAME:
+                return self._town_name
+            if self.entity_description.key == TOWN_ID:
+                return self._town_id
+            if self.entity_description.key == STATION_NAME:
+                return self._station_name
+            if self.entity_description.key == STATION_ID:
+                return self._station_id
+        # Información dinámica
         sensor_code = self.CODE_MAPPING.get(self.entity_description.key)
 
         if sensor_code is not None:
@@ -214,6 +255,9 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
     @staticmethod
     def _convert_degrees_to_cardinal(degree: float) -> str:
         """Convert degrees to cardinal direction."""
+        if not isinstance(degree, (int, float)):
+            return "Unknown"  # Retorna "Unknown" si el valor no es un número válido
+
         directions = [
             "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
             "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW", "N",
