@@ -21,6 +21,18 @@ MAX_TEMPERATURE = "max_temperature"  # Temperatura máxima
 MIN_TEMPERATURE = "min_temperature"  # Temperatura mínima
 WIND_GUST = "wind_gust"  # Racha de viento
 
+# Definición de códigos para variables
+WIND_SPEED_CODE = 30
+WIND_DIRECTION_CODE = 31
+TEMPERATURE_CODE = 32
+HUMIDITY_CODE = 33
+PRESSURE_CODE = 34
+PRECIPITATION_CODE = 35
+UV_INDEX_CODE = 39
+MAX_TEMPERATURE_CODE = 40
+MIN_TEMPERATURE_CODE = 42
+WIND_GUST_CODE = 50
+
 # Mapeo de códigos 'estatCel' a condiciones de Home Assistant
 CONDITION_MAPPING = {
     "sunny": [1],
@@ -34,20 +46,6 @@ CONDITION_MAPPING = {
     "snowy": [10, 26, 27, 28],
     "fog": [11, 12],
     "snow-rainy": [27, 29, 30],
-}
-
-# Mapeo de códigos a claves de sensores
-VARIABLE_CODE_MAPPING = {
-    30: WIND_SPEED,
-    31: WIND_DIRECTION,
-    32: TEMPERATURE,
-    33: HUMIDITY,
-    34: PRESSURE,
-    35: PRECIPITATION,
-    39: UV_INDEX,
-    40: MAX_TEMPERATURE,
-    42: MIN_TEMPERATURE,
-    50: WIND_GUST,
 }
 
 # Platforms
