@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import json
+import aiofiles
 import logging
 from datetime import timedelta
 from typing import Dict
@@ -28,23 +29,17 @@ _LOGGER = logging.getLogger(__name__)
 DEFAULT_SENSOR_UPDATE_INTERVAL = timedelta(minutes=90)
 DEFAULT_ENTITY_UPDATE_INTERVAL = timedelta(hours=12)
 
-def save_json_to_file(data: dict, filename="station_data.json"):
-    """Guardar datos JSON en un archivo para análisis."""
+async def save_json_to_file(data: dict, output_file: str) -> None:
+    """Save the JSON data to a file asynchronously."""
     try:
-        # Crear la carpeta 'files' si no existe
-        output_folder = os.path.join(os.path.dirname(__file__), "files")
-        os.makedirs(output_folder, exist_ok=True)
+        # Crea el directorio si no existe
+        os.makedirs(os.path.dirname(output_file), exist_ok=True)
 
-        # Ruta completa del archivo
-        output_file = os.path.join(output_folder, filename)
-
-        # Guardar los datos en el archivo
-        with open(output_file, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=4)
-
-        _LOGGER.info(f"Archivo JSON guardado en: {output_file}")
+        # Escribe los datos JSON de forma asíncrona
+        async with aiofiles.open(output_file, mode="w", encoding="utf-8") as f:
+            await f.write(json.dumps(data, indent=4, ensure_ascii=False))
     except Exception as e:
-        _LOGGER.error(f"Error al guardar el archivo JSON: {e}")
+        raise RuntimeError(f"Error saving JSON to {output_file}: {e}")
 
 class MeteocatSensorCoordinator(DataUpdateCoordinator):
     """Coordinator para manejar la actualización de datos de los sensores."""
@@ -86,8 +81,13 @@ class MeteocatSensorCoordinator(DataUpdateCoordinator):
             data = await self.meteocat_station_data.get_station_data(self.station_id)
             _LOGGER.debug("Datos de sensores actualizados exitosamente: %s", data)
 
+            # Determinar la ruta al archivo en la carpeta raíz del repositorio
+            output_file = os.path.join(
+                self.hass.config.path(), "custom_components", "meteocat", "files", "station_data.json"
+            )
+
             # Guardar los datos en un archivo JSON
-            save_json_to_file(data)
+            await save_json_to_file(data, output_file)
 
             return data
         except ForbiddenError as err:
