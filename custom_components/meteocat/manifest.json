@@ -8,5 +8,5 @@
     "documentation": "https://gitlab.com/figorr/meteocat",
     "loggers": ["meteocatpy"],
     "requirements": ["meteocatpy==0.0.8", "packaging>=20.3", "wrapt>=1.14.0"],
-    "version": "0.1.25"
+    "version": "0.1.26"
 }

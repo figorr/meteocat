@@ -14,7 +14,7 @@ from .const import DOMAIN, PLATFORMS
 _LOGGER = logging.getLogger(__name__)
 
 # Versión
-__version__ = "0.1.25"
+__version__ = "0.1.26"
 
 
 async def async_setup(hass: core.HomeAssistant, config: dict) -> bool:
