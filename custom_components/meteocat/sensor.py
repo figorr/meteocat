@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from homeassistant.helpers.entity import DeviceInfo
+import logging
+from homeassistant.helpers.entity import (
+    DeviceInfo,
+    EntityCategory,
+)
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
@@ -54,6 +58,8 @@ from .const import (
 )
 
 from .coordinator import MeteocatSensorCoordinator
+
+_LOGGER = logging.getLogger(__name__)
 
 @dataclass
 class MeteocatSensorEntityDescription(SensorEntityDescription):
@@ -149,21 +155,25 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         key=TOWN_NAME,
         name="Town Name",
         icon="mdi:home-city",
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     MeteocatSensorEntityDescription(
         key=TOWN_ID,
         name="Town ID",
         icon="mdi:identifier",
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     MeteocatSensorEntityDescription(
         key=STATION_NAME,
         name="Station Name",
         icon="mdi:broadcast",
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     MeteocatSensorEntityDescription(
         key=STATION_ID,
         name="Station ID",
         icon="mdi:identifier",
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     MeteocatSensorEntityDescription(
     key=STATION_TIMESTAMP,
@@ -187,11 +197,6 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
 
 class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity):
     """Representation of a Meteocat sensor."""
-    """Implementation of an ecowater sensor."""
-
-    _attr_has_entity_name = True
-    entity_description: MeteocatSensorEntityDescription
-
     STATIC_KEYS = {TOWN_NAME, TOWN_ID, STATION_NAME, STATION_ID}
 
     CODE_MAPPING = {
@@ -208,12 +213,9 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
         WIND_GUST: WIND_GUST_CODE,
     }
 
-    def __init__(
-            self,
-            coordinator: MeteocatSensorCoordinator,
-            description: MeteocatSensorEntityDescription,
-            entry_data
-        ) -> None:
+    _attr_has_entity_name = True  # Activa el uso de nombres basados en el dispositivo
+
+    def __init__(self, coordinator, description, entry_data):
         """Initialize the sensor."""
         super().__init__(coordinator)
         self.entity_description = description
@@ -224,8 +226,17 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
         self._station_id = entry_data["station_id"]
 
         # Unique ID for the entity
-        self._attr_unique_id = "meteocat_" + self._town_id + "_" + self.entity_description.key
-        self._attr_native_value = getattr(self.coordinator.data, self.entity_description.key)
+        self._attr_unique_id = f"sensor.{DOMAIN}_{self._station_id}_{self.entity_description.key}"
+
+        # Asigna entity_category desde description (si está definido)
+        self._attr_entity_category = getattr(description, "entity_category", None)
+
+        # Log para depuración
+        _LOGGER.debug(
+            "Inicializando sensor: %s, Unique ID: %s",
+            self.entity_description.name,
+            self._attr_unique_id,
+        )
 
     @property
     def native_value(self):
