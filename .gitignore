@@ -18,6 +18,7 @@ custom_components/meteocat/__pycache__/
 
 # Cache
 .meteocat_cache/
+custom_components/meteocat/.meteocat_cache/
 
 # Pytest_cache
 .pytest_cache/
