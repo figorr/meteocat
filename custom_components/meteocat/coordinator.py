@@ -119,7 +119,6 @@ class MeteocatSensorCoordinator(DataUpdateCoordinator):
             )
             raise
 
-
 class MeteocatEntityCoordinator(DataUpdateCoordinator):
     """Coordinator para manejar la actualización de datos de las entidades de predicción."""
 
