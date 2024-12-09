@@ -1,3 +1,16 @@
+## [0.1.26](https://github.com/figorr/meteocat/compare/v0.1.25...v0.1.26) (2024-12-09)
+
+
+### Bug Fixes
+
+* 0.1.26 ([9d6b083](https://github.com/figorr/meteocat/commit/9d6b083205d12b628d9a62b0c8c558c0ca9d39e2))
+* add station timestamp constant ([6bd0569](https://github.com/figorr/meteocat/commit/6bd0569030361b89c532ef49faae4b938c1dcf8a))
+* add station timestamp sensor ([ac8b98b](https://github.com/figorr/meteocat/commit/ac8b98bcb225d1348b450b619879b6f636a213da))
+* fix async_remove_entry ([ba28daa](https://github.com/figorr/meteocat/commit/ba28daa87271b6286cf22cd2bcc39422f71b668a))
+* fix entity_id names ([b670d8d](https://github.com/figorr/meteocat/commit/b670d8d53888dc93f371ba7c0e4ed2cdad7ac64b))
+* fix loop when saving JSON ([151dbdd](https://github.com/figorr/meteocat/commit/151dbddd932313831028e1e3e17780dd33d44640))
+* sensor names ([5244f7f](https://github.com/figorr/meteocat/commit/5244f7f8e9d332bfd6adf9e65c053e4b12d8a109))
+
 ## [0.1.25](https://github.com/figorr/meteocat/compare/v0.1.24...v0.1.25) (2024-12-08)
 
 
