@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import json
 import logging
 from pathlib import Path
@@ -115,7 +116,13 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
             errors["base"] = "symbols_download_failed"
 
         if not errors:
-            variables_client = MeteocatVariables(self.api_key)
+            # Configurar la ruta para la caché en la carpeta `custom_components/meteocat`
+            cache_dir = os.path.join(os.path.dirname(__file__), ".meteocat_cache")
+
+            # Crear la carpeta de caché si no existe
+            os.makedirs(cache_dir, exist_ok=True)
+
+            variables_client = MeteocatVariables(self.api_key, cache_dir=cache_dir)
             try:
                 variables_data = await variables_client.get_variables()
                 self.variable_id = next(
