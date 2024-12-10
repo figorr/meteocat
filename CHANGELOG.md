@@ -1,3 +1,19 @@
+## [0.1.27](https://github.com/figorr/meteocat/compare/v0.1.26...v0.1.27) (2024-12-10)
+
+
+### Bug Fixes
+
+* 0.1.27 ([99feff1](https://github.com/figorr/meteocat/commit/99feff14eb85201028c1e6156a13354b05b446c3))
+* bump meteocatpy to 0.0.11 ([03b9485](https://github.com/figorr/meteocat/commit/03b9485b0486a2bef7f0b7f3c0bf9bf1fca3da8c))
+* bump meteocatpy to 0.0.9 ([1fb0de9](https://github.com/figorr/meteocat/commit/1fb0de97181b802494cb8371eb472a37c9a51f40))
+* delete .meteocat_cache ([7941005](https://github.com/figorr/meteocat/commit/79410050e68667ca8162ff6575c0541a5f8b6207))
+* fix python version ([07e3264](https://github.com/figorr/meteocat/commit/07e3264f5dde756c322ca431f4b895a211be998f))
+* fix python version ([32f539b](https://github.com/figorr/meteocat/commit/32f539bb33a343881ebd26eb7ad3f12a58ecbed4))
+* fix python version ([2ff2dfc](https://github.com/figorr/meteocat/commit/2ff2dfcfa597d9fbba0fc59c330f975c6b00a55b))
+* ignore cache tests ([238d148](https://github.com/figorr/meteocat/commit/238d148630a5f84123f8d2d5db66dbd6e6b372f8))
+* set variables cache ([ba77035](https://github.com/figorr/meteocat/commit/ba7703511c4e0604bd5d87f7d07ce487be67bafe))
+* set variables cache ([ba55568](https://github.com/figorr/meteocat/commit/ba55568526fe74e83feaf4d7a0cd5127334ee139))
+
 ## [0.1.26](https://github.com/figorr/meteocat/compare/v0.1.25...v0.1.26) (2024-12-09)
 
 
