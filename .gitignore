@@ -52,6 +52,8 @@ tests/sensor_error_test.py
 tests/test_data.py
 tests/files/station_D3_data.json
 tests/files/station_D3_data_mapped.json
+custom_components/meteocat/test_cache.py
+custom_components/meteocat/read_cache.py
 
 # VERSIONS
 current_version.txt
