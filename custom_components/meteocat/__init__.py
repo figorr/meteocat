@@ -8,7 +8,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import async_get_platforms
 
-from .coordinator import MeteocatSensorCoordinator, MeteocatEntityCoordinator
+from .coordinator import MeteocatSensorCoordinator #, MeteocatEntityCoordinator
 from .const import DOMAIN, PLATFORMS
 
 _LOGGER = logging.getLogger(__name__)
@@ -48,10 +48,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Inicializar coordinadores
     try:
         sensor_coordinator = MeteocatSensorCoordinator(hass=hass, entry_data=entry_data)
-        entity_coordinator = MeteocatEntityCoordinator(hass=hass, entry_data=entry_data)
+        # entity_coordinator = MeteocatEntityCoordinator(hass=hass, entry_data=entry_data)
 
         await sensor_coordinator.async_config_entry_first_refresh()
-        await entity_coordinator.async_config_entry_first_refresh()
+        # await entity_coordinator.async_config_entry_first_refresh()
     except Exception as err:  # Capturar todos los errores
         _LOGGER.exception(f"Error al inicializar los coordinadores: {err}")
         return False
@@ -60,7 +60,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = {
         "sensor_coordinator": sensor_coordinator,
-        "entity_coordinator": entity_coordinator,
+        # "entity_coordinator": entity_coordinator,
         **entry_data,
     }
 
