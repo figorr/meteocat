@@ -54,6 +54,7 @@ tests/files/station_D3_data.json
 tests/files/station_D3_data_mapped.json
 custom_components/meteocat/test_cache.py
 custom_components/meteocat/read_cache.py
+custom_components/meteocat/test_call_api.py
 
 # VERSIONS
 current_version.txt
