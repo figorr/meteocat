@@ -1,3 +1,16 @@
+## [0.1.28](https://github.com/figorr/meteocat/compare/v0.1.27...v0.1.28) (2024-12-11)
+
+
+### Bug Fixes
+
+* 0.1.28 ([2c329cb](https://github.com/figorr/meteocat/commit/2c329cb960aa7bd6ec6bec0c6145db791349758f))
+* bump meteocatpy to 0.0.13 ([52c11c6](https://github.com/figorr/meteocat/commit/52c11c66f66b0ebff40fea58a8a5c4d4a74482be))
+* fix entity_id ([fa61841](https://github.com/figorr/meteocat/commit/fa61841ba3857a79d6b97d0e0ed12a543525c205))
+* fix name sensors to include station_id ([7b868fd](https://github.com/figorr/meteocat/commit/7b868fd0eea66f8ec2655e92137d9ab6dd9d0149))
+* ignore test_call_api ([976826a](https://github.com/figorr/meteocat/commit/976826a978889fcec304a8b3620ccf738e1a1946))
+* save variables.json in assets folder ([d2c2234](https://github.com/figorr/meteocat/commit/d2c2234621aaabbbdc65367429b56b304855f710))
+* setup cache folder and new async_remove_entry ([4dfddc0](https://github.com/figorr/meteocat/commit/4dfddc03a64f82582b39eff47870c561d0775d6d))
+
 ## [0.1.27](https://github.com/figorr/meteocat/compare/v0.1.26...v0.1.27) (2024-12-10)
 
 
