@@ -319,7 +319,7 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
         """Return the device info."""
         return DeviceInfo(
             identifiers={(DOMAIN, self._town_id)},
-            name="Meteocat " + self._town_name,
+            name="Meteocat " + self._station_id + " " + self._town_name,
             manufacturer="Meteocat",
             model="Meteocat API",
         )
