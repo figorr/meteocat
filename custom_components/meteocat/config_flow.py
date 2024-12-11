@@ -105,6 +105,7 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
         assets_dir = Path(__file__).parent / "assets"
         assets_dir.mkdir(parents=True, exist_ok=True)
         symbols_file = assets_dir / "symbols.json"
+        variables_file = assets_dir / "variables.json"
         symbols_client = MeteocatSymbols(self.api_key)
 
         try:
@@ -128,6 +129,8 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
                 self.variable_id = next(
                     (v["codi"] for v in variables_data if v["nom"].lower() == "temperatura"), None
                 )
+                async with aiofiles.open(variables_file, "w", encoding="utf-8") as file:
+                    await file.write(json.dumps({"variables": variables_data}, ensure_ascii=False, indent=4))
                 if not self.variable_id:
                     _LOGGER.error("No se encontró la variable 'Temperatura'")
                     errors["base"] = "variable_not_found"
