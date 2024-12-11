@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import os
 import logging
+from pathlib import Path
 from homeassistant import core
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -15,6 +15,18 @@ _LOGGER = logging.getLogger(__name__)
 
 # Versión
 __version__ = "0.1.27"
+
+def safe_remove(path: Path, is_folder: bool = False):
+    """Elimina de forma segura un archivo o carpeta si existe."""
+    try:
+        if is_folder and path.exists() and not any(path.iterdir()):
+            path.rmdir()
+            _LOGGER.info(f"Carpeta {path.name} eliminada correctamente.")
+        elif not is_folder and path.exists():
+            path.unlink()
+            _LOGGER.info(f"Archivo {path.name} eliminado correctamente.")
+    except OSError as e:
+        _LOGGER.error(f"Error al intentar eliminar {path.name}: {e}")
 
 
 async def async_setup(hass: core.HomeAssistant, config: dict) -> bool:
@@ -45,12 +57,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         f"Estación '{entry_data['station_name']}' (ID: {entry_data['station_id']})."
     )
 
+    # Configurar ruta de la caché
+    cache_dir = Path(hass.config.path("custom_components", DOMAIN, ".meteocat_cache"))
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    _LOGGER.debug(f"Directorio de caché configurado en: {cache_dir}")
+
     # Inicializar coordinadores
     try:
         sensor_coordinator = MeteocatSensorCoordinator(hass=hass, entry_data=entry_data)
-        # entity_coordinator = MeteocatEntityCoordinator(hass=hass, entry_data=entry_data)
-
         await sensor_coordinator.async_config_entry_first_refresh()
+
+        # entity_coordinator = MeteocatEntityCoordinator(hass=hass, entry_data=entry_data)
         # await entity_coordinator.async_config_entry_first_refresh()
     except Exception as err:  # Capturar todos los errores
         _LOGGER.exception(f"Error al inicializar los coordinadores: {err}")
@@ -89,48 +106,23 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     _LOGGER.info(f"Eliminando datos residuales de la integración: {entry.entry_id}")
 
     # Definir las rutas de los archivos y carpetas a eliminar
-    custom_components_path = hass.config.path("custom_components", DOMAIN)
-    assets_folder = os.path.join(custom_components_path, "assets")
-    files_folder = os.path.join(custom_components_path, "files")
-    symbols_file = os.path.join(assets_folder, "symbols.json")
-    station_data_file = os.path.join(files_folder, "station_data.json")
+    custom_components_path = Path(hass.config.path("custom_components")) / DOMAIN
+    assets_folder = custom_components_path / "assets"
+    files_folder = custom_components_path / "files"
+    cache_folder = custom_components_path / ".meteocat_cache"
+    symbols_file = assets_folder / "symbols.json"
+    variables_file = assets_folder / "variables.json"
+    station_data_file = files_folder / "station_data.json"
 
-    # Eliminar el archivo symbols.json si existe
-    try:
-        if os.path.exists(symbols_file):
-            os.remove(symbols_file)
-            _LOGGER.info("Archivo symbols.json eliminado correctamente.")
-        else:
-            _LOGGER.info("El archivo symbols.json no se encontró.")
-    except OSError as e:
-        _LOGGER.error(f"Error al intentar eliminar el archivo symbols.json: {e}")
+    # Validar la ruta base
+    if not custom_components_path.exists():
+        _LOGGER.warning(f"La ruta {custom_components_path} no existe. No se realizará la limpieza.")
+        return
 
-    # Eliminar el archivo station_data.json si existe
-    try:
-        if os.path.exists(station_data_file):
-            os.remove(station_data_file)
-            _LOGGER.info("Archivo station_data.json eliminado correctamente.")
-        else:
-            _LOGGER.info("El archivo station_data.json no se encontró.")
-    except OSError as e:
-        _LOGGER.error(f"Error al intentar eliminar el archivo station_data.json: {e}")
-
-    # Eliminar la carpeta assets si está vacía
-    try:
-        if os.path.exists(assets_folder) and not os.listdir(assets_folder):
-            os.rmdir(assets_folder)
-            _LOGGER.info("Carpeta assets eliminada correctamente.")
-        elif os.path.exists(assets_folder):
-            _LOGGER.warning("La carpeta assets no está vacía y no se pudo eliminar.")
-    except OSError as e:
-        _LOGGER.error(f"Error al intentar eliminar la carpeta assets: {e}")
-    
-    # Eliminar la carpeta files si está vacía
-    try:
-        if os.path.exists(files_folder) and not os.listdir(files_folder):
-            os.rmdir(files_folder)
-            _LOGGER.info("Carpeta files eliminada correctamente.")
-        elif os.path.exists(files_folder):
-            _LOGGER.warning("La carpeta files no está vacía y no se pudo eliminar.")
-    except OSError as e:
-        _LOGGER.error(f"Error al intentar eliminar la carpeta files: {e}")
+    # Eliminar archivos y carpetas
+    safe_remove(symbols_file)
+    safe_remove(variables_file)
+    safe_remove(station_data_file)
+    safe_remove(assets_folder, is_folder=True)
+    safe_remove(files_folder, is_folder=True)
+    safe_remove(cache_folder, is_folder=True)
