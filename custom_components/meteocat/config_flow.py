@@ -47,6 +47,7 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
         self.variable_id: str | None = None
         self.station_id: str | None = None
         self.station_name: str | None = None
+        self._cache = {}
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -97,46 +98,57 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
         return self.async_show_form(step_id="select_municipi", data_schema=schema, errors=errors)
 
     async def fetch_symbols_and_variables(self):
-        """Descarga los símbolos y las variables después de seleccionar el municipio."""
+        """Descarga y guarda los símbolos y variables después de seleccionar el municipio."""
 
         errors = {}
 
-        # Descargar y guardar los símbolos
+        # Crear directorio de activos (assets) si no existe
         assets_dir = Path(__file__).parent / "assets"
         assets_dir.mkdir(parents=True, exist_ok=True)
         symbols_file = assets_dir / "symbols.json"
         variables_file = assets_dir / "variables.json"
-        symbols_client = MeteocatSymbols(self.api_key)
 
         try:
+            # Descargar y guardar los símbolos
+            symbols_client = MeteocatSymbols(self.api_key)
             symbols_data = await symbols_client.fetch_symbols()
+
             async with aiofiles.open(symbols_file, "w", encoding="utf-8") as file:
                 await file.write(json.dumps({"symbols": symbols_data}, ensure_ascii=False, indent=4))
+            
+            _LOGGER.info(f"Símbolos guardados en {symbols_file}")
+
+            # Descargar y guardar las variables
+            variables_client = MeteocatVariables(self.api_key)
+            variables_data = await variables_client.get_variables()
+
+            async with aiofiles.open(variables_file, "w", encoding="utf-8") as file:
+                await file.write(json.dumps({"variables": variables_data}, ensure_ascii=False, indent=4))
+
+            # Actualizar la caché
+            cache_data = {
+                "symbols": symbols_data,
+                "variables": variables_data
+            }
+
+            async with aiofiles.open(variables_file, "w", encoding="utf-8") as file:
+                await file.write(json.dumps(cache_data, ensure_ascii=False, indent=4))
+
+            _LOGGER.info(f"Variables guardadas en {variables_file}")
+
+            # Buscar la variable de temperatura
+            self.variable_id = next(
+                (v["codi"] for v in variables_data if v["nom"].lower() == "temperatura"), None
+            )
+            if not self.variable_id:
+                _LOGGER.error("No se encontró la variable 'Temperatura'")
+                errors["base"] = "variable_not_found"
         except (BadRequestError, ForbiddenError, TooManyRequestsError, InternalServerError, UnknownAPIError) as ex:
-            _LOGGER.error("Error al descargar o guardar los símbolos: %s", ex)
-            errors["base"] = "symbols_download_failed"
-
-        if not errors:
-            # Configurar la ruta para la caché en la carpeta `custom_components/meteocat`
-            cache_dir = os.path.join(os.path.dirname(__file__), ".meteocat_cache")
-
-            # Crear la carpeta de caché si no existe
-            os.makedirs(cache_dir, exist_ok=True)
-
-            variables_client = MeteocatVariables(self.api_key, cache_dir=cache_dir)
-            try:
-                variables_data = await variables_client.get_variables()
-                self.variable_id = next(
-                    (v["codi"] for v in variables_data if v["nom"].lower() == "temperatura"), None
-                )
-                async with aiofiles.open(variables_file, "w", encoding="utf-8") as file:
-                    await file.write(json.dumps({"variables": variables_data}, ensure_ascii=False, indent=4))
-                if not self.variable_id:
-                    _LOGGER.error("No se encontró la variable 'Temperatura'")
-                    errors["base"] = "variable_not_found"
-            except (BadRequestError, ForbiddenError, TooManyRequestsError, InternalServerError, UnknownAPIError) as ex:
-                _LOGGER.error("Error al obtener las variables: %s", ex)
-                errors["base"] = "variables_fetch_failed"
+            _LOGGER.error("Error al conectar con la API de Meteocat: %s", ex)
+            errors["base"] = "cannot_connect"
+        except Exception as ex:
+            _LOGGER.error("Error inesperado al descargar los datos: %s", ex)
+            errors["base"] = "unknown"
 
         if errors:
             raise HomeAssistantError(errors)

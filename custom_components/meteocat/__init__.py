@@ -8,7 +8,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import async_get_platforms
 
-from .coordinator import MeteocatSensorCoordinator #, MeteocatEntityCoordinator
+from .coordinator import MeteocatSensorCoordinator  # , MeteocatEntityCoordinator
 from .const import DOMAIN, PLATFORMS
 
 _LOGGER = logging.getLogger(__name__)
@@ -28,11 +28,9 @@ def safe_remove(path: Path, is_folder: bool = False):
     except OSError as e:
         _LOGGER.error(f"Error al intentar eliminar {path.name}: {e}")
 
-
 async def async_setup(hass: core.HomeAssistant, config: dict) -> bool:
     """Configuración inicial del componente Meteocat."""
     return True
-
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Configura una entrada de configuración para Meteocat."""
@@ -56,11 +54,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         f"Variable '{entry_data['variable_name']}' (ID: {entry_data['variable_id']}), "
         f"Estación '{entry_data['station_name']}' (ID: {entry_data['station_id']})."
     )
-
-    # Configurar ruta de la caché
-    cache_dir = Path(hass.config.path("custom_components", DOMAIN, ".meteocat_cache"))
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    _LOGGER.debug(f"Directorio de caché configurado en: {cache_dir}")
 
     # Inicializar coordinadores
     try:
@@ -87,7 +80,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     return True
 
-
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Desactiva una entrada de configuración para Meteocat."""
     platforms = async_get_platforms(hass, DOMAIN)
@@ -100,7 +92,6 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
-
 async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Limpia cualquier dato adicional al desinstalar la integración."""
     _LOGGER.info(f"Eliminando datos residuales de la integración: {entry.entry_id}")
@@ -109,7 +100,6 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     custom_components_path = Path(hass.config.path("custom_components")) / DOMAIN
     assets_folder = custom_components_path / "assets"
     files_folder = custom_components_path / "files"
-    cache_folder = custom_components_path / ".meteocat_cache"
     symbols_file = assets_folder / "symbols.json"
     variables_file = assets_folder / "variables.json"
     station_data_file = files_folder / "station_data.json"
@@ -125,4 +115,3 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     safe_remove(station_data_file)
     safe_remove(assets_folder, is_folder=True)
     safe_remove(files_folder, is_folder=True)
-    safe_remove(cache_folder, is_folder=True)
