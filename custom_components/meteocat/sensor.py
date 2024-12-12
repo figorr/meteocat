@@ -38,6 +38,7 @@ from .const import (
     HUMIDITY,
     PRESSURE,
     PRECIPITATION,
+    PRECIPITATION_ACCUMULATED,
     SOLAR_GLOBAL_IRRADIANCE,
     UV_INDEX,
     MAX_TEMPERATURE,
@@ -112,6 +113,14 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         device_class=None,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfVolumetricFlux.MILLIMETERS_PER_HOUR,
+    ),
+    MeteocatSensorEntityDescription(
+        key=PRECIPITATION_ACCUMULATED,
+        name="Precipitation Accumulated",
+        icon="mdi:weather-rainy",
+        device_class=SensorDeviceClass.PRECIPITATION,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement="mm",
     ),
     MeteocatSensorEntityDescription(
         key=SOLAR_GLOBAL_IRRADIANCE,
@@ -299,7 +308,35 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
                                 # Manejo de errores si el formato no es válido
                                 return None
 
+        # Nuevo sensor para la precipitación acumulada
+        if self.entity_description.key == "precipitation_accumulated":
+            stations = self.coordinator.data or []
+            total_precipitation = 0.0  # Usa float para permitir acumulación de decimales
+
+            for station in stations:
+                variables = station.get("variables", [])
+
+                # Filtramos por código de precipitación
+                variable_data = next(
+                    (var for var in variables if var.get("codi") == PRECIPITATION_CODE),
+                    None,
+                )
+
+                if variable_data:
+                    # Sumamos las lecturas de precipitación
+                    lectures = variable_data.get("lectures", [])
+                    for lecture in lectures:
+                        total_precipitation += float(lecture.get("valor", 0.0))  # Convertimos a float
+
+            _LOGGER.debug(f"Total precipitación acumulada: {total_precipitation} mm")
+            return total_precipitation
+
         return None
+
+    @property
+    def precipitation_accumulated(self):
+        """Return the accumulated precipitation state of the sensor."""
+        
 
     @staticmethod
     def _convert_degrees_to_cardinal(degree: float) -> str:
