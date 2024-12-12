@@ -56,6 +56,7 @@ custom_components/meteocat/test_cache.py
 custom_components/meteocat/read_cache.py
 custom_components/meteocat/read_cache_all.py
 custom_components/meteocat/test_call_api.py
+custom_components/meteocat/precipitation_test.py
 
 # VERSIONS
 current_version.txt
