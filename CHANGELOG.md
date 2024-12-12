@@ -1,3 +1,14 @@
+## [0.1.30](https://github.com/figorr/meteocat/compare/v0.1.29...v0.1.30) (2024-12-12)
+
+
+### Bug Fixes
+
+* 0.1.30 ([2095760](https://github.com/figorr/meteocat/commit/20957606eae28a97e82607136f97fde1abe38f81))
+* add precipitation accumulated sensor ([b05090a](https://github.com/figorr/meteocat/commit/b05090a563656123464d95b17b01ba2d7cada20f))
+* add precipitation_accumulated ([261d877](https://github.com/figorr/meteocat/commit/261d877cf9f68a2106687900951731ba6a4539eb))
+* delete precipitation test ([845d721](https://github.com/figorr/meteocat/commit/845d721ff4e49a2fe79c5cdcf92698d52a6cff36))
+* fix variables json ([df403b1](https://github.com/figorr/meteocat/commit/df403b12ab12cd357f087dc1dceda30c51e4c8f0))
+
 ## [0.1.29](https://github.com/figorr/meteocat/compare/v0.1.28...v0.1.29) (2024-12-12)
 
 
