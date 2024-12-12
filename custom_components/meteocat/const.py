@@ -16,6 +16,7 @@ TEMPERATURE = "temperature"  # Temperatura
 HUMIDITY = "humidity"  # Humedad relativa
 PRESSURE = "pressure"  # Presión atmosférica
 PRECIPITATION = "precipitation"  # Precipitación
+PRECIPITATION_ACCUMULATED = "precipitation_accumulated" #Precipitación acumulada
 SOLAR_GLOBAL_IRRADIANCE = "solar_global_irradiance"  # Irradiación solar global
 UV_INDEX = "uv_index"  # UV
 MAX_TEMPERATURE = "max_temperature"  # Temperatura máxima
