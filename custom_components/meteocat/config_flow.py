@@ -125,15 +125,6 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
             async with aiofiles.open(variables_file, "w", encoding="utf-8") as file:
                 await file.write(json.dumps({"variables": variables_data}, ensure_ascii=False, indent=4))
 
-            # Actualizar la caché
-            cache_data = {
-                "symbols": symbols_data,
-                "variables": variables_data
-            }
-
-            async with aiofiles.open(variables_file, "w", encoding="utf-8") as file:
-                await file.write(json.dumps(cache_data, ensure_ascii=False, indent=4))
-
             _LOGGER.info(f"Variables guardadas en {variables_file}")
 
             # Buscar la variable de temperatura
