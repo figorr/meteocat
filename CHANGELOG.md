@@ -1,3 +1,13 @@
+## [0.1.29](https://github.com/figorr/meteocat/compare/v0.1.28...v0.1.29) (2024-12-12)
+
+
+### Bug Fixes
+
+* 0.1.29 ([f80cb9e](https://github.com/figorr/meteocat/commit/f80cb9eda9bd7d731489b51c161bc16a00ac57f0))
+* bump meteocatpy to 0.0.14 ([74cc591](https://github.com/figorr/meteocat/commit/74cc591ac7e9911c77649a20088af15d3af2d350))
+* remove cache ([8c4f29b](https://github.com/figorr/meteocat/commit/8c4f29b0b2c2cfa33f2b45f72bed57bf45b9a3dd))
+* remove cache tests ([6082096](https://github.com/figorr/meteocat/commit/6082096a92ade5a033e0493a819b20e950aff7a3))
+
 ## [0.1.28](https://github.com/figorr/meteocat/compare/v0.1.27...v0.1.28) (2024-12-11)
 
 
