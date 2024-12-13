@@ -55,6 +55,7 @@ from .const import (
     UV_INDEX_CODE,
     MAX_TEMPERATURE_CODE,
     MIN_TEMPERATURE_CODE,
+    FEELS_LIKE,
     WIND_GUST_CODE,
 )
 
@@ -147,6 +148,14 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         key=MIN_TEMPERATURE,
         name="Min Temperature",
         icon="mdi:thermometer-minus",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+    ),
+    MeteocatSensorEntityDescription(
+        key=FEELS_LIKE,
+        name="Feels Like",
+        icon="mdi:sun-thermometer",
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
@@ -262,6 +271,63 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
             if self.entity_description.key == STATION_ID:
                 return self._station_id
         # Información dinámica
+
+        if self.entity_description.key == FEELS_LIKE:
+            stations = self.coordinator.data or []
+
+            # Variables necesarias
+            temperature = None
+            humidity = None
+            wind_speed = None
+
+            # Obtener valores de las variables
+            for station in stations:
+                variables = station.get("variables", [])
+                for var in variables:
+                    code = var.get("codi")
+                    lectures = var.get("lectures", [])
+                    if not lectures:
+                        continue
+                    latest_reading = lectures[-1].get("valor")
+                    
+                    if code == TEMPERATURE_CODE:
+                        temperature = float(latest_reading)
+                    elif code == HUMIDITY_CODE:
+                        humidity = float(latest_reading)
+                    elif code == WIND_SPEED_CODE:
+                        wind_speed = float(latest_reading)
+            
+            # Verificar que todas las variables necesarias están presentes
+            if temperature is not None and humidity is not None and wind_speed is not None:
+                # Cálculo del windchill
+                windchill = (
+                    13.1267 +
+                    0.6215 * temperature -
+                    11.37 * (wind_speed ** 0.16) +
+                    0.3965 * temperature * (wind_speed ** 0.16)
+                )
+                
+                # Cálculo del heat_index
+                heat_index = (
+                    -8.78469476 +
+                    1.61139411 * temperature +
+                    2.338548839 * humidity -
+                    0.14611605 * temperature * humidity -
+                    0.012308094 * (temperature ** 2) -
+                    0.016424828 * (humidity ** 2) +
+                    0.002211732 * (temperature ** 2) * humidity +
+                    0.00072546 * temperature * (humidity ** 2) -
+                    0.000003582 * (temperature ** 2) * (humidity ** 2)
+                )
+                
+                # Lógica de selección
+                if -50 <= temperature <= 10:
+                    return round(windchill, 2)
+                elif temperature > 26 and humidity > 40:
+                    return round(heat_index, 2)
+                else:
+                    return round(temperature, 2)
+
         sensor_code = self.CODE_MAPPING.get(self.entity_description.key)
 
         if sensor_code is not None:
@@ -288,7 +354,8 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
                             return self._convert_degrees_to_cardinal(value)
 
                         return value
-          # Lógica específica para el sensor de timestamp
+                    
+        # Lógica específica para el sensor de timestamp
         if self.entity_description.key == "station_timestamp":
             stations = self.coordinator.data or []
             for station in stations:
@@ -330,14 +397,9 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
 
             _LOGGER.debug(f"Total precipitación acumulada: {total_precipitation} mm")
             return total_precipitation
-
-        return None
-
-    @property
-    def precipitation_accumulated(self):
-        """Return the accumulated precipitation state of the sensor."""
         
-
+        return None
+        
     @staticmethod
     def _convert_degrees_to_cardinal(degree: float) -> str:
         """Convert degrees to cardinal direction."""
