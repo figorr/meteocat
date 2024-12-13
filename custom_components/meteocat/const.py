@@ -21,6 +21,7 @@ SOLAR_GLOBAL_IRRADIANCE = "solar_global_irradiance"  # Irradiación solar global
 UV_INDEX = "uv_index"  # UV
 MAX_TEMPERATURE = "max_temperature"  # Temperatura máxima
 MIN_TEMPERATURE = "min_temperature"  # Temperatura mínima
+FEELS_LIKE = "feels_like"  # Sensación térmica
 WIND_GUST = "wind_gust"  # Racha de viento
 STATION_TIMESTAMP = "station_timestamp"  # Código de tiempo de la estación
 
