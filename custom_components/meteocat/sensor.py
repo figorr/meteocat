@@ -71,7 +71,7 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
     # Sensores dinámicos
     MeteocatSensorEntityDescription(
         key=WIND_SPEED,
-        name="Wind Speed",
+        translation_key="wind_speed",
         icon="mdi:weather-windy",
         device_class=SensorDeviceClass.WIND_SPEED,
         state_class=SensorStateClass.MEASUREMENT,
@@ -79,13 +79,13 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
     ),
     MeteocatSensorEntityDescription(
         key=WIND_DIRECTION,
-        name="Wind Direction",
+        translation_key="wind_direction",
         icon="mdi:compass",
         device_class=None,
     ),
     MeteocatSensorEntityDescription(
         key=TEMPERATURE,
-        name="Temperature",
+        translation_key="temperature",
         icon="mdi:thermometer",
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
@@ -93,7 +93,7 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
     ),
     MeteocatSensorEntityDescription(
         key=HUMIDITY,
-        name="Humidity",
+        translation_key="humidity",
         icon="mdi:water-percent",
         device_class=SensorDeviceClass.HUMIDITY,
         state_class=SensorStateClass.MEASUREMENT,
@@ -101,7 +101,7 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
     ),
     MeteocatSensorEntityDescription(
         key=PRESSURE,
-        name="Pressure",
+        translation_key="pressure",
         icon="mdi:gauge",
         device_class=SensorDeviceClass.ATMOSPHERIC_PRESSURE,
         state_class=SensorStateClass.MEASUREMENT,
@@ -109,7 +109,7 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
     ),
     MeteocatSensorEntityDescription(
         key=PRECIPITATION,
-        name="Precipitation",
+        translation_key="precipitation",
         icon="mdi:weather-rainy",
         device_class=None,
         state_class=SensorStateClass.MEASUREMENT,
@@ -117,7 +117,7 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
     ),
     MeteocatSensorEntityDescription(
         key=PRECIPITATION_ACCUMULATED,
-        name="Precipitation Accumulated",
+        translation_key="precipitation_accumulated",
         icon="mdi:weather-rainy",
         device_class=SensorDeviceClass.PRECIPITATION,
         state_class=SensorStateClass.MEASUREMENT,
@@ -125,7 +125,7 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
     ),
     MeteocatSensorEntityDescription(
         key=SOLAR_GLOBAL_IRRADIANCE,
-        name="Solar Global Irradiance",
+        translation_key="solar_global_irradiance",
         icon="mdi:weather-sunny",
         device_class=SensorDeviceClass.IRRADIANCE,
         state_class=SensorStateClass.MEASUREMENT,
@@ -133,12 +133,12 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
     ),
     MeteocatSensorEntityDescription(
         key=UV_INDEX,
-        name="UV Index",
+        translation_key="uv_index",
         icon="mdi:weather-sunny",
     ),
     MeteocatSensorEntityDescription(
         key=MAX_TEMPERATURE,
-        name="Max Temperature",
+        translation_key="max_temperature",
         icon="mdi:thermometer-plus",
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
@@ -146,7 +146,7 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
     ),
     MeteocatSensorEntityDescription(
         key=MIN_TEMPERATURE,
-        name="Min Temperature",
+        translation_key="min_temperature",
         icon="mdi:thermometer-minus",
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
@@ -154,7 +154,7 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
     ),
     MeteocatSensorEntityDescription(
         key=FEELS_LIKE,
-        name="Feels Like",
+        translation_key="feels_like",
         icon="mdi:sun-thermometer",
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
@@ -162,7 +162,7 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
     ),
     MeteocatSensorEntityDescription(
         key=WIND_GUST,
-        name="Wind Gust",
+        translation_key="wind_gust",
         icon="mdi:weather-windy",
         device_class=SensorDeviceClass.WIND_SPEED,
         state_class=SensorStateClass.MEASUREMENT,
@@ -171,31 +171,31 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
     # Sensores estáticos
     MeteocatSensorEntityDescription(
         key=TOWN_NAME,
-        name="Town Name",
+        translation_key="town_name",
         icon="mdi:home-city",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     MeteocatSensorEntityDescription(
         key=TOWN_ID,
-        name="Town ID",
+        translation_key="town_id",
         icon="mdi:identifier",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     MeteocatSensorEntityDescription(
         key=STATION_NAME,
-        name="Station Name",
+        translation_key="station_name",
         icon="mdi:broadcast",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     MeteocatSensorEntityDescription(
         key=STATION_ID,
-        name="Station ID",
+        translation_key="station_id",
         icon="mdi:identifier",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     MeteocatSensorEntityDescription(
     key=STATION_TIMESTAMP,
-    name="Station Timestamp",
+    translation_key="station_timestamp",
     icon="mdi:calendar-clock",
     device_class=SensorDeviceClass.TIMESTAMP,
     )

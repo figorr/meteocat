@@ -1,26 +1,85 @@
 {
-    "config": {
-      "step": {
-        "user": {
-          "description": "Enter your Meteocat API Key to validate it.",
-          "title": "API Key"
-        },
-        "select_municipi": {
-          "description": "Select a municipality from the list.",
-          "title": "Municipality Selection"
-        },
-        "select_station": {
-          "description": "Select a station.",
-          "title": "Station Selection"
-        }
+  "config": {
+    "step": {
+      "user": {
+        "description": "Enter your Meteocat API Key to validate it.",
+        "title": "API Key"
       },
-      "error": {
-        "bad_request": "Invalid request. Please check your API Key.",
-        "forbidden": "Access denied. Check your API Key permissions.",
-        "rate_limit_exceeded": "Rate limit exceeded. Please try again later.",
-        "server_error": "Server error. Please try again later.",
-        "connection_error": "Connection error. Please check your network.",
-        "unknown_error": "An unknown error occurred."
+      "select_municipi": {
+        "description": "Select a municipality from the list.",
+        "title": "Municipality Selection"
+      },
+      "select_station": {
+        "description": "Select a station.",
+        "title": "Station Selection"
+      }
+    },
+    "error": {
+      "bad_request": "Invalid request. Please check your API Key.",
+      "forbidden": "Access denied. Check your API Key permissions.",
+      "rate_limit_exceeded": "Rate limit exceeded. Please try again later.",
+      "server_error": "Server error. Please try again later.",
+      "connection_error": "Connection error. Please check your network.",
+      "unknown_error": "An unknown error occurred."
+    }
+  },
+  "entity": {
+    "sensor": {      
+      "wind_speed": {
+        "name": "Wind Speed"
+      },
+      "wind_direction": {
+        "name": "Wind Direction"
+      },
+      "temperature": {
+        "name": "Temperature"
+      },
+      "humidity": {
+        "name": "Humidity"
+      },
+      "pressure": {
+        "name": "Pressure"
+      },
+      "precipitation": {
+        "name": "Precipitation"
+      },
+      "precipitation_accumulated": {
+        "name": "Precipitation Accumulated"
+      },
+      "solar_global_irradiance": {
+        "name": "Solar Global Irradiance"
+      },
+      "uv_index": {
+        "name": "UV Index"
+      },
+      "max_temperature": {
+        "name": "Max Temperature"
+      },
+      "min_temperature": {
+        "name": "Min Temperature"
+      },
+      "feels_like": {
+        "name": "Feels Like"
+      },
+      "wind_gust": {
+        "name": "Wind Gust"
+      },
+      "town_name": {
+        "name": "Town Name"
+      },
+      "town_id": {
+        "name": "Town ID"
+      },
+      "station_name": {
+        "name": "Station Name"
+      },
+      "station_id": {
+        "name": "Station ID"
+      },
+      "station_timestamp": {
+        "name": "Station Timestamp"
       }
     }
-  }    
+  }
+}
+ 

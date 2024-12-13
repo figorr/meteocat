@@ -22,5 +22,64 @@
       "connection_error": "Error de conexión. Revise su conexión de red.",
       "unknown_error": "Error desconocido."
     }
+  },
+  "entity": {
+    "sensor": {      
+      "wind_speed": {
+        "name": "Viento Velocidad"
+      },
+      "wind_direction": {
+        "name": "Viento Dirección"
+      },
+      "temperature": {
+        "name": "Temperatura"
+      },
+      "humidity": {
+        "name": "Humedad"
+      },
+      "pressure": {
+        "name": "Presión"
+      },
+      "precipitation": {
+        "name": "Precipitación"
+      },
+      "precipitation_accumulated": {
+        "name": "Precipitación Acumulada"
+      },
+      "solar_global_irradiance": {
+        "name": "Irradiación Solar Global"
+      },
+      "uv_index": {
+        "name": "UV Índice"
+      },
+      "max_temperature": {
+        "name": "Temperatura Max"
+      },
+      "min_temperature": {
+        "name": "Temperatura Min"
+      },
+      "feels_like": {
+        "name": "Sensación Térmica"
+      },
+      "wind_gust": {
+        "name": "Viento Racha"
+      },
+      "town_name": {
+        "name": "Municipio Nombre"
+      },
+      "town_id": {
+        "name": "Municipio ID"
+      },
+      "station_name": {
+        "name": "Estación Nombre"
+      },
+      "station_id": {
+        "name": "Estación ID"
+      },
+      "station_timestamp": {
+        "name": "Estación Timestamp"
+      }
+    }
   }
-}    
+}
+ 

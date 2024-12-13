@@ -22,5 +22,63 @@
       "connection_error": "Error de connexió. Reviseu la vostra connexió de xarxa.",
       "unknown_error": "Error desconegut."
     }
+  },
+  "entity": {
+    "sensor": {      
+      "wind_speed": {
+        "name": "Vent Velocitat"
+      },
+      "wind_direction": {
+        "name": "Vent Direcció"
+      },
+      "temperature": {
+        "name": "Temperatura"
+      },
+      "humidity": {
+        "name": "Humitat"
+      },
+      "pressure": {
+        "name": "Pressió"
+      },
+      "precipitation": {
+        "name": "Precipitació"
+      },
+      "precipitation_accumulated": {
+        "name": "Precipitació Acumulada"
+      },
+      "solar_global_irradiance": {
+        "name": "Irradiació Solar Global"
+      },
+      "uv_index": {
+        "name": "UV Índex"
+      },
+      "max_temperature": {
+        "name": "Temperatura Max"
+      },
+      "min_temperature": {
+        "name": "Temperatura Min"
+      },
+      "feels_like": {
+        "name": "Sensació Tèrmica"
+      },
+      "wind_gust": {
+        "name": "Vent Ratxa"
+      },
+      "town_name": {
+        "name": "Municipi Nom"
+      },
+      "town_id": {
+        "name": "Municipi ID"
+      },
+      "station_name": {
+        "name": "Estació Nom"
+      },
+      "station_id": {
+        "name": "Estació ID"
+      },
+      "station_timestamp": {
+        "name": "Estació Timestamp"
+      }
+    }
   }
-}    
+}   
