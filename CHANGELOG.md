@@ -1,3 +1,13 @@
+## [0.1.31](https://github.com/figorr/meteocat/compare/v0.1.30...v0.1.31) (2024-12-13)
+
+
+### Bug Fixes
+
+* 0.1.31 ([6d49197](https://github.com/figorr/meteocat/commit/6d4919717b09d4e38a3225bf9a33d1400a0227d0))
+* add feels like sensor ([caca7a0](https://github.com/figorr/meteocat/commit/caca7a0d2bc53969db584eda2e2818321f3930fc))
+* add feels like sensor ([ccecfae](https://github.com/figorr/meteocat/commit/ccecfae83f1a2e72a2438cf6a189bf5d5186d6b3))
+* bump meteocatpy to 0.0.15 ([8d08b6f](https://github.com/figorr/meteocat/commit/8d08b6f66ac2ce5b029569a1538d524d3d7f50dc))
+
 ## [0.1.30](https://github.com/figorr/meteocat/compare/v0.1.29...v0.1.30) (2024-12-12)
 
 
