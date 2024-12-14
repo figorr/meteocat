@@ -96,7 +96,11 @@ class MeteocatSensorCoordinator(DataUpdateCoordinator):
 
             # Determinar la ruta al archivo en la carpeta raíz del repositorio
             output_file = os.path.join(
-                self.hass.config.path(), "custom_components", "meteocat", "files", "station_data.json"
+                self.hass.config.path(),
+                "custom_components",
+                "meteocat",
+                "files",
+                f"station_{self.station_id.lower()}_data.json"
             )
 
             # Guardar los datos en un archivo JSON

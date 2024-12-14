@@ -96,13 +96,23 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Limpia cualquier dato adicional al desinstalar la integración."""
     _LOGGER.info(f"Eliminando datos residuales de la integración: {entry.entry_id}")
 
-    # Definir las rutas de los archivos y carpetas a eliminar
+    # Definir las rutas base a eliminar
     custom_components_path = Path(hass.config.path("custom_components")) / DOMAIN
     assets_folder = custom_components_path / "assets"
     files_folder = custom_components_path / "files"
+
+    # Definir archivos relacionados a eliminar
     symbols_file = assets_folder / "symbols.json"
     variables_file = assets_folder / "variables.json"
-    station_data_file = files_folder / "station_data.json"
+
+    # Obtener el `station_id` para identificar el archivo a eliminar
+    station_id = entry.data.get("station_id")
+    if not station_id:
+        _LOGGER.warning("No se encontró 'station_id' en la configuración. No se puede eliminar el archivo de datos de la estación.")
+        return
+
+    # Archivo JSON de la estación
+    station_data_file = files_folder / f"station_{station_id.lower()}_data.json"
 
     # Validar la ruta base
     if not custom_components_path.exists():
