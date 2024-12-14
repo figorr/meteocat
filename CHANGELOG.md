@@ -1,3 +1,14 @@
+## [0.1.34](https://github.com/figorr/meteocat/compare/v0.1.33...v0.1.34) (2024-12-14)
+
+
+### Bug Fixes
+
+* 0.1.34 ([14c1437](https://github.com/figorr/meteocat/commit/14c1437a95fd41a014146fd63ce80892a2d4a284))
+* fix data validation ([a2c4282](https://github.com/figorr/meteocat/commit/a2c428207b062a06c5c07377ab3bf8ffbc65d277))
+* fix Feels Like round(1) ([6329807](https://github.com/figorr/meteocat/commit/63298077e5aa09cb61413b0578ccd7e4baeb5c51))
+* remove data validation ([250e582](https://github.com/figorr/meteocat/commit/250e5825dbda556e3e8e0c2e4a8014993e1de705))
+* set timeout and data validation ([b7dba2e](https://github.com/figorr/meteocat/commit/b7dba2e9e742bee04c8e16d3694c7ac647ec83ab))
+
 ## [0.1.33](https://github.com/figorr/meteocat/compare/v0.1.32...v0.1.33) (2024-12-14)
 
 
