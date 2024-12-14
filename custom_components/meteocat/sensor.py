@@ -323,13 +323,13 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
                 # Lógica de selección
                 if -50 <= temperature <= 10 and wind_speed > 4.8:
                     _LOGGER.debug(f"Sensación térmica por frío, calculada según la fórmula de Wind Chill: {windchill} ºC")
-                    return round(windchill, 2)
+                    return round(windchill, 1)
                 elif temperature > 26 and humidity > 40:
                     _LOGGER.debug(f"Sensación térmica por calor, calculada según la fórmula de Heat Index: {heat_index} ºC")
-                    return round(heat_index, 2)
+                    return round(heat_index, 1)
                 else:
                     _LOGGER.debug(f"Sensación térmica idéntica a la temperatura actual: {temperature} ºC")
-                    return round(temperature, 2)
+                    return round(temperature, 1)
 
         sensor_code = self.CODE_MAPPING.get(self.entity_description.key)
 
