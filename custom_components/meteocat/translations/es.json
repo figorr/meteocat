@@ -29,7 +29,26 @@
         "name": "Viento Velocidad"
       },
       "wind_direction": {
-        "name": "Viento Dirección"
+        "name": "Viento Dirección",
+        "state": {
+          "N": "NN",
+          "NNE": "NNE",
+          "NE": "NE",
+          "ENE": "ENE",
+          "E": "E",
+          "ESE": "ESE",
+          "SE": "SE",
+          "SSE": "SSE",
+          "S": "S",
+          "SSW": "SSO",
+          "SW": "SO",
+          "WSW": "OSO",
+          "W": "O",
+          "WNW": "ONO",
+          "NW": "NO",
+          "NNW": "NNO",
+          "unknown": "Desconocido"
+        }
       },
       "temperature": {
         "name": "Temperatura"

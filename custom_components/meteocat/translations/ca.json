@@ -29,7 +29,26 @@
         "name": "Vent Velocitat"
       },
       "wind_direction": {
-        "name": "Vent Direcció"
+        "name": "Vent Direcció",
+        "state": {
+          "N": "NN",
+          "NNE": "NNE",
+          "NE": "NE",
+          "ENE": "ENE",
+          "E": "E",
+          "ESE": "ESE",
+          "SE": "SE",
+          "SSE": "SSE",
+          "S": "S",
+          "SSW": "SSO",
+          "SW": "SO",
+          "WSW": "OSO",
+          "W": "O",
+          "WNW": "ONO",
+          "NW": "NO",
+          "NNW": "NNO",
+          "unknown": "Desconegut"
+        }
       },
       "temperature": {
         "name": "Temperatura"
