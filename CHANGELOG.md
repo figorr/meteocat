@@ -1,3 +1,11 @@
+## [0.1.33](https://github.com/figorr/meteocat/compare/v0.1.32...v0.1.33) (2024-12-14)
+
+
+### Bug Fixes
+
+* 0.1.33 ([461a423](https://github.com/figorr/meteocat/commit/461a423bd8596234bc182697d9f2725dd5234334))
+* fix feels like options ([8e22c9e](https://github.com/figorr/meteocat/commit/8e22c9efd175d84eede50b4ce5c1f7abac14dc00))
+
 ## [0.1.32](https://github.com/figorr/meteocat/compare/v0.1.31...v0.1.32) (2024-12-14)
 
 
