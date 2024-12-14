@@ -83,12 +83,6 @@ class MeteocatSensorCoordinator(DataUpdateCoordinator):
                 self.meteocat_station_data.get_station_data(self.station_id),
                 timeout=30  # Tiempo límite de 30 segundos
             )
-            
-            # Validar que los datos sean del tipo esperado
-            if not isinstance(data, dict):
-                _LOGGER.error("Los datos recibidos no tienen el formato esperado: %s", data)
-                raise ValueError("Formato de datos inválido")
-
             _LOGGER.debug("Datos de sensores actualizados exitosamente: %s", data)
 
             # Determinar la ruta al archivo en la carpeta raíz del repositorio
