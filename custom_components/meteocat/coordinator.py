@@ -4,8 +4,9 @@ import os
 import json
 import aiofiles
 import logging
+import asyncio
 from datetime import timedelta
-from typing import Dict
+from typing import Dict, Any
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
@@ -77,8 +78,17 @@ class MeteocatSensorCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self) -> Dict:
         """Actualiza los datos de los sensores desde la API de Meteocat."""
         try:
-            # Obtener datos desde la API
-            data = await self.meteocat_station_data.get_station_data(self.station_id)
+            # Obtener datos desde la API con manejo de tiempo límite
+            data = await asyncio.wait_for(
+                self.meteocat_station_data.get_station_data(self.station_id),
+                timeout=30  # Tiempo límite de 30 segundos
+            )
+            
+            # Validar que los datos sean del tipo esperado
+            if not isinstance(data, dict):
+                _LOGGER.error("Los datos recibidos no tienen el formato esperado: %s", data)
+                raise ValueError("Formato de datos inválido")
+
             _LOGGER.debug("Datos de sensores actualizados exitosamente: %s", data)
 
             # Determinar la ruta al archivo en la carpeta raíz del repositorio
@@ -90,6 +100,9 @@ class MeteocatSensorCoordinator(DataUpdateCoordinator):
             await save_json_to_file(data, output_file)
 
             return data
+        except asyncio.TimeoutError as err:
+            _LOGGER.warning("Tiempo de espera agotado al obtener datos de la API de Meteocat.")
+            raise ConfigEntryNotReady from err
         except ForbiddenError as err:
             _LOGGER.error(
                 "Acceso denegado al obtener datos de sensores (Station ID: %s): %s",
