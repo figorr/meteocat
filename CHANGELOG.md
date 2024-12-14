@@ -1,3 +1,11 @@
+## [0.1.35](https://github.com/figorr/meteocat/compare/v0.1.34...v0.1.35) (2024-12-14)
+
+
+### Bug Fixes
+
+* 0.1.35 ([87adbc5](https://github.com/figorr/meteocat/commit/87adbc5c76941af1ff837f63920ca65164df38c2))
+* fix station data json name ([2c411bd](https://github.com/figorr/meteocat/commit/2c411bd5d040d8c50bd00dae3c4b7858c049e522))
+
 ## [0.1.34](https://github.com/figorr/meteocat/compare/v0.1.33...v0.1.34) (2024-12-14)
 
 
