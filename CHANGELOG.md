@@ -1,3 +1,13 @@
+## [0.1.32](https://github.com/figorr/meteocat/compare/v0.1.31...v0.1.32) (2024-12-14)
+
+
+### Bug Fixes
+
+* 0.1.32 ([7c6186f](https://github.com/figorr/meteocat/commit/7c6186fe81061013f6093355b042750fbc28b921))
+* add LOGGER debug to FEELS LIKE ([a0cd0c4](https://github.com/figorr/meteocat/commit/a0cd0c495b1f01365a74d6262ed595921962b825))
+* add translations names to sensors ([57a5a1c](https://github.com/figorr/meteocat/commit/57a5a1c734db1042b1085c8fb58140c1dc0ad1fb))
+* add wind direction translations ([f4ec133](https://github.com/figorr/meteocat/commit/f4ec1339126d4da008e0cbc2a96fff8be3c6e081))
+
 ## [0.1.31](https://github.com/figorr/meteocat/compare/v0.1.30...v0.1.31) (2024-12-13)
 
 
