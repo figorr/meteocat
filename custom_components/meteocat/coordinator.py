@@ -85,6 +85,15 @@ class MeteocatSensorCoordinator(DataUpdateCoordinator):
             )
             _LOGGER.debug("Datos de sensores actualizados exitosamente: %s", data)
 
+            # Validar que los datos sean una lista de diccionarios
+            if not isinstance(data, list) or not all(isinstance(item, dict) for item in data):
+                _LOGGER.error(
+                    "Formato inválido: Se esperaba una lista de dicts, pero se obtuvo %s. Datos: %s",
+                    type(data).__name__,
+                    data,
+                )
+                raise ValueError("Formato de datos inválido")
+
             # Determinar la ruta al archivo en la carpeta raíz del repositorio
             output_file = os.path.join(
                 self.hass.config.path(), "custom_components", "meteocat", "files", "station_data.json"
