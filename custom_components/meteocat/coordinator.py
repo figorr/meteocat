@@ -14,6 +14,8 @@ from homeassistant.exceptions import ConfigEntryNotReady
 
 from meteocatpy.data import MeteocatStationData
 # from meteocatpy.forecast import MeteocatForecast
+from meteocatpy.uvi import MeteocatUviData
+
 from meteocatpy.exceptions import (
     BadRequestError,
     ForbiddenError,
@@ -28,10 +30,13 @@ _LOGGER = logging.getLogger(__name__)
 
 # Valores predeterminados para los intervalos de actualización
 DEFAULT_SENSOR_UPDATE_INTERVAL = timedelta(minutes=90)
-DEFAULT_ENTITY_UPDATE_INTERVAL = timedelta(hours=12)
+DEFAULT_ENTITY_UPDATE_INTERVAL = timedelta(hours=48)
+DEFAULT_HOURLY_FORECAST_UPDATE_INTERVAL = timedelta(hours=24)
+DEFAULT_DAYLY_FORECAST_UPDATE_INTERVAL = timedelta(hours=48)
+DEFAULT_UVI_UPDATE_INTERVAL = timedelta(hours=48)
 
 async def save_json_to_file(data: dict, output_file: str) -> None:
-    """Save the JSON data to a file asynchronously."""
+    """Guarda datos JSON en un archivo de forma asíncrona."""
     try:
         # Crea el directorio si no existe
         os.makedirs(os.path.dirname(output_file), exist_ok=True)
@@ -40,7 +45,17 @@ async def save_json_to_file(data: dict, output_file: str) -> None:
         async with aiofiles.open(output_file, mode="w", encoding="utf-8") as f:
             await f.write(json.dumps(data, indent=4, ensure_ascii=False))
     except Exception as e:
-        raise RuntimeError(f"Error saving JSON to {output_file}: {e}")
+        raise RuntimeError(f"Error guardando JSON to {output_file}: {e}")
+
+def load_json_from_file(input_file: str) -> dict | list | None:
+    """Carga datos JSON desde un archivo de forma síncrona."""
+    try:
+        if os.path.exists(input_file):
+            with open(input_file, "r", encoding="utf-8") as f:
+                return json.load(f)
+    except Exception as e:
+        _LOGGER.error(f"Error cargando JSON desde {input_file}: {e}")
+    return None
 
 class MeteocatSensorCoordinator(DataUpdateCoordinator):
     """Coordinator para manejar la actualización de datos de los sensores."""
@@ -132,12 +147,136 @@ class MeteocatSensorCoordinator(DataUpdateCoordinator):
             )
             raise
         except Exception as err:
-            _LOGGER.exception(
-                "Error inesperado al obtener datos de sensores (Station ID: %s): %s",
-                self.station_id,
+            if isinstance(err, ConfigEntryNotReady):
+                # El dispositivo no pudo inicializarse por primera vez
+                _LOGGER.exception(
+                    "No se pudo inicializar el dispositivo (Station ID: %s) debido a un error: %s",
+                    self.station_id,
+                    err,
+                )
+                raise  # Re-raise the exception to indicate a fundamental failure in initialization
+            else:
+                # Manejar error durante la actualización de datos
+                _LOGGER.exception(
+                    "Error inesperado al obtener datos de los sensores para (Station ID: %s): %s",
+                    self.station_id,
+                    err,
+                )
+                # Intentar cargar datos en caché si hay un error
+                cached_data = load_json_from_file(output_file)
+                if cached_data:
+                    _LOGGER.info("Usando datos en caché para la estación %s.", self.station_id)
+                    return cached_data
+                # No se puede actualizar el estado, retornar None o un estado fallido
+                return None  # o cualquier otro valor que indique un estado de error
+
+class MeteocatUviCoordinator(DataUpdateCoordinator):
+    """Coordinator para manejar la actualización de datos de los sensores."""
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        entry_data: dict,
+        update_interval: timedelta = DEFAULT_UVI_UPDATE_INTERVAL,
+    ):
+        """
+        Inicializa el coordinador del sensor del Índice UV de Meteocat.
+
+        Args:
+            hass (HomeAssistant): Instancia de Home Assistant.
+            entry_data (dict): Datos de configuración obtenidos de core.config_entries.
+            update_interval (timedelta): Intervalo de actualización.
+        """
+        self.api_key = entry_data["api_key"]  # Usamos la API key de la configuración
+        self.town_id = entry_data["town_id"]  # Usamos el ID del municipio
+        self.meteocat_uvi_data = MeteocatUviData(self.api_key)
+
+        super().__init__(
+            hass,
+            _LOGGER,
+            name=f"{DOMAIN} Uvi Coordinator",
+            update_interval=update_interval,
+        )
+
+    async def _async_update_data(self) -> Dict:
+        """Actualiza los datos de los sensores desde la API de Meteocat."""
+        try:
+            # Obtener datos desde la API con manejo de tiempo límite
+            data = await asyncio.wait_for(
+                self.meteocat_uvi_data.get_uvi_index(self.town_id),
+                timeout=30  # Tiempo límite de 30 segundos
+            )
+            _LOGGER.debug("Datos de sensores actualizados exitosamente: %s", data)
+
+            # Validar que los datos sean una lista de diccionarios
+            if not isinstance(data, list) or not all(isinstance(item, dict) for item in data):
+                _LOGGER.error(
+                    "Formato inválido: Se esperaba una lista de dicts, pero se obtuvo %s. Datos: %s",
+                    type(data).__name__,
+                    data,
+                )
+                raise ValueError("Formato de datos inválido")
+
+            # Determinar la ruta al archivo en la carpeta raíz del repositorio
+            output_file = os.path.join(
+                self.hass.config.path(),
+                "custom_components",
+                "meteocat",
+                "files",
+                f"uvi_{self.town_id.lower()}_data.json"
+            )
+
+            # Guardar los datos en un archivo JSON
+            await save_json_to_file(data, output_file)
+
+            return data
+        except asyncio.TimeoutError as err:
+            _LOGGER.warning("Tiempo de espera agotado al obtener datos de la API de Meteocat.")
+            raise ConfigEntryNotReady from err
+        except ForbiddenError as err:
+            _LOGGER.error(
+                "Acceso denegado al obtener datos del índice UV para (Town ID: %s): %s",
+                self.town_id,
+                err,
+            )
+            raise ConfigEntryNotReady from err
+        except TooManyRequestsError as err:
+            _LOGGER.warning(
+                "Límite de solicitudes alcanzado al obtener datos del índice UV para (Town ID: %s): %s",
+                self.town_id,
+                err,
+            )
+            raise ConfigEntryNotReady from err
+        except (BadRequestError, InternalServerError, UnknownAPIError) as err:
+            _LOGGER.error(
+                "Error al obtener datos del índice UV para (Town ID: %s): %s",
+                self.town_id,
                 err,
             )
             raise
+        except Exception as err:
+            if isinstance(err, ConfigEntryNotReady):
+                # El dispositivo no pudo inicializarse por primera vez
+                _LOGGER.exception(
+                    "No se pudo inicializar el dispositivo (Town ID: %s) debido a un error: %s",
+                    self.town_id,
+                    err,
+                )
+                raise  # Re-raise the exception to indicate a fundamental failure in initialization
+            else:
+                # Manejar error durante la actualización de datos
+                _LOGGER.exception(
+                    "Error inesperado al obtener datos del índice UV para (Town ID: %s): %s",
+                    self.town_id,
+                    err,
+                )
+                # Intentar cargar datos en caché si hay un error
+                cached_data = load_json_from_file(output_file)
+                if cached_data:
+                    _LOGGER.info("Usando datos en caché para la ciudad %s.", self.town_id)
+                    return cached_data
+                # No se puede actualizar el estado, retornar None o un estado fallido
+                return None  # o cualquier otro valor que indique un estado de error
 
 # class MeteocatEntityCoordinator(DataUpdateCoordinator):
 #     """Coordinator para manejar la actualización de datos de las entidades de predicción."""
