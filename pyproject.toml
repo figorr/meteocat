@@ -7,6 +7,9 @@ license = "Apache-2.0"
 readme = "README.md"
 repository = "https://gitlab.com/figorr/meteocat"
 keywords = ['meteocat']
+packages = [
+    { include = "meteocat", from = "custom_components" }
+]
 
 
 [tool.poetry.dependencies]
