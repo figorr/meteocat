@@ -25,7 +25,7 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
 
     def __init__(self, config_entry: ConfigEntry):
         """Inicializa el flujo de opciones."""
-        self.config_entry = config_entry
+        self._config_entry = config_entry
         self.api_key: str | None = None
 
     async def async_step_init(self, user_input: dict | None = None):
@@ -60,8 +60,8 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
             if not errors:
                 # Actualizar la configuración de la entrada con la nueva API Key
                 self.hass.config_entries.async_update_entry(
-                    self.config_entry,
-                    data={**self.config_entry.data, CONF_API_KEY: self.api_key},
+                    self._config_entry,
+                    data={**self._config_entry.data, CONF_API_KEY: self.api_key},
                 )
                 return self.async_create_entry(title="", data={})
 
