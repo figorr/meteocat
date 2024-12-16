@@ -50,6 +50,7 @@ test_dotenv.py
 tests/coordinator_error_test.py
 tests/sensor_error_test.py
 tests/test_data.py
+tests/uvi_test.py
 tests/uvi_file_test.py
 tests/files/station_D3_data.json
 tests/files/station_D3_data_mapped.json
