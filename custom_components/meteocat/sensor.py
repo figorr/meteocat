@@ -478,7 +478,7 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
 
         directions = [
             "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
-            "S", "SSW", "SW", "WSW", "WO", "WNW", "NW", "NNW", "N",
+            "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW", "N",
         ]
         index = round(degree / 22.5) % 16
         return directions[index]
