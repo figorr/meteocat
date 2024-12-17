@@ -1,3 +1,20 @@
+## [0.1.36](https://github.com/figorr/meteocat/compare/v0.1.35...v0.1.36) (2024-12-17)
+
+
+### Bug Fixes
+
+* 0.1.36 ([73da4ed](https://github.com/figorr/meteocat/commit/73da4ed7c598a150528294e89c93407e33abfd24))
+* add hour attribute to UVI sensor ([a365626](https://github.com/figorr/meteocat/commit/a365626aa2bb585ca9a835afcec6cea99e85a4bd))
+* add hour attribute translation ([d50f8bb](https://github.com/figorr/meteocat/commit/d50f8bbbcb3c8867dedcbe51f065951f5dfab817))
+* fix self. _config.entry from deprecated self. config.entry ([ed4bfeb](https://github.com/figorr/meteocat/commit/ed4bfebf0ea45bc63de000a21f6063a0cb9e499a))
+* ignore uvi test ([cf35867](https://github.com/figorr/meteocat/commit/cf358675b1afce3e1ea1650414a22c2372af4b49))
+* set coordinators to uvi sensor ([38288cc](https://github.com/figorr/meteocat/commit/38288cc75a30a1ad77a492dcb2b15592379e774f))
+* set uvi coordinators ([1ea0432](https://github.com/figorr/meteocat/commit/1ea0432d6749cac96d45e52d3cf18e7a83e59739))
+* update devs ([9274984](https://github.com/figorr/meteocat/commit/9274984154facd81bdeaf0e0050c870a08996b10))
+* update devs ([44d7699](https://github.com/figorr/meteocat/commit/44d7699c4d3bde13f6145a5380eafc5c77818c45))
+* use cached data when API failed ([f31bd10](https://github.com/figorr/meteocat/commit/f31bd10539e77f7d3e12bc27b3bf88cc9ab317d2))
+* uvi sensor ([ee0b194](https://github.com/figorr/meteocat/commit/ee0b19461bdfacc26d493f9af0e27729e45ae545))
+
 ## [0.1.35](https://github.com/figorr/meteocat/compare/v0.1.34...v0.1.35) (2024-12-14)
 
 
