@@ -8,7 +8,13 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import async_get_platforms
 
-from .coordinator import MeteocatSensorCoordinator  # , MeteocatEntityCoordinator
+from .coordinator import (
+    MeteocatSensorCoordinator,
+    # MeteocatEntityCoordinator,
+    MeteocatUviCoordinator,
+    MeteocatUviFileCoordinator,
+)
+
 from .const import DOMAIN, PLATFORMS
 
 _LOGGER = logging.getLogger(__name__)
@@ -62,6 +68,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         # entity_coordinator = MeteocatEntityCoordinator(hass=hass, entry_data=entry_data)
         # await entity_coordinator.async_config_entry_first_refresh()
+
+        uvi_coordinator = MeteocatUviCoordinator(hass=hass, entry_data=entry_data)
+        await uvi_coordinator.async_config_entry_first_refresh()
+
+        uvi_file_coordinator = MeteocatUviFileCoordinator(hass=hass, entry_data=entry_data)
+        await uvi_file_coordinator.async_config_entry_first_refresh()
+
     except Exception as err:  # Capturar todos los errores
         _LOGGER.exception(f"Error al inicializar los coordinadores: {err}")
         return False
@@ -71,6 +84,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data[DOMAIN][entry.entry_id] = {
         "sensor_coordinator": sensor_coordinator,
         # "entity_coordinator": entity_coordinator,
+        "uvi_coordinator":  uvi_coordinator,
+        "uvi_file_coordinator": uvi_file_coordinator,
         **entry_data,
     }
 
@@ -114,6 +129,15 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     # Archivo JSON de la estación
     station_data_file = files_folder / f"station_{station_id.lower()}_data.json"
 
+    # Obtener el `town_id` para identificar el archivo a eliminar
+    town_id = entry.data.get("town_id")
+    if not town_id:
+        _LOGGER.warning("No se encontró 'town_id' en la configuración. No se puede eliminar el archivo de datos de la estación.")
+        return
+
+    # Archivo JSON UVI del municipio
+    town_data_file = files_folder / f"uvi_{town_id.lower()}_data.json"
+
     # Validar la ruta base
     if not custom_components_path.exists():
         _LOGGER.warning(f"La ruta {custom_components_path} no existe. No se realizará la limpieza.")
@@ -123,5 +147,6 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     safe_remove(symbols_file)
     safe_remove(variables_file)
     safe_remove(station_data_file)
+    safe_remove(town_data_file)
     safe_remove(assets_folder, is_folder=True)
     safe_remove(files_folder, is_folder=True)
