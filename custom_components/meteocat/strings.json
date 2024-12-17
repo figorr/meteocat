@@ -70,8 +70,10 @@
       },
       "uv_index": {
         "name": "UV Index",
-        "attributes": {
-          "hour": "Hour"
+        "state_attributes": {
+          "hour": {
+            "name": "Hour"
+          }
         }
       },
       "max_temperature": {
