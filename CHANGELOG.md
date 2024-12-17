@@ -1,3 +1,12 @@
+## [0.1.37](https://github.com/figorr/meteocat/compare/v0.1.36...v0.1.37) (2024-12-17)
+
+
+### Bug Fixes
+
+* 0.1.37 ([1e850d8](https://github.com/figorr/meteocat/commit/1e850d8e77d0e572a0bfb8ba01702ab3acf0437f))
+* fix hour attribute translation ([31ccc6f](https://github.com/figorr/meteocat/commit/31ccc6fc9a1a51c441935682cbdc1af07cc6af5f))
+* fix wind directions ([23bbf44](https://github.com/figorr/meteocat/commit/23bbf4465c79107e5326fc107b23cf4a0c71c70c))
+
 ## [0.1.36](https://github.com/figorr/meteocat/compare/v0.1.35...v0.1.36) (2024-12-17)
 
 
