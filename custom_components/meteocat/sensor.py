@@ -261,6 +261,16 @@ class MeteocatUviSensor(CoordinatorEntity[MeteocatUviFileCoordinator], SensorEnt
             return uvi_data.get("uvi", None)
     
     @property
+    def extra_state_attributes(self):
+        """Return additional attributes for the sensor."""
+        attributes = super().extra_state_attributes or {}
+        if self.entity_description.key == UV_INDEX:
+            uvi_data = self.coordinator.data or {}
+            # Add the "hour" attribute if it exists
+            attributes["hour"] = uvi_data.get("hour")
+        return attributes
+    
+    @property
     def device_info(self) -> DeviceInfo:
         """Return the device info."""
         return DeviceInfo(
