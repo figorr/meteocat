@@ -69,7 +69,10 @@
         "name": "Irradiació Solar Global"
       },
       "uv_index": {
-        "name": "UV Índex"
+        "name": "UV Índex",
+        "attributes": {
+          "hour": "Hora"
+        }
       },
       "max_temperature": {
         "name": "Temperatura Max"
