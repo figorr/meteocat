@@ -59,7 +59,10 @@ from .const import (
     WIND_GUST_CODE,
 )
 
-from .coordinator import MeteocatSensorCoordinator
+from .coordinator import (
+    MeteocatSensorCoordinator,
+    MeteocatUviFileCoordinator,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -201,17 +204,71 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
     )
 )
 
-
 @callback
 async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback) -> None:
     """Set up Meteocat sensors from a config entry."""
     entry_data = hass.data[DOMAIN][entry.entry_id]
-    coordinator = entry_data["sensor_coordinator"]
 
+    # Coordinadores para sensores
+    coordinator = entry_data.get("sensor_coordinator")
+    uvi_file_coordinator = entry_data.get("uvi_file_coordinator")
+
+    # Sensores generales
     async_add_entities(
         MeteocatSensor(coordinator, description, entry_data)
         for description in SENSOR_TYPES
+        if description.key != UV_INDEX  # Excluir UVI del coordinador general
     )
+
+    # Sensor UVI
+    async_add_entities(
+        MeteocatUviSensor(uvi_file_coordinator, description, entry_data)
+        for description in SENSOR_TYPES
+        if description.key == UV_INDEX  # Incluir UVI en el coordinador UVI FILE COORDINATOR
+    )
+
+class MeteocatUviSensor(CoordinatorEntity[MeteocatUviFileCoordinator], SensorEntity):
+    """Representation of a Meteocat UV Index sensor."""
+
+    _attr_has_entity_name = True  # Activa el uso de nombres basados en el dispositivo
+
+    def __init__(self, uvi_file_coordinator, description, entry_data):
+        """Initialize the UV Index sensor."""
+        super().__init__(uvi_file_coordinator)
+        self.entity_description = description
+        self._town_name = entry_data["town_name"]
+        self._town_id = entry_data["town_id"]
+        self._station_id = entry_data["station_id"]
+
+        # Unique ID for the entity
+        self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_{self.entity_description.key}"
+
+        # Asigna entity_category desde description (si está definido)
+        self._attr_entity_category = getattr(description, "entity_category", None)
+        
+        # Log para depuración
+        _LOGGER.debug(
+            "Inicializando sensor: %s, Unique ID: %s",
+            self.entity_description.name,
+            self._attr_unique_id,
+        )
+
+    @property
+    def native_value(self):
+        """Return the current UV index value."""
+        if self.entity_description.key == UV_INDEX:
+            uvi_data = self.coordinator.data or {}
+            return uvi_data.get("uvi", None)
+    
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return the device info."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._town_id)},
+            name="Meteocat " + self._station_id + " " + self._town_name,
+            manufacturer="Meteocat",
+            model="Meteocat API",
+        )
 
 class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity):
     """Representation of a Meteocat sensor."""
@@ -225,7 +282,7 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
         PRESSURE: PRESSURE_CODE,
         PRECIPITATION: PRECIPITATION_CODE,
         SOLAR_GLOBAL_IRRADIANCE: SOLAR_GLOBAL_IRRADIANCE_CODE,
-        UV_INDEX: UV_INDEX_CODE,
+        # UV_INDEX: UV_INDEX_CODE,
         MAX_TEMPERATURE: MAX_TEMPERATURE_CODE,
         MIN_TEMPERATURE: MIN_TEMPERATURE_CODE,
         WIND_GUST: WIND_GUST_CODE,
