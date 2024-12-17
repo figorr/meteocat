@@ -5,7 +5,7 @@ import json
 import aiofiles
 import logging
 import asyncio
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Dict, Any
 
 from homeassistant.core import HomeAssistant
@@ -13,8 +13,8 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.exceptions import ConfigEntryNotReady
 
 from meteocatpy.data import MeteocatStationData
-# from meteocatpy.forecast import MeteocatForecast
 from meteocatpy.uvi import MeteocatUviData
+# from meteocatpy.forecast import MeteocatForecast
 
 from meteocatpy.exceptions import (
     BadRequestError,
@@ -34,6 +34,7 @@ DEFAULT_ENTITY_UPDATE_INTERVAL = timedelta(hours=48)
 DEFAULT_HOURLY_FORECAST_UPDATE_INTERVAL = timedelta(hours=24)
 DEFAULT_DAYLY_FORECAST_UPDATE_INTERVAL = timedelta(hours=48)
 DEFAULT_UVI_UPDATE_INTERVAL = timedelta(hours=48)
+DEFAULT_UVI_SENSOR_UPDATE_INTERVAL = timedelta(minutes=5)
 
 async def save_json_to_file(data: dict, output_file: str) -> None:
     """Guarda datos JSON en un archivo de forma asíncrona."""
@@ -208,13 +209,17 @@ class MeteocatUviCoordinator(DataUpdateCoordinator):
             )
             _LOGGER.debug("Datos de sensores actualizados exitosamente: %s", data)
 
-            # Validar que los datos sean una lista de diccionarios
-            if not isinstance(data, list) or not all(isinstance(item, dict) for item in data):
-                _LOGGER.error(
-                    "Formato inválido: Se esperaba una lista de dicts, pero se obtuvo %s. Datos: %s",
-                    type(data).__name__,
-                    data,
-                )
+            # Validar que los datos sean un dict con una clave 'uvi'
+            if not isinstance(data, dict) or 'uvi' not in data:
+                _LOGGER.error("Formato inválido: Se esperaba un dict con la clave 'uvi'. Datos: %s", data)
+                raise ValueError("Formato de datos inválido")
+            
+            # Extraer la lista de datos bajo la clave 'uvi'
+            uvi_data = data.get('uvi', [])
+            
+            # Validar que 'uvi' sea una lista de diccionarios
+            if not isinstance(uvi_data, list) or not all(isinstance(item, dict) for item in uvi_data):
+                _LOGGER.error("Formato inválido: 'uvi' debe ser una lista de dicts. Datos: %s", uvi_data)
                 raise ValueError("Formato de datos inválido")
 
             # Determinar la ruta al archivo en la carpeta raíz del repositorio
@@ -229,7 +234,7 @@ class MeteocatUviCoordinator(DataUpdateCoordinator):
             # Guardar los datos en un archivo JSON
             await save_json_to_file(data, output_file)
 
-            return data
+            return uvi_data
         except asyncio.TimeoutError as err:
             _LOGGER.warning("Tiempo de espera agotado al obtener datos de la API de Meteocat.")
             raise ConfigEntryNotReady from err
@@ -277,6 +282,84 @@ class MeteocatUviCoordinator(DataUpdateCoordinator):
                     return cached_data
                 # No se puede actualizar el estado, retornar None o un estado fallido
                 return None  # o cualquier otro valor que indique un estado de error
+
+class MeteocatUviFileCoordinator(DataUpdateCoordinator):
+    """Coordinator to read and process UV data from a file."""
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        entry_data: dict,
+        update_interval: timedelta = DEFAULT_UVI_SENSOR_UPDATE_INTERVAL,
+    ):
+        """
+        Inicializa el coordinador del sensor del Índice UV de Meteocat.
+
+        Args:
+            hass (HomeAssistant): Instancia de Home Assistant.
+            entry_data (dict): Datos de configuración obtenidos de core.config_entries.
+            update_interval (timedelta): Intervalo de actualización.
+        """
+        self.town_id = entry_data["town_id"]  # Usamos el ID del municipio
+
+        super().__init__(
+            hass,
+            _LOGGER,
+            name=f"{DOMAIN} Uvi File Coordinator",
+            update_interval=update_interval,
+        )
+        self._file_path = os.path.join(
+            hass.config.path("custom_components/meteocat/files"),
+            f"uvi_{self.town_id.lower()}_data.json",
+        )
+
+    async def _async_update_data(self):
+        """Read and process UV data for the current hour from the file asynchronously."""
+        try:
+            async with aiofiles.open(self._file_path, "r", encoding="utf-8") as file:
+                raw_data = await file.read()
+                raw_data = json.loads(raw_data)  # Parse JSON data
+        except FileNotFoundError:
+            _LOGGER.error(
+                "No se ha encontrado el archivo JSON con datos del índice UV en %s.",
+                self._file_path,
+            )
+            return {}
+        except json.JSONDecodeError:
+            _LOGGER.error(
+                "Error al decodificar el archivo JSON del índice UV en %s.",
+                self._file_path,
+            )
+            return {}
+
+        return self._get_uv_for_current_hour(raw_data)
+
+    def _get_uv_for_current_hour(self, raw_data):
+        """Get UV data for the current hour."""
+        # Fecha y hora actual
+        current_datetime = datetime.now()
+        current_date = current_datetime.strftime("%Y-%m-%d")
+        current_hour = current_datetime.hour
+
+        # Busca los datos para la fecha actual
+        for day_data in raw_data.get("uvi", []):
+            if day_data["date"] == current_date:
+                # Encuentra los datos de la hora actual
+                for hour_data in day_data.get("hours", []):
+                    if hour_data["hour"] == current_hour:
+                        return {
+                            "hour": hour_data.get("hour", 0),
+                            "uvi": hour_data.get("uvi", 0),
+                            "uvi_clouds": hour_data.get("uvi_clouds", 0),
+                        }
+
+        # Si no se encuentran datos, devuelve un diccionario vacío con valores predeterminados
+        _LOGGER.warning(
+            "No se encontraron datos del índice UV para hoy (%s) y la hora actual (%s).",
+            current_date,
+            current_hour,
+        )
+        return {"hour": 0, "uvi": 0, "uvi_clouds": 0}
 
 # class MeteocatEntityCoordinator(DataUpdateCoordinator):
 #     """Coordinator para manejar la actualización de datos de las entidades de predicción."""
