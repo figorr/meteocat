@@ -10,7 +10,7 @@ from homeassistant.helpers.entity_platform import async_get_platforms
 
 from .coordinator import (
     MeteocatSensorCoordinator,
-    # MeteocatEntityCoordinator,
+    MeteocatEntityCoordinator,
     MeteocatUviCoordinator,
     MeteocatUviFileCoordinator,
 )
@@ -66,8 +66,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         sensor_coordinator = MeteocatSensorCoordinator(hass=hass, entry_data=entry_data)
         await sensor_coordinator.async_config_entry_first_refresh()
 
-        # entity_coordinator = MeteocatEntityCoordinator(hass=hass, entry_data=entry_data)
-        # await entity_coordinator.async_config_entry_first_refresh()
+        entity_coordinator = MeteocatEntityCoordinator(hass=hass, entry_data=entry_data)
+        await entity_coordinator.async_config_entry_first_refresh()
 
         uvi_coordinator = MeteocatUviCoordinator(hass=hass, entry_data=entry_data)
         await uvi_coordinator.async_config_entry_first_refresh()
@@ -83,7 +83,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = {
         "sensor_coordinator": sensor_coordinator,
-        # "entity_coordinator": entity_coordinator,
+        "entity_coordinator": entity_coordinator,
         "uvi_coordinator":  uvi_coordinator,
         "uvi_file_coordinator": uvi_file_coordinator,
         **entry_data,
@@ -138,6 +138,10 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     # Archivo JSON UVI del municipio
     town_data_file = files_folder / f"uvi_{town_id.lower()}_data.json"
 
+    # Arhivos JSON de las predicciones del municipio a eliminar
+    forecast_hourly_data_file = files_folder / f"forecast_{town_id.lower()}_hourly_data.json"
+    forecast_daily_data_file = files_folder / f"forecast_{town_id.lower()}_daily_data.json"
+
     # Validar la ruta base
     if not custom_components_path.exists():
         _LOGGER.warning(f"La ruta {custom_components_path} no existe. No se realizará la limpieza.")
@@ -148,5 +152,7 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     safe_remove(variables_file)
     safe_remove(station_data_file)
     safe_remove(town_data_file)
+    safe_remove(forecast_hourly_data_file)
+    safe_remove(forecast_daily_data_file)
     safe_remove(assets_folder, is_folder=True)
     safe_remove(files_folder, is_folder=True)
