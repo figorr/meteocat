@@ -14,7 +14,7 @@ from homeassistant.exceptions import ConfigEntryNotReady
 
 from meteocatpy.data import MeteocatStationData
 from meteocatpy.uvi import MeteocatUviData
-# from meteocatpy.forecast import MeteocatForecast
+from meteocatpy.forecast import MeteocatForecast
 
 from meteocatpy.exceptions import (
     BadRequestError,
@@ -361,76 +361,99 @@ class MeteocatUviFileCoordinator(DataUpdateCoordinator):
         )
         return {"hour": 0, "uvi": 0, "uvi_clouds": 0}
 
-# class MeteocatEntityCoordinator(DataUpdateCoordinator):
-#     """Coordinator para manejar la actualización de datos de las entidades de predicción."""
+class MeteocatEntityCoordinator(DataUpdateCoordinator):
+    """Coordinator para manejar la actualización de datos de las entidades de predicción."""
 
-#     def __init__(
-#         self,
-#         hass: HomeAssistant,
-#         entry_data: dict,
-#         update_interval: timedelta = DEFAULT_ENTITY_UPDATE_INTERVAL,
-#     ):
-#         """
-#         Inicializa el coordinador de datos para entidades de predicción.
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        entry_data: dict,
+        update_interval: timedelta = DEFAULT_ENTITY_UPDATE_INTERVAL,
+    ):
+        """
+        Inicializa el coordinador de datos para entidades de predicción.
 
-#         Args:
-#             hass (HomeAssistant): Instancia de Home Assistant.
-#             entry_data (dict): Datos de configuración obtenidos de core.config_entries.
-#             update_interval (timedelta): Intervalo de actualización.
-#         """
-#         self.api_key = entry_data["api_key"]
-#         self.town_name = entry_data["town_name"]
-#         self.town_id = entry_data["town_id"]
-#         self.station_name = entry_data["station_name"]
-#         self.station_id = entry_data["station_id"]
-#         self.variable_name = entry_data["variable_name"]
-#         self.variable_id = entry_data["variable_id"]
-#         self.meteocat_forecast = MeteocatForecast(self.api_key)
+        Args:
+            hass (HomeAssistant): Instancia de Home Assistant.
+            entry_data (dict): Datos de configuración obtenidos de core.config_entries.
+            update_interval (timedelta): Intervalo de actualización.
+        """
+        self.api_key = entry_data["api_key"]
+        self.town_name = entry_data["town_name"]
+        self.town_id = entry_data["town_id"]
+        self.station_name = entry_data["station_name"]
+        self.station_id = entry_data["station_id"]
+        self.variable_name = entry_data["variable_name"]
+        self.variable_id = entry_data["variable_id"]
+        self.meteocat_forecast = MeteocatForecast(self.api_key)
 
-#         super().__init__(
-#             hass,
-#             _LOGGER,
-#             name=f"{DOMAIN} Entity Coordinator",
-#             update_interval=update_interval,
-#         )
+        super().__init__(
+            hass,
+            _LOGGER,
+            name=f"{DOMAIN} Entity Coordinator",
+            update_interval=update_interval,
+        )
 
-#     async def _async_update_data(self) -> Dict:
-#         """Actualiza los datos de las entidades de predicción desde la API de Meteocat."""
-#         try:
-#             hourly_forecast = await self.meteocat_forecast.get_prediccion_horaria(self.town_id)
-#             daily_forecast = await self.meteocat_forecast.get_prediccion_diaria(self.town_id)
-#             _LOGGER.debug(
-#                 "Datos de predicción actualizados exitosamente (Town ID: %s)", self.town_id
-#             )
-#             return {
-#                 "hourly_forecast": hourly_forecast,
-#                 "daily_forecast": daily_forecast,
-#             }
-#         except ForbiddenError as err:
-#             _LOGGER.error(
-#                 "Acceso denegado al obtener datos de predicción (Town ID: %s): %s",
-#                 self.town_id,
-#                 err,
-#             )
-#             raise ConfigEntryNotReady from err
-#         except TooManyRequestsError as err:
-#             _LOGGER.warning(
-#                 "Límite de solicitudes alcanzado al obtener datos de predicción (Town ID: %s): %s",
-#                 self.town_id,
-#                 err,
-#             )
-#             raise ConfigEntryNotReady from err
-#         except (BadRequestError, InternalServerError, UnknownAPIError) as err:
-#             _LOGGER.error(
-#                 "Error al obtener datos de predicción (Town ID: %s): %s",
-#                 self.town_id,
-#                 err,
-#             )
-#             raise
-#         except Exception as err:
-#             _LOGGER.exception(
-#                 "Error inesperado al obtener datos de predicción (Town ID: %s): %s",
-#                 self.town_id,
-#                 err,
-#             )
-#             raise
+    async def _async_update_data(self) -> Dict:
+        """Actualiza los datos de predicción desde la API de Meteocat."""
+        hourly_file = os.path.join(
+            self.hass.config.path(),
+            "custom_components",
+            "meteocat",
+            "files",
+            f"forecast_{self.town_id.lower()}_hourly_data.json",
+        )
+        daily_file = os.path.join(
+            self.hass.config.path(),
+            "custom_components",
+            "meteocat",
+            "files",
+            f"forecast_{self.town_id.lower()}_daily_data.json",
+        )
+
+        try:
+            hourly_data = await asyncio.wait_for(
+                self.meteocat_forecast.get_prediccion_horaria(self.town_id), timeout=30
+            )
+            daily_data = await asyncio.wait_for(
+                self.meteocat_forecast.get_prediccion_diaria(self.town_id), timeout=30
+            )
+
+            _LOGGER.debug(
+                "Predicción horaria y diaria obtenida exitosamente para %s.", self.town_id
+            )
+
+            save_json_to_file(hourly_data, hourly_file)
+            save_json_to_file(daily_data, daily_file)
+
+            return {"hourly": hourly_data, "daily": daily_data}
+        except asyncio.TimeoutError as err:
+            _LOGGER.warning("Tiempo de espera agotado al obtener datos de predicción.")
+            raise ConfigEntryNotReady from err
+        except ForbiddenError as err:
+            _LOGGER.error(
+                "Acceso denegado al obtener datos de predicción (Town ID: %s): %s",
+                self.town_id,
+                err,
+            )
+            raise ConfigEntryNotReady from err
+        except TooManyRequestsError as err:
+            _LOGGER.warning(
+                "Límite de solicitudes alcanzado al obtener datos de predicción (Town ID: %s): %s",
+                self.town_id,
+                err,
+            )
+            raise ConfigEntryNotReady from err
+        except (BadRequestError, InternalServerError, UnknownAPIError) as err:
+            _LOGGER.error(
+                "Error al obtener datos de predicción (Town ID: %s): %s",
+                self.town_id,
+                err,
+            )
+            raise
+        except Exception as err:
+            _LOGGER.exception("Error inesperado al obtener datos de predicción: %s", err)
+            return {
+                "hourly": load_json_from_file(hourly_file) or {},
+                "daily": load_json_from_file(daily_file) or {},
+            }
