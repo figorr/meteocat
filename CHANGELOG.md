@@ -1,3 +1,12 @@
+## [0.1.38](https://github.com/figorr/meteocat/compare/v0.1.37...v0.1.38) (2024-12-18)
+
+
+### Bug Fixes
+
+* 0.1.38 ([58014ef](https://github.com/figorr/meteocat/commit/58014ef56ca54f2b458fe6e142fbcf27cd8d211d))
+* add degrees attribute translations ([341cf84](https://github.com/figorr/meteocat/commit/341cf849024f98ff1f31b66ec7ff6a2a39123148))
+* add degrees property to wind direction ([9570a79](https://github.com/figorr/meteocat/commit/9570a7911d112624818da224369bacec1ee74902))
+
 ## [0.1.37](https://github.com/figorr/meteocat/compare/v0.1.36...v0.1.37) (2024-12-17)
 
 
