@@ -48,6 +48,11 @@
           "NW": "NW",
           "NNW": "NNW",
           "unknown": "Unknown"
+        },
+        "state_attributes": {
+          "degrees": {
+            "name": "Degrees"
+          }
         }
       },
       "temperature": {

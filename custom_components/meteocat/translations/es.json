@@ -48,6 +48,11 @@
           "NW": "NO",
           "NNW": "NNO",
           "unknown": "Desconocido"
+        },
+        "state_attributes": {
+          "degrees": {
+            "name": "Grados"
+          }
         }
       },
       "temperature": {

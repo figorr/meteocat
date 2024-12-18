@@ -48,6 +48,11 @@
           "NW": "NO",
           "NNW": "NNO",
           "unknown": "Desconegut"
+        },
+        "state_attributes": {
+          "degrees": {
+            "name": "Graus"
+          }
         }
       },
       "temperature": {
