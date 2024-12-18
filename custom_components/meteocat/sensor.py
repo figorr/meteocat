@@ -482,6 +482,41 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
         ]
         index = round(degree / 22.5) % 16
         return directions[index]
+    
+    @property
+    def extra_state_attributes(self):
+        """Return additional attributes of the sensor."""
+        attributes = super().extra_state_attributes or {}
+
+        # Agregar grados como atributo solo para WIND_DIRECTION
+        if self.entity_description.key == WIND_DIRECTION:
+            # Obtener el código del sensor desde CODE_MAPPING
+            sensor_code = self.CODE_MAPPING.get(self.entity_description.key)
+
+            if sensor_code is not None:
+                # Acceder a los datos de la estación desde el coordinator
+                stations = self.coordinator.data or []
+                degrees_value = None
+
+                for station in stations:
+                    variables = station.get("variables", [])
+                    # Buscar la variable correspondiente al código
+                    variable_data = next(
+                        (var for var in variables if var.get("codi") == sensor_code),
+                        None,
+                    )
+                    if variable_data:
+                        # Obtener la última lectura de grados
+                        lectures = variable_data.get("lectures", [])
+                        if lectures:
+                            degrees_value = lectures[-1].get("valor")
+                            break
+
+                # Asignar el valor al atributo
+                if degrees_value is not None:
+                    attributes["degrees"] = degrees_value
+
+        return attributes
 
     @property
     def device_info(self) -> DeviceInfo:
