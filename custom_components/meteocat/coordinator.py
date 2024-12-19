@@ -423,8 +423,9 @@ class MeteocatEntityCoordinator(DataUpdateCoordinator):
                 "Predicción horaria y diaria obtenida exitosamente para %s.", self.town_id
             )
 
-            save_json_to_file(hourly_data, hourly_file)
-            save_json_to_file(daily_data, daily_file)
+            # Guardar los datos en los archivos JSON
+            await save_json_to_file(hourly_data, hourly_file)  # Usamos await
+            await save_json_to_file(daily_data, daily_file)    # Usamos await
 
             return {"hourly": hourly_data, "daily": daily_data}
         except asyncio.TimeoutError as err:
