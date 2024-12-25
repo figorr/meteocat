@@ -10,6 +10,7 @@
 ├── CHANGELOG.md
 ├── LICENSE
 ├── README.md
+├── conftest.py
 └── custom_components/
     └── meteocat/
         ├── __init__.py
@@ -17,7 +18,6 @@
         ├── config_flow.py
         ├── const.py
         ├── coordinator.py
-        ├── entity.py
         ├── helpers.py
         ├── manifest.json
         ├── options_flow.py
@@ -28,6 +28,7 @@
             ├── en.json
             ├── es.json
         ├── version.py
+        ├── weather.py
 ├── filetree.py
 ├── filetree.txt
 ├── hacs.json
