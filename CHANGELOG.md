@@ -1,3 +1,23 @@
+## [0.1.39](https://github.com/figorr/meteocat/compare/v0.1.38...v0.1.39) (2024-12-25)
+
+
+### Bug Fixes
+
+* 0.1.39 ([be7e9f3](https://github.com/figorr/meteocat/commit/be7e9f394a02be59521fce9a20100d3091092358))
+* add conditions constants ([95fa3bb](https://github.com/figorr/meteocat/commit/95fa3bba33722d2d976e1545bb58a7f97636ab7b))
+* add MeteocatEntityCoordinator and def json to save files ([f5816cc](https://github.com/figorr/meteocat/commit/f5816cc71dd2d7f4900c796d482969742a67ca05))
+* add MeteocatyEntityCoordinator and update async_remove_entry ([99a9883](https://github.com/figorr/meteocat/commit/99a98837de9923ba4a8604b5ff5ea6e628a51097))
+* add translations to new condition sensor ([92d757c](https://github.com/figorr/meteocat/commit/92d757c82bf9c33bd392d16f74d666f806fc27cb))
+* add weather entity ([914c407](https://github.com/figorr/meteocat/commit/914c4076457c8dd2ff1527ef83e5f62b911112a1))
+* fix condition code ([04c6ea3](https://github.com/figorr/meteocat/commit/04c6ea3e668b19bad95141154ffa6910d4aa8f3a))
+* fix is night code ([d50d587](https://github.com/figorr/meteocat/commit/d50d5871d89eb3ae20217e2070db61dcfc6c2503))
+* fix uvi icon ([d16d452](https://github.com/figorr/meteocat/commit/d16d45282f5eae83f5a337a58d34d5c5e62bee6f))
+* new condition sensor ([8f352fc](https://github.com/figorr/meteocat/commit/8f352fcff6f97e1bfe9ea49d22f03837b177f680))
+* new repo file structure ([ac61261](https://github.com/figorr/meteocat/commit/ac612613e386f926eed526e2796cadd325a3fabc))
+* new weather and condition coordinators ([f8307d8](https://github.com/figorr/meteocat/commit/f8307d8d8de915592c3a285e91dc8c79164953b5))
+* new weather and condition coordinators ([4c457e8](https://github.com/figorr/meteocat/commit/4c457e87f17564fa50743064dfbdd922e4babc17))
+* use await to save json files ([0945320](https://github.com/figorr/meteocat/commit/09453205bf891dcfef811c2628e72bf921aac8bb))
+
 ## [0.1.38](https://github.com/figorr/meteocat/compare/v0.1.37...v0.1.38) (2024-12-18)
 
 
