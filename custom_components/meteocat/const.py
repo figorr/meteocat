@@ -9,6 +9,13 @@ VARIABLE_ID = "variable_id"
 STATION_NAME = "station_name"
 STATION_ID = "station_id"
 
+from homeassistant.const import Platform
+
+ATTRIBUTION = "Powered by Meteocatpy"
+PLATFORMS = [Platform.SENSOR, Platform.WEATHER]
+DEFAULT_NAME = "METEOCAT"
+
+
 # Códigos de sensores de la API
 WIND_SPEED = "wind_speed"  # Velocidad del viento
 WIND_DIRECTION = "wind_direction"  # Dirección del viento
@@ -24,6 +31,7 @@ MIN_TEMPERATURE = "min_temperature"  # Temperatura mínima
 FEELS_LIKE = "feels_like"  # Sensación térmica
 WIND_GUST = "wind_gust"  # Racha de viento
 STATION_TIMESTAMP = "station_timestamp"  # Código de tiempo de la estación
+CONDITION = "condition"  # Estado del cielo
 
 # Definición de códigos para variables
 WIND_SPEED_CODE = 30
@@ -41,7 +49,7 @@ WIND_GUST_CODE = 50
 # Mapeo de códigos 'estatCel' a condiciones de Home Assistant
 CONDITION_MAPPING = {
     "sunny": [1],
-    "clear-night": [1],
+    # "clear-night": [1],
     "partlycloudy": [2, 3],
     "cloudy": [4, 20, 21, 22],
     "rainy": [5, 6, 23],
@@ -52,6 +60,3 @@ CONDITION_MAPPING = {
     "fog": [11, 12],
     "snow-rainy": [27, 29, 30],
 }
-
-# Platforms
-PLATFORMS = ["sensor"]
