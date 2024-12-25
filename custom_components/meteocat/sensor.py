@@ -45,6 +45,7 @@ from .const import (
     MIN_TEMPERATURE,
     WIND_GUST,
     STATION_TIMESTAMP,
+    CONDITION,
     WIND_SPEED_CODE,
     WIND_DIRECTION_CODE,
     TEMPERATURE_CODE,
@@ -61,7 +62,9 @@ from .const import (
 
 from .coordinator import (
     MeteocatSensorCoordinator,
+    MeteocatStaticSensorCoordinator,
     MeteocatUviFileCoordinator,
+    MeteocatConditionCoordinator,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -201,6 +204,11 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
     translation_key="station_timestamp",
     icon="mdi:calendar-clock",
     device_class=SensorDeviceClass.TIMESTAMP,
+    ),
+    MeteocatSensorEntityDescription(
+    key=CONDITION,
+    translation_key="condition",
+    icon="mdi:weather-partly-cloudy",
     )
 )
 
@@ -212,12 +220,21 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
     # Coordinadores para sensores
     coordinator = entry_data.get("sensor_coordinator")
     uvi_file_coordinator = entry_data.get("uvi_file_coordinator")
+    static_sensor_coordinator = entry_data.get("static_sensor_coordinator")
+    condition_coordinator = entry_data.get("condition_coordinator")
 
     # Sensores generales
     async_add_entities(
         MeteocatSensor(coordinator, description, entry_data)
         for description in SENSOR_TYPES
-        if description.key != UV_INDEX  # Excluir UVI del coordinador general
+        if description.key not in {TOWN_NAME, TOWN_ID, STATION_NAME, STATION_ID, UV_INDEX, CONDITION}  # Excluir estáticos y UVI
+    )
+
+    # Sensores estáticos
+    async_add_entities(
+        MeteocatStaticSensor(static_sensor_coordinator, description, entry_data)
+        for description in SENSOR_TYPES
+        if description.key in {TOWN_NAME, TOWN_ID, STATION_NAME, STATION_ID}
     )
 
     # Sensor UVI
@@ -226,6 +243,66 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
         for description in SENSOR_TYPES
         if description.key == UV_INDEX  # Incluir UVI en el coordinador UVI FILE COORDINATOR
     )
+
+    # Sensor CONDITION para estado del cielo
+    async_add_entities(
+        MeteocatConditionSensor(condition_coordinator, description, entry_data)
+        for description in SENSOR_TYPES
+        if description.key == CONDITION  # Incluir CONDITION en el coordinador CONDITION COORDINATOR
+    )
+
+class MeteocatStaticSensor(CoordinatorEntity[MeteocatStaticSensorCoordinator], SensorEntity):
+    """Representation of a static Meteocat sensor."""
+    STATIC_KEYS = {TOWN_NAME, TOWN_ID, STATION_NAME, STATION_ID}
+    
+    _attr_has_entity_name = True  # Activa el uso de nombres basados en el dispositivo
+
+    def __init__(self, static_sensor_coordinator, description, entry_data):
+        """Initialize the static sensor."""
+        super().__init__(static_sensor_coordinator)
+        self.entity_description = description
+        self._town_name = entry_data["town_name"]
+        self._town_id = entry_data["town_id"]
+        self._station_name = entry_data["station_name"]
+        self._station_id = entry_data["station_id"]
+
+        # Unique ID for the entity
+        self._attr_unique_id = f"sensor.{DOMAIN}_{self._station_id}_{self.entity_description.key}"
+
+        # Assign entity_category if defined in the description
+        self._attr_entity_category = getattr(description, "entity_category", None)
+        
+        # Log para depuración
+        _LOGGER.debug(
+            "Inicializando sensor: %s, Unique ID: %s",
+            self.entity_description.name,
+            self._attr_unique_id,
+        )
+
+    @property
+    def native_value(self):
+        """Return the state of the sensor."""
+        # Información estática
+        if self.entity_description.key in self.STATIC_KEYS:
+            # Información estática del `entry_data`
+            if self.entity_description.key == TOWN_NAME:
+                return self._town_name
+            if self.entity_description.key == TOWN_ID:
+                return self._town_id
+            if self.entity_description.key == STATION_NAME:
+                return self._station_name
+            if self.entity_description.key == STATION_ID:
+                return self._station_id
+    
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return the device info."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._town_id)},
+            name="Meteocat " + self._station_id + " " + self._town_name,
+            manufacturer="Meteocat",
+            model="Meteocat API",
+        )
 
 class MeteocatUviSensor(CoordinatorEntity[MeteocatUviFileCoordinator], SensorEntity):
     """Representation of a Meteocat UV Index sensor."""
@@ -280,9 +357,61 @@ class MeteocatUviSensor(CoordinatorEntity[MeteocatUviFileCoordinator], SensorEnt
             model="Meteocat API",
         )
 
+class MeteocatConditionSensor(CoordinatorEntity[MeteocatConditionCoordinator], SensorEntity):
+    """Representation of a Meteocat UV Index sensor."""
+
+    _attr_has_entity_name = True  # Activa el uso de nombres basados en el dispositivo
+
+    def __init__(self, condition_coordinator, description, entry_data):
+        """Initialize the UV Index sensor."""
+        super().__init__(condition_coordinator)
+        self.entity_description = description
+        self._town_name = entry_data["town_name"]
+        self._town_id = entry_data["town_id"]
+        self._station_id = entry_data["station_id"]
+
+        # Unique ID for the entity
+        self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_{self.entity_description.key}"
+
+        # Asigna entity_category desde description (si está definido)
+        self._attr_entity_category = getattr(description, "entity_category", None)
+        
+        # Log para depuración
+        _LOGGER.debug(
+            "Inicializando sensor: %s, Unique ID: %s",
+            self.entity_description.name,
+            self._attr_unique_id,
+        )
+
+    @property
+    def native_value(self):
+        """Return the current UV index value."""
+        if self.entity_description.key == CONDITION:
+            condition_data = self.coordinator.data or {}
+            return condition_data.get("condition", None)
+    
+    @property
+    def extra_state_attributes(self):
+        """Return additional attributes for the sensor."""
+        attributes = super().extra_state_attributes or {}
+        if self.entity_description.key == CONDITION:
+            condition_data = self.coordinator.data or {}
+            # Add the "hour" attribute if it exists
+            attributes["hour"] = condition_data.get("hour", None)
+        return attributes
+    
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return the device info."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._town_id)},
+            name="Meteocat " + self._station_id + " " + self._town_name,
+            manufacturer="Meteocat",
+            model="Meteocat API",
+        )
+
 class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity):
     """Representation of a Meteocat sensor."""
-    STATIC_KEYS = {TOWN_NAME, TOWN_ID, STATION_NAME, STATION_ID}
 
     CODE_MAPPING = {
         WIND_SPEED: WIND_SPEED_CODE,
@@ -326,19 +455,7 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
     @property
     def native_value(self):
         """Return the state of the sensor."""
-        # Información estática
-        if self.entity_description.key in self.STATIC_KEYS:
-            # Información estática del `entry_data`
-            if self.entity_description.key == TOWN_NAME:
-                return self._town_name
-            if self.entity_description.key == TOWN_ID:
-                return self._town_id
-            if self.entity_description.key == STATION_NAME:
-                return self._station_name
-            if self.entity_description.key == STATION_ID:
-                return self._station_id
         # Información dinámica
-
         if self.entity_description.key == FEELS_LIKE:
             stations = self.coordinator.data or []
 
