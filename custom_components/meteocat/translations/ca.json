@@ -107,6 +107,26 @@
       },
       "station_timestamp": {
         "name": "Estació Timestamp"
+      },
+      "condition": {
+        "name": "Estat del Cel",
+        "state": {
+          "sunny": "Assolellat",
+          "clear-night": "Nit Clara",
+          "partlycloudy": "Parcialment ennuvolat",
+          "cloudy": "Ennuvolat",
+          "rainy": "Plovent",
+          "pouring": "Tormenta",
+          "lightning-rainy": "Tormenta amb Llamps",
+          "hail": "Calamarsa",
+          "snowy": "Nevant",
+          "snow-rainy": "Neu amb Pluja"
+        },
+        "state_attributes": {
+          "hour": {
+            "name": "Hora"
+          }
+        }
       }
     }
   }

@@ -107,6 +107,26 @@
       },
       "station_timestamp": {
         "name": "Station Timestamp"
+      },
+      "condition": {
+        "name": "Condition",
+        "state": {
+          "sunny": "Sunny",
+          "clear-night": "Clear Night",
+          "partlycloudy": "Partly Cloudy",
+          "cloudy": "Cloudy",
+          "rainy": "Rainy",
+          "pouring": "Pouring",
+          "lightning-rainy": "Lightning Rainy",
+          "hail": "Hail",
+          "snowy": "Snowy",
+          "snow-rainy": "Snow Rainy"
+        },
+        "state_attributes": {
+          "hour": {
+            "name": "Hour"
+          }
+        }
       }
     }
   }

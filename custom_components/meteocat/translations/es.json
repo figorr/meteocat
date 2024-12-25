@@ -107,6 +107,26 @@
       },
       "station_timestamp": {
         "name": "Estación Timestamp"
+      },
+      "condition": {
+        "name": "Estado del cielo",
+        "state": {
+          "sunny": "Soleado",
+          "clear-night": "Noche Despejada",
+          "partlycloudy": "Parcialmente Nublado",
+          "cloudy": "Nublado",
+          "rainy": "Lluvioso",
+          "pouring": "Tormenta",
+          "lightning-rainy": "Tormenta con Rayos",
+          "hail": "Granizo",
+          "snowy": "Nevando",
+          "snow-rainy": "Nieve con Lluvia"
+        },
+        "state_attributes": {
+          "hour": {
+            "name": "Hora"
+          }
+        }
       }
     }
   }
