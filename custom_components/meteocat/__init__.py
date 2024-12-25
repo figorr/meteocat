@@ -10,9 +10,13 @@ from homeassistant.helpers.entity_platform import async_get_platforms
 
 from .coordinator import (
     MeteocatSensorCoordinator,
+    MeteocatStaticSensorCoordinator,
     MeteocatEntityCoordinator,
     MeteocatUviCoordinator,
     MeteocatUviFileCoordinator,
+    HourlyForecastCoordinator,
+    DailyForecastCoordinator,
+    MeteocatConditionCoordinator,
 )
 
 from .const import DOMAIN, PLATFORMS
@@ -65,6 +69,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     try:
         sensor_coordinator = MeteocatSensorCoordinator(hass=hass, entry_data=entry_data)
         await sensor_coordinator.async_config_entry_first_refresh()
+        
+        static_sensor_coordinator = MeteocatStaticSensorCoordinator(hass=hass, entry_data=entry_data)
+        await sensor_coordinator.async_config_entry_first_refresh()
 
         entity_coordinator = MeteocatEntityCoordinator(hass=hass, entry_data=entry_data)
         await entity_coordinator.async_config_entry_first_refresh()
@@ -75,6 +82,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         uvi_file_coordinator = MeteocatUviFileCoordinator(hass=hass, entry_data=entry_data)
         await uvi_file_coordinator.async_config_entry_first_refresh()
 
+        hourly_forecast_coordinator = HourlyForecastCoordinator(hass=hass, entry_data=entry_data)
+        await hourly_forecast_coordinator.async_config_entry_first_refresh()
+        
+        daily_forecast_coordinator = DailyForecastCoordinator(hass=hass, entry_data=entry_data)
+        await daily_forecast_coordinator.async_config_entry_first_refresh()
+
+        condition_coordinator = MeteocatConditionCoordinator(hass=hass, entry_data=entry_data)
+        await condition_coordinator.async_config_entry_first_refresh()
+
     except Exception as err:  # Capturar todos los errores
         _LOGGER.exception(f"Error al inicializar los coordinadores: {err}")
         return False
@@ -83,9 +99,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = {
         "sensor_coordinator": sensor_coordinator,
+        "static_sensor_coordinator": static_sensor_coordinator,
         "entity_coordinator": entity_coordinator,
         "uvi_coordinator":  uvi_coordinator,
         "uvi_file_coordinator": uvi_file_coordinator,
+        "hourly_forecast_coordinator": hourly_forecast_coordinator,
+        "daily_forecast_coordinator": daily_forecast_coordinator,
+        "condition_coordinator": condition_coordinator,
         **entry_data,
     }
 
