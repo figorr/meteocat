@@ -140,7 +140,7 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
     MeteocatSensorEntityDescription(
         key=UV_INDEX,
         translation_key="uv_index",
-        icon="mdi:weather-sunny",
+        icon="mdi:weather-sunny-alert",
     ),
     MeteocatSensorEntityDescription(
         key=MAX_TEMPERATURE,
@@ -200,15 +200,15 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     MeteocatSensorEntityDescription(
-    key=STATION_TIMESTAMP,
-    translation_key="station_timestamp",
-    icon="mdi:calendar-clock",
-    device_class=SensorDeviceClass.TIMESTAMP,
+        key=STATION_TIMESTAMP,
+        translation_key="station_timestamp",
+        icon="mdi:calendar-clock",
+        device_class=SensorDeviceClass.TIMESTAMP,
     ),
     MeteocatSensorEntityDescription(
-    key=CONDITION,
-    translation_key="condition",
-    icon="mdi:weather-partly-cloudy",
+        key=CONDITION,
+        translation_key="condition",
+        icon="mdi:weather-partly-cloudy",
     )
 )
 
