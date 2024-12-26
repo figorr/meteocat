@@ -63,6 +63,7 @@ custom_components/meteocat/precipitation_test.py
 custom_components/meteocat/test_weather_entity.py
 custom_components/meteocat/test_condition.py
 custom_components/meteocat/test_condition_hour.py
+custom_components/meteocat/test_hourly_forecast.py
 
 # VERSIONS
 current_version.txt
