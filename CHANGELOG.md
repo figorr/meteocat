@@ -1,3 +1,11 @@
+## [0.1.40](https://github.com/figorr/meteocat/compare/v0.1.39...v0.1.40) (2024-12-26)
+
+
+### Bug Fixes
+
+* 0.1.40 ([011f139](https://github.com/figorr/meteocat/commit/011f1391874a78d16c1ad1eebbd8f84e6b053b5b))
+* fix hourly forecasts ([bc1aa17](https://github.com/figorr/meteocat/commit/bc1aa178222a7158590b32af442427def4187e38))
+
 ## [0.1.39](https://github.com/figorr/meteocat/compare/v0.1.38...v0.1.39) (2024-12-25)
 
 
