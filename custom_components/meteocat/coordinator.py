@@ -602,7 +602,7 @@ class HourlyForecastCoordinator(DataUpdateCoordinator):
         )
 
     async def _is_data_valid(self) -> bool:
-        """Verifica si los datos en el archivo JSON son válidos y actuales."""
+        """Verifica si los datos horarios en el archivo JSON son válidos y actuales."""
         if not os.path.exists(self.file_path):
             return False
 
@@ -611,18 +611,23 @@ class HourlyForecastCoordinator(DataUpdateCoordinator):
                 content = await f.read()
                 data = json.loads(content)
 
-            if not data or "dies" not in data or not data["dies"]:
+            if not data or "dies" not in data:
                 return False
 
-            # Validar que los datos sean para la fecha actual
-            first_date = datetime.fromisoformat(data["dies"][0]["data"].rstrip("Z")).date()
-            return first_date == datetime.now(timezone.utc).date()
+            now = datetime.now(timezone.utc)
+            for dia in data["dies"]:
+                for forecast in dia.get("variables", {}).get("estatCel", {}).get("valors", []):
+                    forecast_time = datetime.fromisoformat(forecast["data"].rstrip("Z")).replace(tzinfo=timezone.utc)
+                    if forecast_time >= now:
+                        return True
+
+            return False
         except Exception as e:
             _LOGGER.warning("Error validando datos horarios en %s: %s", self.file_path, e)
             return False
 
     async def _async_update_data(self) -> dict:
-        """Lee los datos de predicción horaria desde el archivo local."""
+        """Lee los datos horarios desde el archivo local."""
         if await self._is_data_valid():
             try:
                 async with aiofiles.open(self.file_path, "r", encoding="utf-8") as f:
@@ -633,41 +638,63 @@ class HourlyForecastCoordinator(DataUpdateCoordinator):
 
         return {}
 
-    async def async_forecast_hourly(self) -> list[Forecast] | None:
-        """Devuelve una lista de objetos Forecast para las próximas horas."""
+    def parse_hourly_forecast(self, dia: dict, forecast_time: datetime) -> dict:
+        """Convierte una hora de predicción en un diccionario con los datos necesarios."""
+        variables = dia.get("variables", {})
+        condition_code = next(
+            (item["valor"] for item in variables.get("estatCel", {}).get("valors", []) if
+             datetime.fromisoformat(item["data"].rstrip("Z")).replace(tzinfo=timezone.utc) == forecast_time),
+            -1,
+        )
+        condition = get_condition_from_code(int(condition_code))
+
+        return {
+            "datetime": forecast_time.isoformat(),
+            "temperature": self._get_variable_value(dia, "temp", forecast_time),
+            "precipitation": self._get_variable_value(dia, "precipitacio", forecast_time),
+            "condition": condition,
+            "wind_speed": self._get_variable_value(dia, "velVent", forecast_time),
+            "wind_bearing": self._get_variable_value(dia, "dirVent", forecast_time),
+            "humidity": self._get_variable_value(dia, "humitat", forecast_time),
+        }
+
+    def get_all_hourly_forecasts(self) -> list[dict]:
+        """Obtiene una lista de predicciones horarias procesadas."""
         if not self.data or "dies" not in self.data:
-            return None
+            return []
 
         forecasts = []
         now = datetime.now(timezone.utc)
-
         for dia in self.data["dies"]:
             for forecast in dia.get("variables", {}).get("estatCel", {}).get("valors", []):
                 forecast_time = datetime.fromisoformat(forecast["data"].rstrip("Z")).replace(tzinfo=timezone.utc)
                 if forecast_time >= now:
-                    # Usar la función para obtener la condición meteorológica
-                    condition = get_condition_from_code(int(forecast["valor"]))
-
-                    forecast_data = {
-                        "datetime": forecast_time,
-                        "temperature": self._get_variable_value(dia, "temp", forecast_time),
-                        "precipitation": self._get_variable_value(dia, "precipitacio", forecast_time),
-                        "condition": condition,  # Se usa la condición traducida
-                        "wind_speed": self._get_variable_value(dia, "velVent", forecast_time),
-                        "wind_bearing": self._get_variable_value(dia, "dirVent", forecast_time),
-                        "humidity": self._get_variable_value(dia, "humitat", forecast_time),
-                    }
-                    forecasts.append(Forecast(**forecast_data))
-
-        return forecasts if forecasts else None
+                    forecasts.append(self.parse_hourly_forecast(dia, forecast_time))
+        return forecasts
 
     def _get_variable_value(self, dia, variable_name, target_time):
         """Devuelve el valor de una variable específica para una hora determinada."""
         variable = dia.get("variables", {}).get(variable_name, {})
-        for valor in variable.get("valors", []):
-            data_hora = datetime.fromisoformat(valor["data"].rstrip("Z"))
-            if data_hora == target_time:
-                return valor["valor"]
+        if not variable:
+            _LOGGER.warning("Variable '%s' no encontrada en los datos.", variable_name)
+            return None
+
+        # Obtener lista de valores, soportando tanto 'valors' como 'valor'
+        valores = variable.get("valors") or variable.get("valor")
+        if not valores:
+            _LOGGER.warning("No se encontraron valores para la variable '%s'.", variable_name)
+            return None
+
+        for valor in valores:
+            try:
+                data_hora = datetime.fromisoformat(valor["data"].rstrip("Z")).replace(tzinfo=timezone.utc)
+                if data_hora == target_time:
+                    return float(valor["valor"])
+            except (KeyError, ValueError) as e:
+                _LOGGER.warning("Error procesando '%s' para %s: %s", variable_name, valor, e)
+                continue
+
+        _LOGGER.info("No se encontró un valor válido para '%s' en %s.", variable_name, target_time)
         return None
     
 class DailyForecastCoordinator(DataUpdateCoordinator):
