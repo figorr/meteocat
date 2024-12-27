@@ -3,7 +3,9 @@ from __future__ import annotations
 from datetime import datetime
 from .const import CONDITION_MAPPING
 from .helpers import is_night
+import logging
 
+_LOGGER = logging.getLogger(__name__)
 
 def get_condition_from_statcel(
     codi_estatcel, current_time: datetime, hass, is_hourly: bool = True
@@ -17,6 +19,13 @@ def get_condition_from_statcel(
     :param is_hourly: Indica si los datos son de predicción horaria (True) o diaria (False).
     :return: Diccionario con la condición y el icono.
     """
+    
+    _LOGGER.debug(
+        "Entrando en get_condition_from_statcel con codi_estatcel: %s, is_hourly: %s",
+        codi_estatcel,
+        is_hourly,
+    )
+
     # Asegurarse de que codi_estatcel sea una lista válida
     if codi_estatcel is None:
         codi_estatcel = []
@@ -31,7 +40,19 @@ def get_condition_from_statcel(
         if any(code in codes for code in codi_estatcel):
             # Ajustar para condiciones nocturnas si aplica
             if condition == "sunny" and is_night_flag:
+                _LOGGER.debug(
+                    "Códigos EstatCel: %s, Es Noche: %s, Condición Devuelta: clear-night",
+                    codi_estatcel,
+                    is_night_flag,
+                )
                 return {"condition": "clear-night", "icon": None}
+            
+            _LOGGER.debug(
+                "Códigos EstatCel: %s, Es Noche: %s, Condición Devuelta: %s",
+                codi_estatcel,
+                is_night_flag,
+                condition,
+            )
             return {"condition": condition, "icon": None}
 
     # Si no coincide ningún código, devolver condición desconocida

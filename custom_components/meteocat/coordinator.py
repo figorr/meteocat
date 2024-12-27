@@ -36,10 +36,10 @@ _LOGGER = logging.getLogger(__name__)
 # Valores predeterminados para los intervalos de actualización
 DEFAULT_SENSOR_UPDATE_INTERVAL = timedelta(minutes=90)
 DEFAULT_STATIC_SENSOR_UPDATE_INTERVAL = timedelta(hours=24)
-DEFAULT_ENTITY_UPDATE_INTERVAL = timedelta(hours=48)
+DEFAULT_ENTITY_UPDATE_INTERVAL = timedelta(minutes=60)
 DEFAULT_HOURLY_FORECAST_UPDATE_INTERVAL = timedelta(minutes=5)
 DEFAULT_DAILY_FORECAST_UPDATE_INTERVAL = timedelta(minutes=15)
-DEFAULT_UVI_UPDATE_INTERVAL = timedelta(hours=48)
+DEFAULT_UVI_UPDATE_INTERVAL = timedelta(minutes=60)
 DEFAULT_UVI_SENSOR_UPDATE_INTERVAL = timedelta(minutes=5)
 DEFAULT_CONDITION_SENSOR_UPDATE_INTERVAL = timedelta(minutes=5)
 
@@ -291,9 +291,9 @@ class MeteocatUviCoordinator(DataUpdateCoordinator):
             if not isinstance(uvi_data, list) or not uvi_data:
                 return None
 
-            # Validar la fecha del primer elemento
-            first_date = uvi_data[0].get("date")
-            if first_date != datetime.now(timezone.utc).strftime("%Y-%m-%d"):
+             # Validar la fecha del primer elemento superior a 1 día
+            first_date = datetime.strptime(uvi_data[0].get("date"), "%Y-%m-%d").date()
+            if (datetime.now(timezone.utc).date() - first_date).days > 1:
                 return None
 
             return data
@@ -489,7 +489,10 @@ class MeteocatEntityCoordinator(DataUpdateCoordinator):
 
             # Obtener la fecha del primer día
             first_date = datetime.fromisoformat(data["dies"][0]["data"].rstrip("Z")).date()
-            return first_date == datetime.now(timezone.utc).date()
+            today = datetime.now(timezone.utc).date()
+
+            # Verificar si la antigüedad es mayor a un día
+            return (today - first_date).days <= 1
         except Exception as e:
             _LOGGER.warning("Error validando datos en %s: %s", file_path, e)
             return False
@@ -842,6 +845,8 @@ class MeteocatConditionCoordinator(DataUpdateCoordinator):
 
     async def _async_update_data(self):
         """Read and process condition data for the current hour from the file asynchronously."""
+        _LOGGER.debug("Iniciando actualización de datos desde el archivo: %s", self._file_path)
+
         try:
             async with aiofiles.open(self._file_path, "r", encoding="utf-8") as file:
                 raw_data = await file.read()
@@ -889,6 +894,12 @@ class MeteocatConditionCoordinator(DataUpdateCoordinator):
                             "hour": current_hour,
                             "date": current_date,
                         })
+                        _LOGGER.debug(
+                            "Hora actual: %s, Código estatCel: %s, Condición procesada: %s",
+                            current_datetime,
+                            codi_estatcel,
+                            condition,
+                        )
                         return condition
                 break  # Sale del bucle una vez encontrada la fecha actual
 
@@ -899,4 +910,3 @@ class MeteocatConditionCoordinator(DataUpdateCoordinator):
             current_hour,
         )
         return {"condition": "unknown", "hour": current_hour, "icon": None, "date": current_date}
-
