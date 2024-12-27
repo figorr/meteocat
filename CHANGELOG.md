@@ -1,3 +1,17 @@
+## [0.1.41](https://github.com/figorr/meteocat/compare/v0.1.40...v0.1.41) (2024-12-27)
+
+
+### Bug Fixes
+
+* 0.1.41 ([ba2c800](https://github.com/figorr/meteocat/commit/ba2c80048cc2da6efe5f950a5d8fb958a53a7ef6))
+* add new Max and Min Today Temperature sensors ([6cc726d](https://github.com/figorr/meteocat/commit/6cc726d127432ddc13a54638157f1f9566967ed4))
+* add Today temp max and min translations ([8e1d31e](https://github.com/figorr/meteocat/commit/8e1d31e78c1d5df61c37635a19d95b6339f0b0a5))
+* add Today temp max and min translations ([041c3ab](https://github.com/figorr/meteocat/commit/041c3ab877b269f3b3d3359792ecf13b14969466))
+* add Today temp max and min translations ([be25fc4](https://github.com/figorr/meteocat/commit/be25fc43bef58e1cecc2afaff8e0b8d3288399fb))
+* add Today temp max and min translations ([e236182](https://github.com/figorr/meteocat/commit/e236182dfe29b15c3eb06d6a8fd3e02712837858))
+* fix condition when is night ([fb64e0b](https://github.com/figorr/meteocat/commit/fb64e0b754eb5a39afe9135a0be842d5e8bdeae0))
+* fix sunset and sunrise events for night flag ([4770e56](https://github.com/figorr/meteocat/commit/4770e5633707933c0bdd2aae0f74ada363da86bb))
+
 ## [0.1.40](https://github.com/figorr/meteocat/compare/v0.1.39...v0.1.40) (2024-12-26)
 
 
