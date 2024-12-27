@@ -127,6 +127,12 @@
             "name": "Hour"
           }
         }
+      },
+      "max_temperature_forecast": {
+        "name": "Max Temperature Today"
+      },
+      "min_temperature_forecast": {
+        "name": "Min Temperature Today"
       }
     }
   }
