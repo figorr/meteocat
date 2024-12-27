@@ -649,7 +649,15 @@ class HourlyForecastCoordinator(DataUpdateCoordinator):
              datetime.fromisoformat(item["data"].rstrip("Z")).replace(tzinfo=timezone.utc) == forecast_time),
             -1,
         )
-        condition = get_condition_from_code(int(condition_code))
+        
+        # Determinar la condición usando `get_condition_from_statcel`
+        condition_data = get_condition_from_statcel(
+            codi_estatcel=condition_code,
+            current_time=forecast_time,
+            hass=self.hass,
+            is_hourly=True
+        )
+        condition = condition_data["condition"]
 
         return {
             "datetime": forecast_time.isoformat(),
