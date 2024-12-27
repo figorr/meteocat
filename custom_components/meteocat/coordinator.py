@@ -42,6 +42,7 @@ DEFAULT_DAILY_FORECAST_UPDATE_INTERVAL = timedelta(minutes=15)
 DEFAULT_UVI_UPDATE_INTERVAL = timedelta(minutes=60)
 DEFAULT_UVI_SENSOR_UPDATE_INTERVAL = timedelta(minutes=5)
 DEFAULT_CONDITION_SENSOR_UPDATE_INTERVAL = timedelta(minutes=5)
+DEFAULT_TEMP_FORECAST_UPDATE_INTERVAL = timedelta(minutes=5)
 
 async def save_json_to_file(data: dict, output_file: str) -> None:
     """Guarda datos JSON en un archivo de forma asíncrona."""
@@ -918,3 +919,103 @@ class MeteocatConditionCoordinator(DataUpdateCoordinator):
             current_hour,
         )
         return {"condition": "unknown", "hour": current_hour, "icon": None, "date": current_date}
+
+class MeteocatTempForecastCoordinator(DataUpdateCoordinator):
+    """Coordinator para manejar las predicciones diarias desde archivos locales."""
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        entry_data: dict,
+        update_interval: timedelta = DEFAULT_TEMP_FORECAST_UPDATE_INTERVAL,
+    ):
+        """Inicializa el coordinador para predicciones diarias."""
+        self.town_name = entry_data["town_name"]
+        self.town_id = entry_data["town_id"]
+        self.station_name = entry_data["station_name"]
+        self.station_id = entry_data["station_id"]
+        self.file_path = os.path.join(
+            hass.config.path(),
+            "custom_components",
+            "meteocat",
+            "files",
+            f"forecast_{self.town_id.lower()}_daily_data.json",
+        )
+        super().__init__(
+            hass,
+            _LOGGER,
+            name=f"{DOMAIN} Daily Forecast Coordinator",
+            update_interval=update_interval,
+        )
+
+    async def _is_data_valid(self) -> bool:
+        """Verifica si hay datos válidos y actuales en el archivo JSON."""
+        if not os.path.exists(self.file_path):
+            return False
+
+        try:
+            async with aiofiles.open(self.file_path, "r", encoding="utf-8") as f:
+                content = await f.read()
+                data = json.loads(content)
+
+            if not data or "dies" not in data or not data["dies"]:
+                return False
+
+            today = datetime.now(timezone.utc).date()
+            for dia in data["dies"]:
+                forecast_date = datetime.fromisoformat(dia["data"].rstrip("Z")).date()
+                if forecast_date >= today:
+                    return True
+
+            return False
+        except Exception as e:
+            _LOGGER.warning("Error validando datos diarios en %s: %s", self.file_path, e)
+            return False
+
+    async def _async_update_data(self) -> dict:
+        """Lee y filtra los datos de predicción diaria desde el archivo local."""
+        if await self._is_data_valid():
+            try:
+                async with aiofiles.open(self.file_path, "r", encoding="utf-8") as f:
+                    content = await f.read()
+                    data = json.loads(content)
+
+                # Filtrar días pasados
+                today = datetime.now(timezone.utc).date()
+                data["dies"] = [
+                    dia for dia in data["dies"]
+                    if datetime.fromisoformat(dia["data"].rstrip("Z")).date() >= today
+                ]
+
+                # Usar datos del día actual si están disponibles
+                today_temp_forecast = self.get_temp_forecast_for_today(data)
+                if today_temp_forecast:
+                    parsed_data = self.parse_forecast(today_temp_forecast)
+                    return parsed_data
+            except Exception as e:
+                _LOGGER.warning("Error leyendo archivo de predicción diaria: %s", e)
+
+        return {}
+
+    def get_temp_forecast_for_today(self, data: dict) -> dict | None:
+        """Obtiene los datos diarios para el día actual."""
+        if not data or "dies" not in data or not data["dies"]:
+            return None
+
+        today = datetime.now(timezone.utc).date()
+        for dia in data["dies"]:
+            forecast_date = datetime.fromisoformat(dia["data"].rstrip("Z")).date()
+            if forecast_date == today:
+                return dia
+        return None
+
+    def parse_forecast(self, dia: dict) -> dict:
+        """Convierte un día de predicción en un diccionario con los datos necesarios."""
+        variables = dia.get("variables", {})
+
+        temp_forecast_data = {
+            "date": datetime.fromisoformat(dia["data"].rstrip("Z")).date(),
+            "max_temp_forecast": float(variables.get("tmax", {}).get("valor", 0.0)),
+            "min_temp_forecast": float(variables.get("tmin", {}).get("valor", 0.0)),
+        }
+        return temp_forecast_data

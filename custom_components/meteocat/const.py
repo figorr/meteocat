@@ -32,6 +32,8 @@ FEELS_LIKE = "feels_like"  # Sensación térmica
 WIND_GUST = "wind_gust"  # Racha de viento
 STATION_TIMESTAMP = "station_timestamp"  # Código de tiempo de la estación
 CONDITION = "condition"  # Estado del cielo
+MAX_TEMPERATURE_FORECAST = "max_temperature_forecast"  # Temperatura máxima prevista
+MIN_TEMPERATURE_FORECAST = "min_temperature_forecast"  # Temperatura mínima prevista
 
 # Definición de códigos para variables
 WIND_SPEED_CODE = 30

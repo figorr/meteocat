@@ -46,6 +46,8 @@ from .const import (
     WIND_GUST,
     STATION_TIMESTAMP,
     CONDITION,
+    MAX_TEMPERATURE_FORECAST,
+    MIN_TEMPERATURE_FORECAST,
     WIND_SPEED_CODE,
     WIND_DIRECTION_CODE,
     TEMPERATURE_CODE,
@@ -65,6 +67,7 @@ from .coordinator import (
     MeteocatStaticSensorCoordinator,
     MeteocatUviFileCoordinator,
     MeteocatConditionCoordinator,
+    MeteocatTempForecastCoordinator,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -209,7 +212,23 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         key=CONDITION,
         translation_key="condition",
         icon="mdi:weather-partly-cloudy",
-    )
+    ),
+     MeteocatSensorEntityDescription(
+        key=MAX_TEMPERATURE_FORECAST,
+        translation_key="max_temperature_forecast",
+        icon="mdi:thermometer-plus",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+    ),
+    MeteocatSensorEntityDescription(
+        key=MIN_TEMPERATURE_FORECAST,
+        translation_key="min_temperature_forecast",
+        icon="mdi:thermometer-minus",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+    ),
 )
 
 @callback
@@ -222,12 +241,13 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
     uvi_file_coordinator = entry_data.get("uvi_file_coordinator")
     static_sensor_coordinator = entry_data.get("static_sensor_coordinator")
     condition_coordinator = entry_data.get("condition_coordinator")
+    temp_forecast_coordinator = entry_data.get("temp_forecast_coordinator")
 
     # Sensores generales
     async_add_entities(
         MeteocatSensor(coordinator, description, entry_data)
         for description in SENSOR_TYPES
-        if description.key not in {TOWN_NAME, TOWN_ID, STATION_NAME, STATION_ID, UV_INDEX, CONDITION}  # Excluir estáticos y UVI
+        if description.key not in {TOWN_NAME, TOWN_ID, STATION_NAME, STATION_ID, UV_INDEX, CONDITION, MAX_TEMPERATURE_FORECAST, MIN_TEMPERATURE_FORECAST}  # Excluir estáticos y UVI
     )
 
     # Sensores estáticos
@@ -249,6 +269,13 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
         MeteocatConditionSensor(condition_coordinator, description, entry_data)
         for description in SENSOR_TYPES
         if description.key == CONDITION  # Incluir CONDITION en el coordinador CONDITION COORDINATOR
+    )
+
+    # Sensores temperatura previsión
+    async_add_entities(
+        MeteocatTempForecast(temp_forecast_coordinator, description, entry_data)
+        for description in SENSOR_TYPES
+        if description.key in {MAX_TEMPERATURE_FORECAST, MIN_TEMPERATURE_FORECAST}
     )
 
 class MeteocatStaticSensor(CoordinatorEntity[MeteocatStaticSensorCoordinator], SensorEntity):
@@ -543,7 +570,7 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
                         return value
                     
         # Lógica específica para el sensor de timestamp
-        if self.entity_description.key == "station_timestamp":
+        if self.entity_description.key == STATION_TIMESTAMP:
             stations = self.coordinator.data or []
             for station in stations:
                 variables = station.get("variables", [])
@@ -563,7 +590,7 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
                                 return None
 
         # Nuevo sensor para la precipitación acumulada
-        if self.entity_description.key == "precipitation_accumulated":
+        if self.entity_description.key == PRECIPITATION_ACCUMULATED:
             stations = self.coordinator.data or []
             total_precipitation = 0.0  # Usa float para permitir acumulación de decimales
 
@@ -634,6 +661,53 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
                     attributes["degrees"] = degrees_value
 
         return attributes
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return the device info."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._town_id)},
+            name="Meteocat " + self._station_id + " " + self._town_name,
+            manufacturer="Meteocat",
+            model="Meteocat API",
+        )
+
+class MeteocatTempForecast(CoordinatorEntity[MeteocatTempForecastCoordinator], SensorEntity):
+    """Representation of a Meteocat UV Index sensor."""
+
+    _attr_has_entity_name = True  # Activa el uso de nombres basados en el dispositivo
+
+    def __init__(self, temp_forecast_coordinator, description, entry_data):
+        """Initialize the UV Index sensor."""
+        super().__init__(temp_forecast_coordinator)
+        self.entity_description = description
+        self._town_name = entry_data["town_name"]
+        self._town_id = entry_data["town_id"]
+        self._station_id = entry_data["station_id"]
+
+        # Unique ID for the entity
+        self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_{self.entity_description.key}"
+
+        # Asigna entity_category desde description (si está definido)
+        self._attr_entity_category = getattr(description, "entity_category", None)
+        
+        # Log para depuración
+        _LOGGER.debug(
+            "Inicializando sensor: %s, Unique ID: %s",
+            self.entity_description.name,
+            self._attr_unique_id,
+        )
+
+    @property
+    def native_value(self):
+        """Return the Max and Min Temp Forecast value."""
+        temp_forecast_data = self.coordinator.data or {}
+        
+        if self.entity_description.key == MAX_TEMPERATURE_FORECAST:
+            return temp_forecast_data.get("max_temp_forecast", None)
+        if self.entity_description.key == MIN_TEMPERATURE_FORECAST:
+            return temp_forecast_data.get("min_temp_forecast", None)
+        return None
 
     @property
     def device_info(self) -> DeviceInfo:

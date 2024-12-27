@@ -17,6 +17,7 @@ from .coordinator import (
     HourlyForecastCoordinator,
     DailyForecastCoordinator,
     MeteocatConditionCoordinator,
+    MeteocatTempForecastCoordinator,
 )
 
 from .const import DOMAIN, PLATFORMS
@@ -91,6 +92,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         condition_coordinator = MeteocatConditionCoordinator(hass=hass, entry_data=entry_data)
         await condition_coordinator.async_config_entry_first_refresh()
 
+        temp_forecast_coordinator = MeteocatTempForecastCoordinator(hass=hass, entry_data=entry_data)
+        await temp_forecast_coordinator.async_config_entry_first_refresh()
+
     except Exception as err:  # Capturar todos los errores
         _LOGGER.exception(f"Error al inicializar los coordinadores: {err}")
         return False
@@ -106,6 +110,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "hourly_forecast_coordinator": hourly_forecast_coordinator,
         "daily_forecast_coordinator": daily_forecast_coordinator,
         "condition_coordinator": condition_coordinator,
+        "temp_forecast_coordinator": temp_forecast_coordinator,
         **entry_data,
     }
 
