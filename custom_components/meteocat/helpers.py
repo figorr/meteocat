@@ -1,41 +1,51 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta
-from homeassistant.core import HomeAssistant
-from homeassistant.util.dt import as_local, as_utc
-from homeassistant.helpers.sun import get_astral_event_next
+from datetime import datetime
+from homeassistant.util.dt import as_local, as_utc, start_of_local_day
+from homeassistant.helpers.sun import get_astral_event_date
 
 _LOGGER = logging.getLogger(__name__)
 
-def get_sun_times(hass: HomeAssistant, current_time: datetime | None = None):
-    """Get the sunrise and sunset times."""
-    # Usa la hora actual si no se proporciona una hora específica
+def get_sun_times(hass, current_time=None):
+    """Obtén las horas de amanecer y atardecer para el día actual."""
     if current_time is None:
         current_time = datetime.now()
 
-    # Asegúrate de que current_time es aware (UTC con offset)
+    # Asegúrate de que current_time es aware (UTC)
     current_time = as_utc(current_time)
+    today = start_of_local_day(as_local(current_time))
 
-    # Obtén los tiempos de amanecer y atardecer desde el helper
-    sunrise = get_astral_event_next(hass, "sunrise", utc_point_in_time=current_time)
-    sunset = get_astral_event_next(hass, "sunset", utc_point_in_time=current_time)
+    # Obtén los eventos de amanecer y atardecer del día actual
+    sunrise = get_astral_event_date(hass, "sunrise", today)
+    sunset = get_astral_event_date(hass, "sunset", today)
 
-    # Asegúrate de que no sean None y conviértelos a la zona horaria local
+    _LOGGER.debug(
+        "Sunrise: %s, Sunset: %s, Current Time: %s",
+        sunrise,
+        sunset,
+        as_local(current_time),
+    )
+
     if sunrise and sunset:
-        return as_local(sunrise), as_local(sunset)
+        return sunrise, sunset
 
-    # Lanza un error si no se pudieron determinar los eventos
-    raise ValueError("Sunrise or sunset data is unavailable.")
+    raise ValueError("No se pudieron determinar los datos de amanecer y atardecer.")
 
-def is_night(current_time: datetime, hass: HomeAssistant) -> bool:
-    """Determine if it is currently night based on sunrise and sunset times."""
-    # Convierte current_time a UTC si no tiene información de zona horaria
+def is_night(current_time, hass):
+    """Determina si actualmente es de noche."""
+    # Asegúrate de que current_time es aware (UTC)
     if current_time.tzinfo is None:
         current_time = as_utc(current_time)
 
-    # Obtén los tiempos de amanecer y atardecer
     sunrise, sunset = get_sun_times(hass, current_time)
 
-    # Compara las horas
+    _LOGGER.debug(
+        "Hora actual: %s, Amanecer: %s, Atardecer: %s",
+        as_local(current_time),
+        as_local(sunrise),
+        as_local(sunset),
+    )
+
+    # Es de noche si es antes del amanecer o después del atardecer
     return current_time < sunrise or current_time > sunset
