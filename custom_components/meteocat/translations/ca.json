@@ -127,7 +127,14 @@
             "name": "Hora"
           }
         }
+      },
+      "max_temperature_forecast": {
+        "name": "Temperatura Max Avui"
+      },
+      "min_temperature_forecast": {
+        "name": "Temperatura Min Avui"
       }
     }
   }
-}   
+}
+  
