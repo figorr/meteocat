@@ -1,3 +1,12 @@
+## [0.1.42](https://github.com/figorr/meteocat/compare/v0.1.41...v0.1.42) (2024-12-28)
+
+
+### Bug Fixes
+
+* 0.1.42 ([f180cf1](https://github.com/figorr/meteocat/commit/f180cf1400e614684cfee81849369bb74796ee5e))
+* bump meteocatpy to 0.0.16 ([0e14f79](https://github.com/figorr/meteocat/commit/0e14f79445ee4c059d47a315bcbdc20858a0c666))
+* set logger to warning when using cache data ([b840d72](https://github.com/figorr/meteocat/commit/b840d7202c439f83b08597b9365c007e92aca1c5))
+
 ## [0.1.41](https://github.com/figorr/meteocat/compare/v0.1.40...v0.1.41) (2024-12-27)
 
 
