@@ -23,7 +23,16 @@ from .const import (
     VARIABLE_NAME,
     VARIABLE_ID,
     STATION_NAME,
-    STATION_ID
+    STATION_ID,
+    STATION_TYPE,
+    LATITUDE,
+    LONGITUDE,
+    ALTITUDE,
+    REGION_ID,
+    REGION_NAME,
+    PROVINCE_ID,
+    PROVINCE_NAME,
+    STATION_STATUS
 )
     
 from .options_flow import MeteocatOptionsFlowHandler
@@ -31,6 +40,8 @@ from meteocatpy.town import MeteocatTown
 from meteocatpy.symbols import MeteocatSymbols
 from meteocatpy.variables import MeteocatVariables
 from meteocatpy.townstations import MeteocatTownStations
+from meteocatpy.infostation import MeteocatInfoStation
+
 from meteocatpy.exceptions import BadRequestError, ForbiddenError, TooManyRequestsError, InternalServerError, UnknownAPIError
 
 _LOGGER = logging.getLogger(__name__)
@@ -103,10 +114,17 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
         errors = {}
 
         # Crear directorio de activos (assets) si no existe
-        assets_dir = Path(__file__).parent / "assets"
-        assets_dir.mkdir(parents=True, exist_ok=True)
-        symbols_file = assets_dir / "symbols.json"
-        variables_file = assets_dir / "variables.json"
+        assets_dir = os.path.join(
+            self.hass.config.path(),
+            "custom_components",
+            "meteocat",
+            "assets"
+        )
+        os.makedirs(assets_dir, exist_ok=True)
+
+        # Rutas para los archivos de símbolos y variables
+        symbols_file = os.path.join(assets_dir, "symbols.json")
+        variables_file = os.path.join(assets_dir, "variables.json")
 
         try:
             # Descargar y guardar los símbolos
@@ -171,6 +189,26 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
                 self.station_id = selected_station["codi"]
                 self.station_name = selected_station["nom"]
 
+                # Obtener metadatos de la estación
+                infostation_client = MeteocatInfoStation(self.api_key)
+                try:
+                    station_metadata = await infostation_client.get_infostation(self.station_id)
+                except Exception as ex:
+                    _LOGGER.error("Error al obtener los metadatos de la estación: %s", ex)
+                    errors["base"] = "metadata_fetch_failed"
+                    station_metadata = {}
+
+                # Extraer los valores necesarios de los metadatos
+                self.station_type = station_metadata.get("tipus", "")
+                self.latitude = station_metadata.get("coordenades", {}).get("latitud", 0.0)
+                self.longitude = station_metadata.get("coordenades", {}).get("longitud", 0.0)
+                self.altitude = station_metadata.get("altitud", 0)
+                self.region_id = station_metadata.get("comarca", {}).get("codi", "")
+                self.region_name = station_metadata.get("comarca", {}).get("nom", "")
+                self.province_id = station_metadata.get("provincia", {}).get("codi", "")
+                self.province_name = station_metadata.get("provincia", {}).get("nom", "")
+                self.station_status = station_metadata.get("estats", [{}])[0].get("codi", "")
+
                 return self.async_create_entry(
                     title=self.selected_municipi["nom"],
                     data={
@@ -180,7 +218,16 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
                         VARIABLE_NAME: "Temperatura",
                         VARIABLE_ID: str(self.variable_id),
                         STATION_NAME: self.station_name,
-                        STATION_ID: self.station_id
+                        STATION_ID: self.station_id,
+                        STATION_TYPE: self.station_type,
+                        LATITUDE: self.latitude,
+                        LONGITUDE: self.longitude,
+                        ALTITUDE: self.altitude,
+                        REGION_ID: self.region_id,
+                        REGION_NAME: self.region_name,
+                        PROVINCE_ID: self.province_id,
+                        PROVINCE_NAME: self.province_name,
+                        STATION_STATUS: self.station_status,
                     },
                 )
             else:

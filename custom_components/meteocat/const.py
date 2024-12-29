@@ -8,6 +8,15 @@ VARIABLE_NAME = "variable_name"
 VARIABLE_ID = "variable_id"
 STATION_NAME = "station_name"
 STATION_ID = "station_id"
+STATION_TYPE = "station_type"
+LATITUDE = "latitude"
+LONGITUDE = "longitude"
+ALTITUDE = "altitude"
+REGION_ID = "region_id"
+REGION_NAME = "region_name"
+PROVINCE_ID = "province_id"
+PROVINCE_NAME = "province_name"
+STATION_STATUS = "station_status"
 
 from homeassistant.const import Platform
 
