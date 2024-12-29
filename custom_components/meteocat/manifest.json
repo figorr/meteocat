@@ -7,6 +7,6 @@
     "iot_class": "cloud_polling",
     "documentation": "https://gitlab.com/figorr/meteocat",
     "loggers": ["meteocatpy"],
-    "requirements": ["meteocatpy==0.0.16", "packaging>=20.3", "wrapt>=1.14.0"],
+    "requirements": ["meteocatpy==0.0.17", "packaging>=20.3", "wrapt>=1.14.0"],
     "version": "0.1.42"
 }
