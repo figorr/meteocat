@@ -782,16 +782,29 @@ class MeteocatHourlyForecastStatusSensor(CoordinatorEntity[MeteocatEntityCoordin
         # Assign entity_category if defined in the description
         self._attr_entity_category = getattr(description, "entity_category", None)
 
-    @property
-    def native_value(self):
+    def _get_first_date(self):
         hourly_data = self.coordinator.data.get("hourly")
         if hourly_data and "dies" in hourly_data:
-            first_date = datetime.fromisoformat(hourly_data["dies"][0]["data"].rstrip("Z")).date()
+            return datetime.fromisoformat(hourly_data["dies"][0]["data"].rstrip("Z")).date()
+        return None
+
+    @property
+    def native_value(self):
+        first_date = self._get_first_date()
+        if first_date:
             today = datetime.now(timezone.utc).date()
             days_difference = (today - first_date).days
             _LOGGER.debug(f"Diferencia de días para predicciones horarias: {days_difference}")
             return "updated" if days_difference <= 1 else "obsolete"
         return "unknown"
+
+    @property
+    def extra_state_attributes(self):
+        attributes = super().extra_state_attributes or {}
+        first_date = self._get_first_date()
+        if first_date:
+            attributes["update_date"] = first_date.isoformat()
+        return attributes
     
     @property
     def device_info(self) -> DeviceInfo:
@@ -820,16 +833,29 @@ class MeteocatDailyForecastStatusSensor(CoordinatorEntity[MeteocatEntityCoordina
         # Assign entity_category if defined in the description
         self._attr_entity_category = getattr(description, "entity_category", None)
 
-    @property
-    def native_value(self):
+    def _get_first_date(self):
         daily_data = self.coordinator.data.get("daily")
         if daily_data and "dies" in daily_data:
-            first_date = datetime.fromisoformat(daily_data["dies"][0]["data"].rstrip("Z")).date()
+            return datetime.fromisoformat(daily_data["dies"][0]["data"].rstrip("Z")).date()
+        return None
+
+    @property
+    def native_value(self):
+        first_date = self._get_first_date()
+        if first_date:
             today = datetime.now(timezone.utc).date()
             days_difference = (today - first_date).days
             _LOGGER.debug(f"Diferencia de días para predicciones diarias: {days_difference}")
             return "updated" if days_difference <= 1 else "obsolete"
         return "unknown"
+
+    @property
+    def extra_state_attributes(self):
+        attributes = super().extra_state_attributes or {}
+        first_date = self._get_first_date()
+        if first_date:
+            attributes["update_date"] = first_date.isoformat()
+        return attributes
     
     @property
     def device_info(self) -> DeviceInfo:
@@ -858,15 +884,28 @@ class MeteocatUviStatusSensor(CoordinatorEntity[MeteocatUviCoordinator], SensorE
         # Assign entity_category if defined in the description
         self._attr_entity_category = getattr(description, "entity_category", None)
 
+    def _get_first_date(self):
+        if self.coordinator.data:
+            return datetime.strptime(self.coordinator.data[0].get("date"), "%Y-%m-%d").date()
+        return None
+
     @property
     def native_value(self):
-        if self.coordinator.data:
-            first_date = datetime.strptime(self.coordinator.data[0].get("date"), "%Y-%m-%d").date()
+        first_date = self._get_first_date()
+        if first_date:
             today = datetime.now(timezone.utc).date()
             days_difference = (today - first_date).days
             _LOGGER.debug(f"Diferencia de días para UVI: {days_difference}")
             return "updated" if days_difference <= 1 else "obsolete"
         return "unknown"
+
+    @property
+    def extra_state_attributes(self):
+        attributes = super().extra_state_attributes or {}
+        first_date = self._get_first_date()
+        if first_date:
+            attributes["update_date"] = first_date.isoformat()
+        return attributes
     
     @property
     def device_info(self) -> DeviceInfo:
