@@ -223,11 +223,11 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
                         LATITUDE: self.latitude,
                         LONGITUDE: self.longitude,
                         ALTITUDE: self.altitude,
-                        REGION_ID: self.region_id,
+                        REGION_ID: str(self.region_id),
                         REGION_NAME: self.region_name,
-                        PROVINCE_ID: self.province_id,
+                        PROVINCE_ID: str(self.province_id),
                         PROVINCE_NAME: self.province_name,
-                        STATION_STATUS: self.station_status,
+                        STATION_STATUS: str(self.station_status),
                     },
                 )
             else:
