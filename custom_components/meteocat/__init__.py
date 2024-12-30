@@ -53,7 +53,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Validar campos requeridos
     required_fields = [
         "api_key", "town_name", "town_id", "variable_name",
-        "variable_id", "station_name", "station_id"
+        "variable_id", "station_name", "station_id", "province_name", 
+        "province_id", "region_name", "region_id"
     ]
     missing_fields = [field for field in required_fields if field not in entry_data]
     if missing_fields:
@@ -63,7 +64,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     _LOGGER.debug(
         f"Datos de configuración: Municipio '{entry_data['town_name']}' (ID: {entry_data['town_id']}), "
         f"Variable '{entry_data['variable_name']}' (ID: {entry_data['variable_id']}), "
-        f"Estación '{entry_data['station_name']}' (ID: {entry_data['station_id']})."
+        f"Estación '{entry_data['station_name']}' (ID: {entry_data['station_id']}), "
+        f"Provincia '{entry_data['province_name']}' (ID: {entry_data['province_id']}), "
+        f"Comarca '{entry_data['region_name']}' (ID: {entry_data['region_id']})."
     )
 
     # Inicializar coordinadores
