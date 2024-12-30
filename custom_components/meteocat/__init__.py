@@ -25,7 +25,7 @@ from .const import DOMAIN, PLATFORMS
 _LOGGER = logging.getLogger(__name__)
 
 # Versión
-__version__ = "0.1.42"
+__version__ = "0.1.43"
 
 def safe_remove(path: Path, is_folder: bool = False):
     """Elimina de forma segura un archivo o carpeta si existe."""
