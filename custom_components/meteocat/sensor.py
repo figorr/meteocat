@@ -237,19 +237,19 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
     MeteocatSensorEntityDescription(
         key=HOURLY_FORECAST_FILE_STATUS,
         translation_key="hourly_forecast_file_status",
-        icon="mdi:clock",
+        icon="mdi:update",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     MeteocatSensorEntityDescription(
         key=DAILY_FORECAST_FILE_STATUS,
         translation_key="daily_forecast_file_status",
-        icon="mdi:clock",
+        icon="mdi:update",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     MeteocatSensorEntityDescription(
         key=UVI_FILE_STATUS,
         translation_key="uvi_file_status",
-        icon="mdi:clock",
+        icon="mdi:update",
         entity_category=EntityCategory.DIAGNOSTIC,
     )
 )
