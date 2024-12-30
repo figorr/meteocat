@@ -133,6 +133,15 @@
       },
       "min_temperature_forecast": {
         "name": "Min Temperature Today"
+      },
+      "hourly_forecast_file_status": {
+        "name": "Hourly File"
+      },
+      "daily_forecast_file_status": {
+        "name": "Daily File"
+      },
+      "uvi_file_status": {
+        "name": "Uvi File"
       }
     }
   }

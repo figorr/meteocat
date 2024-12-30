@@ -133,6 +133,15 @@
       },
       "min_temperature_forecast": {
         "name": "Temperatura Min Avui"
+      },
+      "hourly_forecast_file_status": {
+        "name": "Arxiu Horari"
+      },
+      "daily_forecast_file_status": {
+        "name": "Arxiu Diari"
+      },
+      "uvi_file_status": {
+        "name": "Arxiu UVI"
       }
     }
   }
