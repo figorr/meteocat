@@ -135,13 +135,25 @@
         "name": "Temperatura Min Avui"
       },
       "hourly_forecast_file_status": {
-        "name": "Arxiu Horari"
+        "name": "Arxiu Horari",
+        "state": {
+          "updated": "Actualitzat",
+          "obsolete": "Obsolet"      
+        }
       },
       "daily_forecast_file_status": {
-        "name": "Arxiu Diari"
+        "name": "Arxiu Diari",
+        "state": {
+          "updated": "Actualitzat",
+          "obsolete": "Obsolet"      
+        }
       },
       "uvi_file_status": {
-        "name": "Arxiu UVI"
+        "name": "Arxiu UVI",
+        "state": {
+          "updated": "Actualitzat",
+          "obsolete": "Obsolet"      
+        }
       }
     }
   }

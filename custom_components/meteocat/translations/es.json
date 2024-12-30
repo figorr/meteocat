@@ -135,15 +135,26 @@
         "name": "Temperatura Min Hoy"
       },
       "hourly_forecast_file_status": {
-        "name": "Archivo Horario"
+        "name": "Archivo Horario",
+        "state": {
+          "updated": "Actualizado",
+          "obsolete": "Obsoleto"      
+        }
       },
       "daily_forecast_file_status": {
-        "name": "Archivo Diario"
+        "name": "Archivo Diario",
+        "state": {
+          "updated": "Actualizado",
+          "obsolete": "Obsoleto"      
+        }
       },
       "uvi_file_status": {
-        "name": "Archivo UVI"
+        "name": "Archivo UVI",
+        "state": {
+          "updated": "Actualizado",
+          "obsolete": "Obsoleto"      
+        }
       }
     }
   }
 }
- 

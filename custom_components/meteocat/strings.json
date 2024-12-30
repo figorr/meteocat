@@ -135,13 +135,25 @@
         "name": "Min Temperature Today"
       },
       "hourly_forecast_file_status": {
-        "name": "Hourly File"
+        "name": "Hourly File",
+        "state": {
+          "updated": "Updated",
+          "obsolete": "Obsolete"      
+        }
       },
       "daily_forecast_file_status": {
-        "name": "Daily File"
+        "name": "Daily File",
+        "state": {
+          "updated": "Updated",
+          "obsolete": "Obsolete"      
+        }
       },
       "uvi_file_status": {
-        "name": "Uvi File"
+        "name": "Uvi File",
+        "state": {
+          "updated": "Updated",
+          "obsolete": "Obsolete"      
+        }
       }
     }
   }
