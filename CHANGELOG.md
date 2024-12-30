@@ -1,3 +1,18 @@
+## [0.1.43](https://github.com/figorr/meteocat/compare/v0.1.42...v0.1.43) (2024-12-30)
+
+
+### Bug Fixes
+
+* 0.1.43 ([13185b2](https://github.com/figorr/meteocat/commit/13185b2276a5efb02b4fd18d07d30ab03ca7357d))
+* add info station to config_flow ([6c8c652](https://github.com/figorr/meteocat/commit/6c8c652dc54788e2b471984726dc7dd3c0ba30d6))
+* add new hourly, daily and uvi file status sensors ([42aa8b2](https://github.com/figorr/meteocat/commit/42aa8b2abbf6b333287c15d92e19b69d9630e62e))
+* add new hourly, daily and uvi file status sensors translations ([5639489](https://github.com/figorr/meteocat/commit/563948999feb077a5effe9c07df9dda950469d73))
+* add new hourly, daily and uvi sensor constants ([f7a4814](https://github.com/figorr/meteocat/commit/f7a481435abf34926b52312cc5302045c9357e69))
+* fix entity and uvi coordinator ([ee3a557](https://github.com/figorr/meteocat/commit/ee3a5571e5e08737b3393a650509732b1cd4996a))
+* ignore test read json date ([f5ce2ed](https://github.com/figorr/meteocat/commit/f5ce2edfa77d1ec33c4beff8c5c775499c0564fe))
+* include entity and uvi coordinators ([4128d39](https://github.com/figorr/meteocat/commit/4128d3902bd67414eaee6d8d6da4628ecbce3493))
+* set region, province and status to str ([31f58e7](https://github.com/figorr/meteocat/commit/31f58e7d701b2499e4f4d9f385238368703c75ff))
+
 ## [0.1.42](https://github.com/figorr/meteocat/compare/v0.1.41...v0.1.42) (2024-12-28)
 
 
