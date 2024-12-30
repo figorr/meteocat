@@ -17,6 +17,9 @@ REGION_NAME = "region_name"
 PROVINCE_ID = "province_id"
 PROVINCE_NAME = "province_name"
 STATION_STATUS = "station_status"
+HOURLY_FORECAST_FILE_STATUS = "hourly_forecast_file_status"
+DAILY_FORECAST_FILE_STATUS = "daily_forecast_file_status"
+UVI_FILE_STATUS = "uvi_file_status"
 
 from homeassistant.const import Platform
 
