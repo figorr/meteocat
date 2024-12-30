@@ -139,6 +139,11 @@
         "state": {
           "updated": "Updated",
           "obsolete": "Obsolete"      
+        },
+        "state_attributes": {
+          "update_date": {
+            "name": "Date"
+          }
         }
       },
       "daily_forecast_file_status": {
@@ -146,6 +151,11 @@
         "state": {
           "updated": "Updated",
           "obsolete": "Obsolete"      
+        },
+        "state_attributes": {
+          "update_date": {
+            "name": "Date"
+          }
         }
       },
       "uvi_file_status": {
@@ -153,6 +163,11 @@
         "state": {
           "updated": "Updated",
           "obsolete": "Obsolete"      
+        },
+        "state_attributes": {
+          "update_date": {
+            "name": "Date"
+          }
         }
       }
     }

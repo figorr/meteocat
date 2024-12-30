@@ -139,6 +139,11 @@
         "state": {
           "updated": "Actualitzat",
           "obsolete": "Obsolet"      
+        },
+        "state_attributes": {
+          "update_date": {
+            "name": "Data"
+          }
         }
       },
       "daily_forecast_file_status": {
@@ -146,6 +151,11 @@
         "state": {
           "updated": "Actualitzat",
           "obsolete": "Obsolet"      
+        },
+        "state_attributes": {
+          "update_date": {
+            "name": "Data"
+          }
         }
       },
       "uvi_file_status": {
@@ -153,6 +163,11 @@
         "state": {
           "updated": "Actualitzat",
           "obsolete": "Obsolet"      
+        },
+        "state_attributes": {
+          "update_date": {
+            "name": "Data"
+          }
         }
       }
     }
