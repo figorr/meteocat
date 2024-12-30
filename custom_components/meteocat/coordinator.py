@@ -275,22 +275,15 @@ class MeteocatUviCoordinator(DataUpdateCoordinator):
         """Comprueba si el archivo JSON contiene datos válidos para el día actual y devuelve los datos si son válidos."""
         try:
             if not os.path.exists(self.uvi_file):
+                _LOGGER.info("El archivo %s no existe. Se considerará inválido.", self.uvi_file)
                 return None
 
             async with aiofiles.open(self.uvi_file, "r", encoding="utf-8") as file:
                 content = await file.read()
                 data = json.loads(content)
 
-            # Verificar que el formato sea correcto
-            if not isinstance(data, dict) or "uvi" not in data:
-                return None
-
-            uvi_data = data["uvi"]
-            if not isinstance(uvi_data, list) or not uvi_data:
-                return None
-
              # Validar la fecha del primer elemento superior a 1 día
-            first_date = datetime.strptime(uvi_data[0].get("date"), "%Y-%m-%d").date()
+            first_date = datetime.strptime(data["uvi"][0].get("date"), "%Y-%m-%d").date()
             today = datetime.now(timezone.utc).date()
 
             # Log detallado
@@ -319,7 +312,7 @@ class MeteocatUviCoordinator(DataUpdateCoordinator):
         try:
             # Validar el archivo JSON existente
             valid_data = await self.is_uvi_data_valid()
-            if valid_data and "uvi" in valid_data:
+            if valid_data:
                 _LOGGER.info("Los datos del índice UV están actualizados. No se realiza llamada a la API.")
                 return valid_data['uvi']
 
@@ -511,9 +504,7 @@ class MeteocatEntityCoordinator(DataUpdateCoordinator):
             async with aiofiles.open(file_path, "r", encoding="utf-8") as f:
                 content = await f.read()
                 data = json.loads(content)
-            if "dies" not in data or not data["dies"]:
-                _LOGGER.warning("El archivo %s no contiene datos válidos.", file_path)
-                return None
+
             # Obtener la fecha del primer día
             first_date = datetime.fromisoformat(data["dies"][0]["data"].rstrip("Z")).date()
             today = datetime.now(timezone.utc).date()
