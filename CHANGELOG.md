@@ -1,3 +1,13 @@
+## [0.1.44](https://github.com/figorr/meteocat/compare/v0.1.43...v0.1.44) (2024-12-30)
+
+
+### Bug Fixes
+
+* 0.1.44 ([7a506ea](https://github.com/figorr/meteocat/commit/7a506eab7e1fa1c0975561d71520ec3e146019dd))
+* add date attribute for status sensors ([5663be5](https://github.com/figorr/meteocat/commit/5663be50ba007debe349aa730a7e735f8d448a8b))
+* add state translations for file status ([32bcd61](https://github.com/figorr/meteocat/commit/32bcd611cddf773046ee07043a8578a6cbc52f94))
+* add translations for status sensors date attribute ([9504a58](https://github.com/figorr/meteocat/commit/9504a5809fbc83ed2bba0b507354260d6606b7c5))
+
 ## [0.1.43](https://github.com/figorr/meteocat/compare/v0.1.42...v0.1.43) (2024-12-30)
 
 
