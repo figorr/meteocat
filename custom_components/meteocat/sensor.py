@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 from homeassistant.helpers.entity import (
     DeviceInfo,
@@ -48,6 +48,9 @@ from .const import (
     CONDITION,
     MAX_TEMPERATURE_FORECAST,
     MIN_TEMPERATURE_FORECAST,
+    HOURLY_FORECAST_FILE_STATUS,
+    DAILY_FORECAST_FILE_STATUS,
+    UVI_FILE_STATUS,
     WIND_SPEED_CODE,
     WIND_DIRECTION_CODE,
     TEMPERATURE_CODE,
@@ -68,6 +71,8 @@ from .coordinator import (
     MeteocatUviFileCoordinator,
     MeteocatConditionCoordinator,
     MeteocatTempForecastCoordinator,
+    MeteocatEntityCoordinator,
+    MeteocatUviCoordinator,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -229,6 +234,24 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
     ),
+    MeteocatSensorEntityDescription(
+        key=HOURLY_FORECAST_FILE_STATUS,
+        translation_key="hourly_forecast_file_status",
+        icon="mdi:clock",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    MeteocatSensorEntityDescription(
+        key=DAILY_FORECAST_FILE_STATUS,
+        translation_key="daily_forecast_file_status",
+        icon="mdi:clock",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    MeteocatSensorEntityDescription(
+        key=UVI_FILE_STATUS,
+        translation_key="uvi_file_status",
+        icon="mdi:clock",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    )
 )
 
 @callback
@@ -242,12 +265,14 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
     static_sensor_coordinator = entry_data.get("static_sensor_coordinator")
     condition_coordinator = entry_data.get("condition_coordinator")
     temp_forecast_coordinator = entry_data.get("temp_forecast_coordinator")
+    entity_coordinator = entry_data.get("entity_coordinator")
+    uvi_coordinator = entry_data.get("uvi_coordinator")
 
     # Sensores generales
     async_add_entities(
         MeteocatSensor(coordinator, description, entry_data)
         for description in SENSOR_TYPES
-        if description.key not in {TOWN_NAME, TOWN_ID, STATION_NAME, STATION_ID, UV_INDEX, CONDITION, MAX_TEMPERATURE_FORECAST, MIN_TEMPERATURE_FORECAST}  # Excluir estáticos y UVI
+        if description.key not in {TOWN_NAME, TOWN_ID, STATION_NAME, STATION_ID, UV_INDEX, CONDITION, MAX_TEMPERATURE_FORECAST, MIN_TEMPERATURE_FORECAST, HOURLY_FORECAST_FILE_STATUS, DAILY_FORECAST_FILE_STATUS, UVI_FILE_STATUS}  # Excluir estáticos y UVI
     )
 
     # Sensores estáticos
@@ -276,6 +301,27 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
         MeteocatTempForecast(temp_forecast_coordinator, description, entry_data)
         for description in SENSOR_TYPES
         if description.key in {MAX_TEMPERATURE_FORECAST, MIN_TEMPERATURE_FORECAST}
+    )
+
+    # Sensores de estado de los archivos de previsión horaria
+    async_add_entities(
+        MeteocatHourlyForecastStatusSensor(entity_coordinator, description, entry_data)
+        for description in SENSOR_TYPES
+        if description.key == HOURLY_FORECAST_FILE_STATUS
+    )
+
+    # Sensores de estado de los archivos de previsión diaria
+    async_add_entities(
+        MeteocatDailyForecastStatusSensor(entity_coordinator, description, entry_data)
+        for description in SENSOR_TYPES
+        if description.key == DAILY_FORECAST_FILE_STATUS
+    )
+
+    # Sensores de estado de los archivos de uvi
+    async_add_entities(
+        MeteocatUviStatusSensor(uvi_coordinator, description, entry_data)
+        for description in SENSOR_TYPES
+        if description.key == UVI_FILE_STATUS
     )
 
 class MeteocatStaticSensor(CoordinatorEntity[MeteocatStaticSensorCoordinator], SensorEntity):
@@ -709,6 +755,119 @@ class MeteocatTempForecast(CoordinatorEntity[MeteocatTempForecastCoordinator], S
             return temp_forecast_data.get("min_temp_forecast", None)
         return None
 
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return the device info."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._town_id)},
+            name="Meteocat " + self._station_id + " " + self._town_name,
+            manufacturer="Meteocat",
+            model="Meteocat API",
+        )
+
+class MeteocatHourlyForecastStatusSensor(CoordinatorEntity[MeteocatEntityCoordinator], SensorEntity):
+
+    _attr_has_entity_name = True  # Activa el uso de nombres basados en el dispositivo
+
+    def __init__(self, entity_coordinator, description, entry_data):
+        super().__init__(entity_coordinator)
+        self.entity_description = description
+        self._town_name = entry_data["town_name"]
+        self._town_id = entry_data["town_id"]
+        self._station_id = entry_data["station_id"]
+
+        # Unique ID for the entity
+        self._attr_unique_id = f"sensor.{DOMAIN}_{self._station_id}_hourly_status"
+
+        # Assign entity_category if defined in the description
+        self._attr_entity_category = getattr(description, "entity_category", None)
+
+    @property
+    def native_value(self):
+        hourly_data = self.coordinator.data.get("hourly")
+        if hourly_data and "dies" in hourly_data:
+            first_date = datetime.fromisoformat(hourly_data["dies"][0]["data"].rstrip("Z")).date()
+            today = datetime.now(timezone.utc).date()
+            days_difference = (today - first_date).days
+            _LOGGER.debug(f"Diferencia de días para predicciones horarias: {days_difference}")
+            return "updated" if days_difference <= 1 else "obsolete"
+        return "unknown"
+    
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return the device info."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._town_id)},
+            name="Meteocat " + self._station_id + " " + self._town_name,
+            manufacturer="Meteocat",
+            model="Meteocat API",
+        )
+
+class MeteocatDailyForecastStatusSensor(CoordinatorEntity[MeteocatEntityCoordinator], SensorEntity):
+
+    _attr_has_entity_name = True  # Activa el uso de nombres basados en el dispositivo
+
+    def __init__(self, entity_coordinator, description, entry_data):
+        super().__init__(entity_coordinator)
+        self.entity_description = description
+        self._town_name = entry_data["town_name"]
+        self._town_id = entry_data["town_id"]
+        self._station_id = entry_data["station_id"]
+
+        # Unique ID for the entity
+        self._attr_unique_id = f"sensor.{DOMAIN}_{self._station_id}_daily_status"
+
+        # Assign entity_category if defined in the description
+        self._attr_entity_category = getattr(description, "entity_category", None)
+
+    @property
+    def native_value(self):
+        daily_data = self.coordinator.data.get("daily")
+        if daily_data and "dies" in daily_data:
+            first_date = datetime.fromisoformat(daily_data["dies"][0]["data"].rstrip("Z")).date()
+            today = datetime.now(timezone.utc).date()
+            days_difference = (today - first_date).days
+            _LOGGER.debug(f"Diferencia de días para predicciones diarias: {days_difference}")
+            return "updated" if days_difference <= 1 else "obsolete"
+        return "unknown"
+    
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return the device info."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._town_id)},
+            name="Meteocat " + self._station_id + " " + self._town_name,
+            manufacturer="Meteocat",
+            model="Meteocat API",
+        )
+
+class MeteocatUviStatusSensor(CoordinatorEntity[MeteocatUviCoordinator], SensorEntity):
+
+    _attr_has_entity_name = True  # Activa el uso de nombres basados en el dispositivo
+
+    def __init__(self, uvi_coordinator, description, entry_data):
+        super().__init__(uvi_coordinator)
+        self.entity_description = description
+        self._town_name = entry_data["town_name"]
+        self._town_id = entry_data["town_id"]
+        self._station_id = entry_data["station_id"]
+
+        # Unique ID for the entity
+        self._attr_unique_id = f"sensor.{DOMAIN}_{self._station_id}_uvi_status"
+
+        # Assign entity_category if defined in the description
+        self._attr_entity_category = getattr(description, "entity_category", None)
+
+    @property
+    def native_value(self):
+        if self.coordinator.data:
+            first_date = datetime.strptime(self.coordinator.data[0].get("date"), "%Y-%m-%d").date()
+            today = datetime.now(timezone.utc).date()
+            days_difference = (today - first_date).days
+            _LOGGER.debug(f"Diferencia de días para UVI: {days_difference}")
+            return "updated" if days_difference <= 1 else "obsolete"
+        return "unknown"
+    
     @property
     def device_info(self) -> DeviceInfo:
         """Return the device info."""
