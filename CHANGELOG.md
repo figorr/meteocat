@@ -1,3 +1,14 @@
+## [0.1.45](https://github.com/figorr/meteocat/compare/v0.1.44...v0.1.45) (2024-12-31)
+
+
+### Bug Fixes
+
+* 0.1.45 ([ab522cf](https://github.com/figorr/meteocat/commit/ab522cf4d94687c64dc84480f8f5507645a79557))
+* change icon for status sensors ([7415646](https://github.com/figorr/meteocat/commit/741564698b09b6e29b774bb388b6c96f718a573a))
+* fix async_add_entities for generic dynamic sensors ([2192214](https://github.com/figorr/meteocat/commit/2192214ebb767e74c187df98e7c811225c21ca33))
+* fix name and comments for Temp Forecast Coordinator ([e65e476](https://github.com/figorr/meteocat/commit/e65e476f03b0de062ab14a9563eaa71b6d80301f))
+* fix name sensor coordinator ([e93d01f](https://github.com/figorr/meteocat/commit/e93d01f359158ee63494e697059550fcea37806f))
+
 ## [0.1.44](https://github.com/figorr/meteocat/compare/v0.1.43...v0.1.44) (2024-12-30)
 
 
