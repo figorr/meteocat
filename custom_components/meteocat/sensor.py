@@ -260,7 +260,7 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
     entry_data = hass.data[DOMAIN][entry.entry_id]
 
     # Coordinadores para sensores
-    coordinator = entry_data.get("sensor_coordinator")
+    sensor_coordinator = entry_data.get("sensor_coordinator")
     uvi_file_coordinator = entry_data.get("uvi_file_coordinator")
     static_sensor_coordinator = entry_data.get("static_sensor_coordinator")
     condition_coordinator = entry_data.get("condition_coordinator")
@@ -270,7 +270,7 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
 
     # Sensores generales
     async_add_entities(
-        MeteocatSensor(coordinator, description, entry_data)
+        MeteocatSensor(sensor_coordinator, description, entry_data)
         for description in SENSOR_TYPES
         if description.key in {WIND_SPEED, WIND_DIRECTION, TEMPERATURE, HUMIDITY, PRESSURE, PRECIPITATION, PRECIPITATION_ACCUMULATED, SOLAR_GLOBAL_IRRADIANCE, MAX_TEMPERATURE, MIN_TEMPERATURE, FEELS_LIKE, WIND_GUST, STATION_TIMESTAMP}  # Incluir sensores generales en el coordinador SENSOR COORDINATOR
     )
@@ -502,9 +502,9 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
 
     _attr_has_entity_name = True  # Activa el uso de nombres basados en el dispositivo
 
-    def __init__(self, coordinator, description, entry_data):
+    def __init__(self, sensor_coordinator, description, entry_data):
         """Initialize the sensor."""
-        super().__init__(coordinator)
+        super().__init__(sensor_coordinator)
         self.entity_description = description
         self.api_key = entry_data["api_key"]
         self._town_name = entry_data["town_name"]
