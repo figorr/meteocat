@@ -272,7 +272,7 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
     async_add_entities(
         MeteocatSensor(coordinator, description, entry_data)
         for description in SENSOR_TYPES
-        if description.key not in {TOWN_NAME, TOWN_ID, STATION_NAME, STATION_ID, UV_INDEX, CONDITION, MAX_TEMPERATURE_FORECAST, MIN_TEMPERATURE_FORECAST, HOURLY_FORECAST_FILE_STATUS, DAILY_FORECAST_FILE_STATUS, UVI_FILE_STATUS}  # Excluir estáticos y UVI
+        if description.key in {WIND_SPEED, WIND_DIRECTION, TEMPERATURE, HUMIDITY, PRESSURE, PRECIPITATION, PRECIPITATION_ACCUMULATED, SOLAR_GLOBAL_IRRADIANCE, MAX_TEMPERATURE, MIN_TEMPERATURE, FEELS_LIKE, WIND_GUST, STATION_TIMESTAMP}  # Incluir sensores generales en el coordinador SENSOR COORDINATOR
     )
 
     # Sensores estáticos
