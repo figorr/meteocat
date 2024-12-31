@@ -940,14 +940,14 @@ class MeteocatConditionCoordinator(DataUpdateCoordinator):
         return {"condition": "unknown", "hour": current_hour, "icon": None, "date": current_date}
 
 class MeteocatTempForecastCoordinator(DataUpdateCoordinator):
-    """Coordinator para manejar las predicciones diarias desde archivos locales."""
+    """Coordinator para manejar la temperatura máxima y mínima de las predicciones diarias desde archivos locales."""
 
     def __init__(
         self,
         hass: HomeAssistant,
         entry_data: dict,
     ):
-        """Inicializa el coordinador para predicciones diarias."""
+        """Inicializa el coordinador para las temperaturas máximas y mínimas de predicciones diarias."""
         self.town_name = entry_data["town_name"]
         self.town_id = entry_data["town_id"]
         self.station_name = entry_data["station_name"]
@@ -962,7 +962,7 @@ class MeteocatTempForecastCoordinator(DataUpdateCoordinator):
         super().__init__(
             hass,
             _LOGGER,
-            name=f"{DOMAIN} Daily Forecast Coordinator",
+            name=f"{DOMAIN} Daily Temperature Forecast Coordinator",
             update_interval=DEFAULT_TEMP_FORECAST_UPDATE_INTERVAL,
         )
 
@@ -1005,18 +1005,18 @@ class MeteocatTempForecastCoordinator(DataUpdateCoordinator):
                     if datetime.fromisoformat(dia["data"].rstrip("Z")).date() >= today
                 ]
 
-                # Usar datos del día actual si están disponibles
+                # Usar datos de temperatura del día actual si están disponibles
                 today_temp_forecast = self.get_temp_forecast_for_today(data)
                 if today_temp_forecast:
                     parsed_data = self.parse_temp_forecast(today_temp_forecast)
                     return parsed_data
             except Exception as e:
-                _LOGGER.warning("Error leyendo archivo de predicción diaria: %s", e)
+                _LOGGER.warning("Error leyendo temperaturas del archivo de predicción diaria: %s", e)
 
         return {}
 
     def get_temp_forecast_for_today(self, data: dict) -> dict | None:
-        """Obtiene los datos diarios para el día actual."""
+        """Obtiene los datos de temperaturas diarios para el día actual."""
         if not data or "dies" not in data or not data["dies"]:
             return None
 
@@ -1028,7 +1028,7 @@ class MeteocatTempForecastCoordinator(DataUpdateCoordinator):
         return None
 
     def parse_temp_forecast(self, dia: dict) -> dict:
-        """Convierte un día de predicción en un diccionario con los datos necesarios."""
+        """Convierte la temperatura de un día de predicción en un diccionario con los datos necesarios."""
         variables = dia.get("variables", {})
 
         temp_forecast_data = {
