@@ -1,3 +1,11 @@
+## [0.1.46](https://github.com/figorr/meteocat/compare/v0.1.45...v0.1.46) (2025-01-01)
+
+
+### Bug Fixes
+
+* 0.1.46 ([e2e736e](https://github.com/figorr/meteocat/commit/e2e736e102f25da704060bc6329696eec8c8fac6))
+* add validity days, hours and minutes ([61a6761](https://github.com/figorr/meteocat/commit/61a6761cde31c321dbed4dce126416f65062a90f))
+
 ## [0.1.45](https://github.com/figorr/meteocat/compare/v0.1.44...v0.1.45) (2024-12-31)
 
 
