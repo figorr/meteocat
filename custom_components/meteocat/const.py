@@ -27,6 +27,10 @@ ATTRIBUTION = "Powered by Meteocatpy"
 PLATFORMS = [Platform.SENSOR, Platform.WEATHER]
 DEFAULT_NAME = "METEOCAT"
 
+# Tiempos para validación de API
+DEFAULT_VALIDITY_DAYS = 1  # Número de días a partir de los cuales se considera que el archivo de información está obsoleto
+DEFAULT_VALIDITY_HOURS = 5  # Hora a partir de la cuall la API tiene la información actualizada de predicciones disponible para descarga
+DEFAULT_VALIDITY_MINUTES = 0 # Minutos a partir de los cuales la API tiene la información actualizada de predicciones disponible para descarga
 
 # Códigos de sensores de la API
 WIND_SPEED = "wind_speed"  # Velocidad del viento

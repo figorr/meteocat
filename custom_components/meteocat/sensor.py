@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timezone, time
 import logging
 from homeassistant.helpers.entity import (
     DeviceInfo,
@@ -63,6 +63,9 @@ from .const import (
     MIN_TEMPERATURE_CODE,
     FEELS_LIKE,
     WIND_GUST_CODE,
+    DEFAULT_VALIDITY_DAYS,
+    DEFAULT_VALIDITY_HOURS,
+    DEFAULT_VALIDITY_MINUTES,
 )
 
 from .coordinator import (
@@ -793,9 +796,21 @@ class MeteocatHourlyForecastStatusSensor(CoordinatorEntity[MeteocatEntityCoordin
         first_date = self._get_first_date()
         if first_date:
             today = datetime.now(timezone.utc).date()
+            current_time = datetime.now(timezone.utc).time()
             days_difference = (today - first_date).days
-            _LOGGER.debug(f"Diferencia de días para predicciones horarias: {days_difference}")
-            return "updated" if days_difference <= 1 else "obsolete"
+            _LOGGER.debug(
+                f"Diferencia de días para predicciones horarias: {days_difference}."
+                f"Hora actual de validación: {current_time}."
+                f"Para la validación: "
+                f"número de días= {DEFAULT_VALIDITY_DAYS}, "
+                f"hora de contacto a la API >= {DEFAULT_VALIDITY_HOURS}, "
+                f"minutos de contacto a la API >= {DEFAULT_VALIDITY_MINUTES}."
+            )
+            
+            # Validar fecha y hora según la lógica del coordinador
+            if days_difference > DEFAULT_VALIDITY_DAYS and current_time >= time(DEFAULT_VALIDITY_HOURS, DEFAULT_VALIDITY_MINUTES):
+                return "obsolete"
+            return "updated"
         return "unknown"
 
     @property
@@ -844,9 +859,21 @@ class MeteocatDailyForecastStatusSensor(CoordinatorEntity[MeteocatEntityCoordina
         first_date = self._get_first_date()
         if first_date:
             today = datetime.now(timezone.utc).date()
+            current_time = datetime.now(timezone.utc).time()
             days_difference = (today - first_date).days
-            _LOGGER.debug(f"Diferencia de días para predicciones diarias: {days_difference}")
-            return "updated" if days_difference <= 1 else "obsolete"
+            _LOGGER.debug(
+                f"Diferencia de días para predicciones diarias: {days_difference}."
+                f"Hora actual de validación: {current_time}."
+                f"Para la validación: "
+                f"número de días= {DEFAULT_VALIDITY_DAYS}, "
+                f"hora de contacto a la API >= {DEFAULT_VALIDITY_HOURS}, "
+                f"minutos de contacto a la API >= {DEFAULT_VALIDITY_MINUTES}."
+            )
+
+            # Validar fecha y hora según la lógica del coordinador
+            if days_difference > DEFAULT_VALIDITY_DAYS and current_time >= time(DEFAULT_VALIDITY_HOURS, DEFAULT_VALIDITY_MINUTES):
+                return "obsolete"
+            return "updated"
         return "unknown"
 
     @property
@@ -894,9 +921,21 @@ class MeteocatUviStatusSensor(CoordinatorEntity[MeteocatUviCoordinator], SensorE
         first_date = self._get_first_date()
         if first_date:
             today = datetime.now(timezone.utc).date()
+            current_time = datetime.now(timezone.utc).time()
             days_difference = (today - first_date).days
-            _LOGGER.debug(f"Diferencia de días para UVI: {days_difference}")
-            return "updated" if days_difference <= 1 else "obsolete"
+            _LOGGER.debug(
+                f"Diferencia de días para datos UVI: {days_difference}."
+                f"Hora actual de validación: {current_time}."
+                f"Para la validación: "
+                f"número de días= {DEFAULT_VALIDITY_DAYS}, "
+                f"hora de contacto a la API >= {DEFAULT_VALIDITY_HOURS}, "
+                f"minutos de contacto a la API >= {DEFAULT_VALIDITY_MINUTES}."
+            )
+
+            # Validar fecha y hora según la lógica del coordinador
+            if days_difference > DEFAULT_VALIDITY_DAYS and current_time >= time(DEFAULT_VALIDITY_HOURS, DEFAULT_VALIDITY_MINUTES):
+                return "obsolete"
+            return "updated"
         return "unknown"
 
     @property

@@ -5,7 +5,7 @@ import json
 import aiofiles
 import logging
 import asyncio
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, time
 from typing import Dict, Any
 
 from homeassistant.core import HomeAssistant
@@ -29,6 +29,9 @@ from .condition import get_condition_from_statcel
 from .const import (
     DOMAIN,
     CONDITION_MAPPING,
+    DEFAULT_VALIDITY_DAYS,
+    DEFAULT_VALIDITY_HOURS,
+    DEFAULT_VALIDITY_MINUTES,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -285,6 +288,7 @@ class MeteocatUviCoordinator(DataUpdateCoordinator):
              # Validar la fecha del primer elemento superior a 1 día
             first_date = datetime.strptime(data["uvi"][0].get("date"), "%Y-%m-%d").date()
             today = datetime.now(timezone.utc).date()
+            current_time = datetime.now(timezone.utc).time()
 
             # Log detallado
             _LOGGER.info(
@@ -292,10 +296,11 @@ class MeteocatUviCoordinator(DataUpdateCoordinator):
                 self.uvi_file,
                 today,
                 first_date,
+                current_time,
             )
 
             # Verificar si la antigüedad es mayor a un día
-            if (today - first_date).days > 1:
+            if (today - first_date).days > DEFAULT_VALIDITY_DAYS and current_time >= time(DEFAULT_VALIDITY_HOURS, DEFAULT_VALIDITY_MINUTES):
                 _LOGGER.info(
                     "Los datos en %s son antiguos. Se procederá a llamar a la API.",
                     self.uvi_file,
@@ -508,6 +513,7 @@ class MeteocatEntityCoordinator(DataUpdateCoordinator):
             # Obtener la fecha del primer día
             first_date = datetime.fromisoformat(data["dies"][0]["data"].rstrip("Z")).date()
             today = datetime.now(timezone.utc).date()
+            current_time = datetime.now(timezone.utc).time()
 
             # Log detallado
             _LOGGER.info(
@@ -515,10 +521,11 @@ class MeteocatEntityCoordinator(DataUpdateCoordinator):
                 file_path,
                 today,
                 first_date,
+                current_time,
             )
 
             # Verificar si la antigüedad es mayor a un día
-            if (today - first_date).days > 1:
+            if (today - first_date).days > DEFAULT_VALIDITY_DAYS and current_time >= time(DEFAULT_VALIDITY_HOURS, DEFAULT_VALIDITY_MINUTES):
                 _LOGGER.info(
                     "Los datos en %s son antiguos. Se procederá a llamar a la API.",
                     file_path,
