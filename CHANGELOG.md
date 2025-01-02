@@ -1,3 +1,13 @@
+## [0.1.47](https://github.com/figorr/meteocat/compare/v0.1.46...v0.1.47) (2025-01-02)
+
+
+### Bug Fixes
+
+* 0.1.47 ([03d1d08](https://github.com/figorr/meteocat/commit/03d1d08dd837dc47d8f2062ba561be706e1d8b05))
+* convert to local time from UTC ([0dfe9f9](https://github.com/figorr/meteocat/commit/0dfe9f9ef7409bcd23d839963076aff14921f114))
+* fix semantic-release-bot ([754f18b](https://github.com/figorr/meteocat/commit/754f18b2c0378c704eb255259192655b76100c43))
+* fix timestamp sensor from UTC to local time Europe/Madrid ([e64539a](https://github.com/figorr/meteocat/commit/e64539a091adecfd4e23419c63bc54eda2293da3))
+
 ## [0.1.46](https://github.com/figorr/meteocat/compare/v0.1.45...v0.1.46) (2025-01-01)
 
 
