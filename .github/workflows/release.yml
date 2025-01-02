@@ -24,8 +24,14 @@ jobs:
       # Paso 3: Instalar dependencias necesarias
       - name: Install dependencies
         run: npm ci
+      
+      # Paso 4: Configurar el autor de Git
+      - name: Configure Git author
+        run: |
+          git config user.name "semantic-release-bot"
+          git config user.email "jdcuartero@yahoo.es"
 
-      # Paso 4: Ejecutar semantic-release
+      # Paso 5: Ejecutar semantic-release
       - name: Run semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_TOKEN }}
