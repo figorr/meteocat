@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone, time
+from zoneinfo import ZoneInfo 
 import logging
 from homeassistant.helpers.entity import (
     DeviceInfo,
@@ -327,6 +328,19 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
         if description.key == UVI_FILE_STATUS
     )
 
+# Cambiar UTC a la zona horaria local
+def convert_to_local_time(utc_time: str, local_tz: str = "Europe/Madrid") -> datetime:
+    try:
+        # Convertir la cadena UTC a un objeto datetime
+        utc_dt = datetime.fromisoformat(utc_time.replace("Z", "+00:00"))
+        
+        # Convertir a la zona horaria local usando ZoneInfo
+        local_dt = utc_dt.replace(tzinfo=ZoneInfo("UTC")).astimezone(ZoneInfo(local_tz))
+        
+        return local_dt
+    except ValueError:
+        return None
+
 class MeteocatStaticSensor(CoordinatorEntity[MeteocatStaticSensorCoordinator], SensorEntity):
     """Representation of a static Meteocat sensor."""
     STATIC_KEYS = {TOWN_NAME, TOWN_ID, STATION_NAME, STATION_ID}
@@ -633,9 +647,13 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
                         if raw_timestamp:
                             # Convertir el timestamp a un objeto datetime
                             try:
-                                return datetime.fromisoformat(raw_timestamp.replace("Z", "+00:00"))
+                                # Convertimos raw_timestamp a hora local
+                                local_time = convert_to_local_time(raw_timestamp)
+                                _LOGGER.debug("Hora UTC: %s convertida a hora local: %s", raw_timestamp, local_time)
+                                return local_time
                             except ValueError:
                                 # Manejo de errores si el formato no es válido
+                                _LOGGER.error(f"Error al convertir el timestamp '{raw_timestamp}' a hora local.")
                                 return None
 
         # Nuevo sensor para la precipitación acumulada
