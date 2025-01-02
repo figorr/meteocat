@@ -329,7 +329,17 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
     )
 
 # Cambiar UTC a la zona horaria local
-def convert_to_local_time(utc_time: str, local_tz: str = "Europe/Madrid") -> datetime:
+def convert_to_local_time(utc_time: str, local_tz: str = "Europe/Madrid") -> datetime | None:
+    """
+    Convierte una fecha/hora UTC en formato ISO 8601 a la zona horaria local especificada.
+
+    Args:
+        utc_time (str): Fecha/hora en formato ISO 8601 (ejemplo: '2025-01-02T12:00:00Z').
+        local_tz (str): Zona horaria local en formato IANA (por defecto, 'Europe/Madrid').
+
+    Returns:
+        datetime | None: Objeto datetime convertido a la zona horaria local, o None si hay un error.
+    """
     try:
         # Convertir la cadena UTC a un objeto datetime
         utc_dt = datetime.fromisoformat(utc_time.replace("Z", "+00:00"))

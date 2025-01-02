@@ -6,6 +6,7 @@ import aiofiles
 import logging
 import asyncio
 from datetime import datetime, timedelta, timezone, time
+from zoneinfo import ZoneInfo 
 from typing import Dict, Any
 
 from homeassistant.core import HomeAssistant
@@ -79,6 +80,30 @@ async def load_json_from_file(input_file: str) -> dict:
     except json.JSONDecodeError as err:
         _LOGGER.error("Error al decodificar JSON del archivo %s: %s", input_file, err)
         return {}
+
+# Cambiar UTC a la zona horaria local
+def convert_to_local_time(utc_time: str, local_tz: str = "Europe/Madrid") -> datetime | None:
+    """
+    Convierte una fecha/hora UTC en formato ISO 8601 a la zona horaria local especificada.
+
+    Args:
+        utc_time (str): Fecha/hora en formato ISO 8601 (ejemplo: '2025-01-02T12:00:00Z').
+        local_tz (str): Zona horaria local en formato IANA (por defecto, 'Europe/Madrid').
+
+    Returns:
+        datetime | None: Objeto datetime convertido a la zona horaria local, o None si hay un error.
+    """
+    try:
+        utc_dt = datetime.fromisoformat(utc_time.replace("Z", "+00:00"))
+        local_dt = utc_dt.replace(tzinfo=ZoneInfo("UTC")).astimezone(ZoneInfo(local_tz))
+        return local_dt
+    except ValueError:
+        return None
+
+# Obtener la hora local en lugar de la hora UTC
+def get_local_datetime(tz: str = "Europe/Madrid"):
+    """Obtiene la fecha y hora local según la zona horaria proporcionada."""
+    return datetime.now(ZoneInfo(tz))
 
 class MeteocatSensorCoordinator(DataUpdateCoordinator):
     """Coordinator para manejar la actualización de datos de los sensores."""
@@ -286,9 +311,9 @@ class MeteocatUviCoordinator(DataUpdateCoordinator):
                 data = json.loads(content)
 
              # Validar la fecha del primer elemento superior a 1 día
-            first_date = datetime.strptime(data["uvi"][0].get("date"), "%Y-%m-%d").date()
-            today = datetime.now(timezone.utc).date()
-            current_time = datetime.now(timezone.utc).time()
+            first_date = convert_to_local_time(data["uvi"][0].get("date"), "%Y-%m-%d").date()
+            today = get_local_datetime().date()  # Usar la hora local
+            current_time = get_local_datetime().time()
 
             # Log detallado
             _LOGGER.info(
@@ -428,8 +453,8 @@ class MeteocatUviFileCoordinator(DataUpdateCoordinator):
 
     def _get_uv_for_current_hour(self, raw_data):
         """Get UV data for the current hour."""
-        # Fecha y hora actual
-        current_datetime = datetime.now()
+        # # Obtiene la fecha y hora locales
+        current_datetime = get_local_datetime()
         current_date = current_datetime.strftime("%Y-%m-%d")
         current_hour = current_datetime.hour
 
@@ -510,10 +535,10 @@ class MeteocatEntityCoordinator(DataUpdateCoordinator):
                 content = await f.read()
                 data = json.loads(content)
 
-            # Obtener la fecha del primer día
-            first_date = datetime.fromisoformat(data["dies"][0]["data"].rstrip("Z")).date()
-            today = datetime.now(timezone.utc).date()
-            current_time = datetime.now(timezone.utc).time()
+            # Convertir la fecha del primer día a la zona horaria local
+            first_date = convert_to_local_time(data["dies"][0]["data"]).date()
+            today = get_local_datetime().date()  # Usar la hora local
+            current_time = get_local_datetime().time()
 
             # Log detallado
             _LOGGER.info(
@@ -552,6 +577,11 @@ class MeteocatEntityCoordinator(DataUpdateCoordinator):
                 hourly_data = await self._fetch_and_save_data(
                     self.meteocat_forecast.get_prediccion_horaria, self.hourly_file
                 )
+            
+            # Convertir las fechas horarias a hora local
+            for day in hourly_data.get("dies", []):
+                for hour_data in day["variables"].get("temp", {}).get("valors", []):
+                    hour_data["data"] = convert_to_local_time(hour_data["data"]).isoformat()
 
             # Validar o actualizar datos diarios
             daily_data = await self.validate_forecast_data(self.daily_file)
@@ -559,6 +589,10 @@ class MeteocatEntityCoordinator(DataUpdateCoordinator):
                 daily_data = await self._fetch_and_save_data(
                     self.meteocat_forecast.get_prediccion_diaria, self.daily_file
                 )
+
+            # Convertir las fechas diarias a hora local
+            for day in daily_data.get("dies", []):
+                day["data"] = convert_to_local_time(day["data"]).isoformat()
 
             return {"hourly": hourly_data, "daily": daily_data}
 
@@ -646,10 +680,10 @@ class HourlyForecastCoordinator(DataUpdateCoordinator):
             if not data or "dies" not in data:
                 return False
 
-            now = datetime.now(timezone.utc)
+            now = get_local_datetime()
             for dia in data["dies"]:
                 for forecast in dia.get("variables", {}).get("estatCel", {}).get("valors", []):
-                    forecast_time = datetime.fromisoformat(forecast["data"].rstrip("Z")).replace(tzinfo=timezone.utc)
+                    forecast_time = convert_to_local_time(forecast["data"])
                     if forecast_time >= now:
                         return True
 
@@ -675,7 +709,7 @@ class HourlyForecastCoordinator(DataUpdateCoordinator):
         variables = dia.get("variables", {})
         condition_code = next(
             (item["valor"] for item in variables.get("estatCel", {}).get("valors", []) if
-             datetime.fromisoformat(item["data"].rstrip("Z")).replace(tzinfo=timezone.utc) == forecast_time),
+             convert_to_local_time(item["data"]) == forecast_time),
             -1,
         )
         
@@ -704,10 +738,10 @@ class HourlyForecastCoordinator(DataUpdateCoordinator):
             return []
 
         forecasts = []
-        now = datetime.now(timezone.utc)
+        now = get_local_datetime()
         for dia in self.data["dies"]:
             for forecast in dia.get("variables", {}).get("estatCel", {}).get("valors", []):
-                forecast_time = datetime.fromisoformat(forecast["data"].rstrip("Z")).replace(tzinfo=timezone.utc)
+                forecast_time = convert_to_local_time(forecast["data"])
                 if forecast_time >= now:
                     forecasts.append(self.parse_hourly_forecast(dia, forecast_time))
         return forecasts
@@ -727,7 +761,7 @@ class HourlyForecastCoordinator(DataUpdateCoordinator):
 
         for valor in valores:
             try:
-                data_hora = datetime.fromisoformat(valor["data"].rstrip("Z")).replace(tzinfo=timezone.utc)
+                data_hora = convert_to_local_time(valor["data"])
                 if data_hora == target_time:
                     return float(valor["valor"])
             except (KeyError, ValueError) as e:
@@ -777,9 +811,9 @@ class DailyForecastCoordinator(DataUpdateCoordinator):
             if not data or "dies" not in data or not data["dies"]:
                 return False
 
-            today = datetime.now(timezone.utc).date()
+            today = get_local_datetime().date()  # Usar la hora local
             for dia in data["dies"]:
-                forecast_date = datetime.fromisoformat(dia["data"].rstrip("Z")).date()
+                forecast_date = convert_to_local_time(dia["data"], "Europe/Madrid").date()
                 if forecast_date >= today:
                     return True
 
@@ -797,10 +831,10 @@ class DailyForecastCoordinator(DataUpdateCoordinator):
                     data = json.loads(content)
 
                 # Filtrar días pasados
-                today = datetime.now(timezone.utc).date()
+                today = get_local_datetime().date()  # Usar la hora local
                 data["dies"] = [
                     dia for dia in data["dies"]
-                    if datetime.fromisoformat(dia["data"].rstrip("Z")).date() >= today
+                    if convert_to_local_time(dia["data"], "Europe/Madrid").date() >= today
                 ]
                 return data
             except Exception as e:
@@ -813,9 +847,9 @@ class DailyForecastCoordinator(DataUpdateCoordinator):
         if not self.data or "dies" not in self.data or not self.data["dies"]:
             return None
 
-        today = datetime.now(timezone.utc).date()
+        today = get_local_datetime().date()  # Usar la hora local
         for dia in self.data["dies"]:
-            forecast_date = datetime.fromisoformat(dia["data"].rstrip("Z")).date()
+            forecast_date = convert_to_local_time(dia["data"], "Europe/Madrid").date()
             if forecast_date == today:
                 return dia
         return None
@@ -827,7 +861,7 @@ class DailyForecastCoordinator(DataUpdateCoordinator):
         condition = get_condition_from_code(int(condition_code))
 
         forecast_data = {
-            "date": datetime.fromisoformat(dia["data"].rstrip("Z")).date(),
+            "date": convert_to_local_time(dia["data"], "Europe/Madrid").date(),
             "temperature_max": float(variables.get("tmax", {}).get("valor", 0.0)),
             "temperature_min": float(variables.get("tmin", {}).get("valor", 0.0)),
             "precipitation": float(variables.get("precipitacio", {}).get("valor", 0.0)),
@@ -907,7 +941,7 @@ class MeteocatConditionCoordinator(DataUpdateCoordinator):
     def _get_condition_for_current_hour(self, raw_data):
         """Get condition data for the current hour."""
         # Fecha y hora actual
-        current_datetime = datetime.now()
+        current_datetime = get_local_datetime()  # Usar la zona horaria local
         current_date = current_datetime.strftime("%Y-%m-%d")
         current_hour = current_datetime.hour
 
@@ -915,7 +949,7 @@ class MeteocatConditionCoordinator(DataUpdateCoordinator):
         for day in raw_data.get("dies", []):
             if day["data"].startswith(current_date):
                 for value in day["variables"]["estatCel"]["valors"]:
-                    data_hour = datetime.fromisoformat(value["data"])
+                    data_hour = convert_to_local_time(value["data"])
                     if data_hour.hour == current_hour:
                         codi_estatcel = value["valor"]
                         condition = get_condition_from_statcel(
@@ -986,9 +1020,9 @@ class MeteocatTempForecastCoordinator(DataUpdateCoordinator):
             if not data or "dies" not in data or not data["dies"]:
                 return False
 
-            today = datetime.now(timezone.utc).date()
+            today = get_local_datetime().date()
             for dia in data["dies"]:
-                forecast_date = datetime.fromisoformat(dia["data"].rstrip("Z")).date()
+                forecast_date = convert_to_local_time(dia["data"]).date()  # Convertir a hora local
                 if forecast_date >= today:
                     return True
 
@@ -1006,10 +1040,10 @@ class MeteocatTempForecastCoordinator(DataUpdateCoordinator):
                     data = json.loads(content)
 
                 # Filtrar días pasados
-                today = datetime.now(timezone.utc).date()
+                today = get_local_datetime().date()  # Usar la hora local
                 data["dies"] = [
                     dia for dia in data["dies"]
-                    if datetime.fromisoformat(dia["data"].rstrip("Z")).date() >= today
+                    if convert_to_local_time(dia["data"]).date() >= today  # Convertir a hora local
                 ]
 
                 # Usar datos de temperatura del día actual si están disponibles
@@ -1027,9 +1061,9 @@ class MeteocatTempForecastCoordinator(DataUpdateCoordinator):
         if not data or "dies" not in data or not data["dies"]:
             return None
 
-        today = datetime.now(timezone.utc).date()
+        today = get_local_datetime().date()  # Usar la hora local
         for dia in data["dies"]:
-            forecast_date = datetime.fromisoformat(dia["data"].rstrip("Z")).date()
+            forecast_date = convert_to_local_time(dia["data"]).date()  # Convertir a hora local
             if forecast_date == today:
                 return dia
         return None
@@ -1039,7 +1073,7 @@ class MeteocatTempForecastCoordinator(DataUpdateCoordinator):
         variables = dia.get("variables", {})
 
         temp_forecast_data = {
-            "date": datetime.fromisoformat(dia["data"].rstrip("Z")).date(),
+            "date": convert_to_local_time(dia["data"]),  # Fecha convertida a hora local
             "max_temp_forecast": float(variables.get("tmax", {}).get("valor", 0.0)),
             "min_temp_forecast": float(variables.get("tmin", {}).get("valor", 0.0)),
         }
