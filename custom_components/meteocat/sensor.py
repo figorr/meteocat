@@ -81,6 +81,9 @@ from .coordinator import (
     MeteocatUviCoordinator,
 )
 
+# Definir la zona horaria local
+TIMEZONE = ZoneInfo("Europe/Madrid")
+
 _LOGGER = logging.getLogger(__name__)
 
 @dataclass
@@ -319,7 +322,7 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
 
     # Sensor precipitación probabilidad
     async_add_entities(
-        DailyForecastCoordinator(daily_forecast_coordinator, description, entry_data)
+        MeteocatPrecipitationProbabilitySensor(daily_forecast_coordinator, description, entry_data)
         for description in SENSOR_TYPES
         if description.key == PRECIPITATION_PROBABILITY
     )
@@ -813,44 +816,39 @@ class MeteocatTempForecast(CoordinatorEntity[MeteocatTempForecastCoordinator], S
             model="Meteocat API",
         )
 
-class MeteocatPrecipitationProbability(CoordinatorEntity[DailyForecastCoordinator], SensorEntity):
-    """Representation of a Meteocat Precipitation Probability sensor."""
+class MeteocatPrecipitationProbabilitySensor(CoordinatorEntity[DailyForecastCoordinator], SensorEntity):
+    """Representation of a Meteocat precipitation probability sensor."""
 
-    _attr_has_entity_name = True  # Activa el uso de nombres basados en el dispositivo
+    _attr_has_entity_name = True  # Enable device-based naming
 
     def __init__(self, daily_forecast_coordinator, description, entry_data):
-        """Initialize the Precipitation Probability sensor."""
         super().__init__(daily_forecast_coordinator)
         self.entity_description = description
         self._town_name = entry_data["town_name"]
         self._town_id = entry_data["town_id"]
         self._station_id = entry_data["station_id"]
 
-        # Unique ID for the entity
         self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_{self.entity_description.key}"
-
-        # Asigna entity_category desde description (si está definido)
         self._attr_entity_category = getattr(description, "entity_category", None)
         
-        # Log para depuración
         _LOGGER.debug(
-            "Inicializando sensor: %s, Unique ID: %s",
+            "Initializing sensor: %s, Unique ID: %s",
             self.entity_description.name,
             self._attr_unique_id,
         )
 
     @property
     def native_value(self):
-        """Return the Precipitation Probability percentage value."""
-        precipitation_probability_data = self.coordinator.data or {}
-        
-        if self.entity_description.key == PRECIPITATION_PROBABILITY:
-            return precipitation_probability_data.get("precipitation", None)
+        """Retorna la probabilidad de precipitación del día actual."""
+        forecast = self.coordinator.get_forecast_for_today()
+        if forecast:
+            precipitation = forecast.get("variables", {}).get("precipitacio", {}).get("valor", None)
+            if precipitation is not None and float(precipitation) >= 0:
+                return float(precipitation)
         return None
 
     @property
     def device_info(self) -> DeviceInfo:
-        """Return the device info."""
         return DeviceInfo(
             identifiers={(DOMAIN, self._town_id)},
             name="Meteocat " + self._station_id + " " + self._town_name,
