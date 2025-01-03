@@ -1,3 +1,11 @@
+## [0.1.48](https://github.com/figorr/meteocat/compare/v0.1.47...v0.1.48) (2025-01-03)
+
+
+### Bug Fixes
+
+* 0.1.48 ([b8b8830](https://github.com/figorr/meteocat/commit/b8b8830a23b0d63744f30c3dff33fc9f172a3c01))
+* fix UTC to local time conversion ([14cf7d2](https://github.com/figorr/meteocat/commit/14cf7d2ca696ede2bedcd6041195df44fdd6d245))
+
 ## [0.1.47](https://github.com/figorr/meteocat/compare/v0.1.46...v0.1.47) (2025-01-02)
 
 
