@@ -70,6 +70,9 @@
       "precipitation_accumulated": {
         "name": "Precipitation Accumulated"
       },
+      "precipitation_probability": {
+        "name": "Precipitation Probability"
+      },
       "solar_global_irradiance": {
         "name": "Solar Global Irradiance"
       },

@@ -40,6 +40,7 @@ from .const import (
     PRESSURE,
     PRECIPITATION,
     PRECIPITATION_ACCUMULATED,
+    PRECIPITATION_PROBABILITY,
     SOLAR_GLOBAL_IRRADIANCE,
     UV_INDEX,
     MAX_TEMPERATURE,
@@ -76,6 +77,7 @@ from .coordinator import (
     MeteocatConditionCoordinator,
     MeteocatTempForecastCoordinator,
     MeteocatEntityCoordinator,
+    DailyForecastCoordinator,
     MeteocatUviCoordinator,
 )
 
@@ -140,6 +142,13 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         device_class=SensorDeviceClass.PRECIPITATION,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement="mm",
+    ),
+    MeteocatSensorEntityDescription(
+        key=PRECIPITATION_PROBABILITY,
+        translation_key="precipitation_probability",
+        icon="mdi:weather-rainy",
+        device_class=None,
+        native_unit_of_measurement=PERCENTAGE,
     ),
     MeteocatSensorEntityDescription(
         key=SOLAR_GLOBAL_IRRADIANCE,
@@ -268,6 +277,7 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
     uvi_file_coordinator = entry_data.get("uvi_file_coordinator")
     static_sensor_coordinator = entry_data.get("static_sensor_coordinator")
     condition_coordinator = entry_data.get("condition_coordinator")
+    daily_forecast_coordinator = entry_data.get("daily_forecast_coordinator")
     temp_forecast_coordinator = entry_data.get("temp_forecast_coordinator")
     entity_coordinator = entry_data.get("entity_coordinator")
     uvi_coordinator = entry_data.get("uvi_coordinator")
@@ -305,6 +315,13 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
         MeteocatTempForecast(temp_forecast_coordinator, description, entry_data)
         for description in SENSOR_TYPES
         if description.key in {MAX_TEMPERATURE_FORECAST, MIN_TEMPERATURE_FORECAST}
+    )
+
+    # Sensor precipitación probabilidad
+    async_add_entities(
+        DailyForecastCoordinator(daily_forecast_coordinator, description, entry_data)
+        for description in SENSOR_TYPES
+        if description.key == PRECIPITATION_PROBABILITY
     )
 
     # Sensores de estado de los archivos de previsión horaria
@@ -750,12 +767,12 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
         )
 
 class MeteocatTempForecast(CoordinatorEntity[MeteocatTempForecastCoordinator], SensorEntity):
-    """Representation of a Meteocat UV Index sensor."""
+    """Representation of a Meteocat Min and Max Temperature sensors."""
 
     _attr_has_entity_name = True  # Activa el uso de nombres basados en el dispositivo
 
     def __init__(self, temp_forecast_coordinator, description, entry_data):
-        """Initialize the UV Index sensor."""
+        """Initialize the Mina and Max Temperature sensors."""
         super().__init__(temp_forecast_coordinator)
         self.entity_description = description
         self._town_name = entry_data["town_name"]
@@ -784,6 +801,51 @@ class MeteocatTempForecast(CoordinatorEntity[MeteocatTempForecastCoordinator], S
             return temp_forecast_data.get("max_temp_forecast", None)
         if self.entity_description.key == MIN_TEMPERATURE_FORECAST:
             return temp_forecast_data.get("min_temp_forecast", None)
+        return None
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return the device info."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._town_id)},
+            name="Meteocat " + self._station_id + " " + self._town_name,
+            manufacturer="Meteocat",
+            model="Meteocat API",
+        )
+
+class MeteocatPrecipitationProbability(CoordinatorEntity[DailyForecastCoordinator], SensorEntity):
+    """Representation of a Meteocat Precipitation Probability sensor."""
+
+    _attr_has_entity_name = True  # Activa el uso de nombres basados en el dispositivo
+
+    def __init__(self, daily_forecast_coordinator, description, entry_data):
+        """Initialize the Precipitation Probability sensor."""
+        super().__init__(daily_forecast_coordinator)
+        self.entity_description = description
+        self._town_name = entry_data["town_name"]
+        self._town_id = entry_data["town_id"]
+        self._station_id = entry_data["station_id"]
+
+        # Unique ID for the entity
+        self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_{self.entity_description.key}"
+
+        # Asigna entity_category desde description (si está definido)
+        self._attr_entity_category = getattr(description, "entity_category", None)
+        
+        # Log para depuración
+        _LOGGER.debug(
+            "Inicializando sensor: %s, Unique ID: %s",
+            self.entity_description.name,
+            self._attr_unique_id,
+        )
+
+    @property
+    def native_value(self):
+        """Return the Precipitation Probability percentage value."""
+        precipitation_probability_data = self.coordinator.data or {}
+        
+        if self.entity_description.key == PRECIPITATION_PROBABILITY:
+            return precipitation_probability_data.get("precipitation", None)
         return None
 
     @property
