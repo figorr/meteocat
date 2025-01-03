@@ -1,3 +1,12 @@
+## [0.1.49](https://github.com/figorr/meteocat/compare/v0.1.48...v0.1.49) (2025-01-03)
+
+
+### Bug Fixes
+
+* 0.1.49 ([81dea76](https://github.com/figorr/meteocat/commit/81dea7618fc1b3fd6aa4edff923720e424ca7f8d))
+* add daily precipitation probability sensor ([4d59c3f](https://github.com/figorr/meteocat/commit/4d59c3f9480c09da678fd6ce7efa775619a17d86))
+* add daily precipitation probability sensor ([c786f26](https://github.com/figorr/meteocat/commit/c786f26d36b8f17bb9512d405a5a2ba921a8b881))
+
 ## [0.1.48](https://github.com/figorr/meteocat/compare/v0.1.47...v0.1.48) (2025-01-03)
 
 
