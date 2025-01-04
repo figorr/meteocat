@@ -23,6 +23,7 @@ from homeassistant.const import (
     UnitOfPressure,
     UnitOfSpeed,
     UnitOfTemperature,
+    UnitOfPrecipitationDepth,
     UnitOfVolumetricFlux,
     UnitOfIrradiance,
 )
@@ -134,9 +135,9 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         key=PRECIPITATION,
         translation_key="precipitation",
         icon="mdi:weather-rainy",
-        device_class=None,
+        device_class=SensorDeviceClass.PRECIPITATION,
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement=UnitOfVolumetricFlux.MILLIMETERS_PER_HOUR,
+        native_unit_of_measurement="mm",
     ),
     MeteocatSensorEntityDescription(
         key=PRECIPITATION_ACCUMULATED,
