@@ -1,3 +1,14 @@
+## [1.0.1](https://github.com/figorr/meteocat/compare/v1.0.0...v1.0.1) (2025-01-04)
+
+
+### Bug Fixes
+
+* 1.0.1 ([c2f56d7](https://github.com/figorr/meteocat/commit/c2f56d7243649cf48ce1a1d84761c05762832e8c))
+* fix directions translation key ([3545d7c](https://github.com/figorr/meteocat/commit/3545d7cee8662462de4a3ed3c164d9d4a7e5e854))
+* fix hacs.json file removing iot_class ([03d3db0](https://github.com/figorr/meteocat/commit/03d3db08beb94a5d7c92aa0960a6ff627256e88a))
+* fix order in manifest.json ([434e3d5](https://github.com/figorr/meteocat/commit/434e3d50a5369a5a7c9deda0130a691d5e71b991))
+* fix wind direction translation keys ([3a73291](https://github.com/figorr/meteocat/commit/3a73291d803b72890d627eeb5814be17d22ab6b4))
+
 ## [1.0.0](https://github.com/figorr/meteocat/compare/v0.1.51...v1.0.0) (2025-01-04)
 
 
