@@ -9,5 +9,5 @@
     "issue_tracker": "https://github.com/figorr/meteocat/issues",
     "loggers": ["meteocatpy"],
     "requirements": ["meteocatpy==0.0.17", "packaging>=20.3", "wrapt>=1.14.0"],
-    "version": "0.1.50"
+    "version": "1.0.0"
 }
