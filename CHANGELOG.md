@@ -1,3 +1,11 @@
+## [0.1.50](https://github.com/figorr/meteocat/compare/v0.1.49...v0.1.50) (2025-01-04)
+
+
+### Bug Fixes
+
+* 0.1.50 ([cbfc022](https://github.com/figorr/meteocat/commit/cbfc0228195762f7af306a85db4c03b287cd3c24))
+* fix precipitation unit ([9e6d5aa](https://github.com/figorr/meteocat/commit/9e6d5aa85ce3450341d70e2edff9a13880c69a89))
+
 ## [0.1.49](https://github.com/figorr/meteocat/compare/v0.1.48...v0.1.49) (2025-01-03)
 
 
