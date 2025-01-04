@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "meteocat"
-version = "0.1.49"
+version = "0.1.50"
 description = "Script para obtener datos meteorológicos de la API de Meteocat"
 authors = ["figorr <jdcuartero@yahoo.es>"]
 license = "Apache-2.0"
