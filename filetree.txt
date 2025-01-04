@@ -1,6 +1,8 @@
 └── .github/
     └── workflows/
+        ├── hassfest.yaml
         ├── release.yml
+        ├── validate.yaml
 ├── .gitignore
 ├── .gitlab-ci.yml
 ├── .pre-commit-config.yaml
@@ -32,6 +34,17 @@
 ├── filetree.py
 ├── filetree.txt
 ├── hacs.json
+└── images/
+    ├── banner.png
+    ├── change_units.png
+    ├── devices.png
+    ├── diagnostic_sensors.png
+    ├── dynamic_sensors.png
+    ├── login.png
+    ├── pick_area.png
+    ├── pick_station.png
+    ├── pick_town.png
+├── info.md
 ├── package-lock.json
 ├── package.json
 ├── poetry.lock
