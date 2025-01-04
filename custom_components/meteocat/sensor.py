@@ -719,8 +719,8 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
             return "Unknown"  # Retorna "Unknown" si el valor no es un número válido
 
         directions = [
-            "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
-            "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW", "N",
+        "north", "north_northeast", "northeast", "east_northeast", "east", "east_southeast", "southeast", "south_southeast",
+        "south", "south_southwest", "southwest", "west_southwest", "west", "west_northwest", "northwest", "north_northwest", "north",
         ]
         index = round(degree / 22.5) % 16
         return directions[index]
