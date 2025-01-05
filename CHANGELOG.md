@@ -1,3 +1,16 @@
+# [1.1.0](https://github.com/figorr/meteocat/compare/v1.0.2...v1.1.0) (2025-01-05)
+
+
+### Bug Fixes
+
+* 1.1.0 ([b0e0d9a](https://github.com/figorr/meteocat/commit/b0e0d9a3aa3d2f13bb4eff129311c8c6d4e04304))
+
+
+### Features
+
+* add wind bearing to weather entity ([0d40460](https://github.com/figorr/meteocat/commit/0d40460947466a644a51da3bf3361e89383ccbfe))
+* new wind direction cardinal sensor ([c430c48](https://github.com/figorr/meteocat/commit/c430c48a0621dbd1270a040ef017aff2c6dadc28))
+
 ## [1.0.2](https://github.com/figorr/meteocat/compare/v1.0.1...v1.0.2) (2025-01-05)
 
 
