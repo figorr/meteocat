@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import logging
+import voluptuous as vol
 from pathlib import Path
 from homeassistant import core
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import async_get_platforms
+from homeassistant.helpers import config_validation as cv
 
 from .coordinator import (
     MeteocatSensorCoordinator,
@@ -26,6 +28,27 @@ _LOGGER = logging.getLogger(__name__)
 
 # Versión
 __version__ = "1.0.1"
+
+# Definir el esquema de configuración CONFIG_SCHEMA
+CONFIG_SCHEMA = vol.Schema(
+    {
+        DOMAIN: vol.Schema(
+            {
+                vol.Required("api_key"): cv.string,
+                vol.Required("town_name"): cv.string,
+                vol.Required("town_id"): cv.string,
+                vol.Optional("variable_name", default="temperature"): cv.string,
+                vol.Optional("station_name"): cv.string,
+                vol.Optional("station_id"): cv.string,
+                vol.Optional("province_name"): cv.string,
+                vol.Optional("province_id"): cv.string,
+                vol.Optional("region_name"): cv.string,
+                vol.Optional("region_id"): cv.string,
+            }
+        )
+    },
+    extra=vol.ALLOW_EXTRA,
+)
 
 def safe_remove(path: Path, is_folder: bool = False):
     """Elimina de forma segura un archivo o carpeta si existe."""
