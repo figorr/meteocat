@@ -29,7 +29,10 @@
         "name": "Wind Speed"
       },
       "wind_direction": {
-        "name": "Wind Direction",
+        "name": "Wind Direction"
+      },
+      "wind_direction_cardinal": {
+        "name": "Wind Direction Cardinal",
         "state": {
           "north": "N",
           "north_northeast": "NNE",
@@ -48,11 +51,6 @@
           "northwest": "NW",
           "north_northwest": "NNW",
           "unknown": "Unknown"
-        },
-        "state_attributes": {
-          "degrees": {
-            "name": "Degrees"
-          }
         }
       },
       "temperature": {

@@ -29,7 +29,10 @@
         "name": "Vent Velocitat"
       },
       "wind_direction": {
-        "name": "Vent Direcció",
+        "name": "Vent Direcció"
+      },
+      "wind_direction_cardinal": {
+        "name": "Vent Direcció Cardinal",
         "state": {
           "north": "N",
           "north_northeast": "NNE",
@@ -48,11 +51,6 @@
           "northwest": "NO",
           "north_northwest": "NNO",
           "unknown": "Desconegut"
-        },
-        "state_attributes": {
-          "degrees": {
-            "name": "Graus"
-          }
         }
       },
       "temperature": {

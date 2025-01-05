@@ -36,6 +36,7 @@ from .const import (
     STATION_ID,
     WIND_SPEED,
     WIND_DIRECTION,
+    WIND_DIRECTION_CARDINAL,
     TEMPERATURE,
     HUMIDITY,
     PRESSURE,
@@ -104,6 +105,12 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
     MeteocatSensorEntityDescription(
         key=WIND_DIRECTION,
         translation_key="wind_direction",
+        icon="mdi:compass",
+        device_class=None,
+    ),
+    MeteocatSensorEntityDescription(
+        key=WIND_DIRECTION_CARDINAL,
+        translation_key="wind_direction_cardinal",
         icon="mdi:compass",
         device_class=None,
     ),
@@ -290,7 +297,7 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
     async_add_entities(
         MeteocatSensor(sensor_coordinator, description, entry_data)
         for description in SENSOR_TYPES
-        if description.key in {WIND_SPEED, WIND_DIRECTION, TEMPERATURE, HUMIDITY, PRESSURE, PRECIPITATION, PRECIPITATION_ACCUMULATED, SOLAR_GLOBAL_IRRADIANCE, MAX_TEMPERATURE, MIN_TEMPERATURE, FEELS_LIKE, WIND_GUST, STATION_TIMESTAMP}  # Incluir sensores generales en el coordinador SENSOR COORDINATOR
+        if description.key in {WIND_SPEED, WIND_DIRECTION, WIND_DIRECTION_CARDINAL, TEMPERATURE, HUMIDITY, PRESSURE, PRECIPITATION, PRECIPITATION_ACCUMULATED, SOLAR_GLOBAL_IRRADIANCE, MAX_TEMPERATURE, MIN_TEMPERATURE, FEELS_LIKE, WIND_GUST, STATION_TIMESTAMP}  # Incluir sensores generales en el coordinador SENSOR COORDINATOR
     )
 
     # Sensores estáticos
@@ -657,11 +664,28 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
                         latest_reading = lectures[-1]
                         value = latest_reading.get("valor")
 
-                        # Convertimos grados a dirección cardinal para WIND_DIRECTION
-                        if self.entity_description.key == WIND_DIRECTION and isinstance(value, (int, float)):
-                            return self._convert_degrees_to_cardinal(value)
-
                         return value
+                    
+        # Para el sensor WIND_DIRECTION_CARDINAL, convertir grados a dirección cardinal
+        if self.entity_description.key == WIND_DIRECTION_CARDINAL:
+            stations = self.coordinator.data or []
+            for station in stations:
+                variables = station.get("variables", [])
+
+                # Filtramos por código
+                variable_data = next(
+                    (var for var in variables if var.get("codi") == WIND_DIRECTION_CODE),
+                    None,
+                )
+
+                if variable_data:
+                    # Obtenemos la última lectura
+                    lectures = variable_data.get("lectures", [])
+                    if lectures:
+                        latest_reading = lectures[-1]
+                        value = latest_reading.get("valor")
+
+                        return self._convert_degrees_to_cardinal(value)
                     
         # Lógica específica para el sensor de timestamp
         if self.entity_description.key == STATION_TIMESTAMP:
@@ -711,7 +735,7 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
             return total_precipitation
         
         return None
-        
+    
     @staticmethod
     def _convert_degrees_to_cardinal(degree: float) -> str:
         """Convert degrees to cardinal direction."""
@@ -724,41 +748,6 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
         ]
         index = round(degree / 22.5) % 16
         return directions[index]
-    
-    @property
-    def extra_state_attributes(self):
-        """Return additional attributes of the sensor."""
-        attributes = super().extra_state_attributes or {}
-
-        # Agregar grados como atributo solo para WIND_DIRECTION
-        if self.entity_description.key == WIND_DIRECTION:
-            # Obtener el código del sensor desde CODE_MAPPING
-            sensor_code = self.CODE_MAPPING.get(self.entity_description.key)
-
-            if sensor_code is not None:
-                # Acceder a los datos de la estación desde el coordinator
-                stations = self.coordinator.data or []
-                degrees_value = None
-
-                for station in stations:
-                    variables = station.get("variables", [])
-                    # Buscar la variable correspondiente al código
-                    variable_data = next(
-                        (var for var in variables if var.get("codi") == sensor_code),
-                        None,
-                    )
-                    if variable_data:
-                        # Obtener la última lectura de grados
-                        lectures = variable_data.get("lectures", [])
-                        if lectures:
-                            degrees_value = lectures[-1].get("valor")
-                            break
-
-                # Asignar el valor al atributo
-                if degrees_value is not None:
-                    attributes["degrees"] = degrees_value
-
-        return attributes
 
     @property
     def device_info(self) -> DeviceInfo:

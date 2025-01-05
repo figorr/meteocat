@@ -29,7 +29,10 @@
         "name": "Viento Velocidad"
       },
       "wind_direction": {
-        "name": "Viento Dirección",
+        "name": "Viento Dirección"
+      },
+      "wind_direction_cardinal": {
+        "name": "Viento Dirección Cardinal",
         "state": {
           "north": "N",
           "north_northeast": "NNE",
@@ -48,11 +51,6 @@
           "northwest": "NO",
           "north_northwest": "NNO",
           "unknown": "Desconocido"
-        },
-        "state_attributes": {
-          "degrees": {
-            "name": "Grados"
-          }
         }
       },
       "temperature": {

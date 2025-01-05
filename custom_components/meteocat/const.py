@@ -35,6 +35,7 @@ DEFAULT_VALIDITY_MINUTES = 0 # Minutos a partir de los cuales la API tiene la in
 # Códigos de sensores de la API
 WIND_SPEED = "wind_speed"  # Velocidad del viento
 WIND_DIRECTION = "wind_direction"  # Dirección del viento
+WIND_DIRECTION_CARDINAL = "wind_direction_cardinal"  # Dirección del viento en cardinal
 TEMPERATURE = "temperature"  # Temperatura
 HUMIDITY = "humidity"  # Humedad relativa
 PRESSURE = "pressure"  # Presión atmosférica
