@@ -27,7 +27,7 @@ from .const import DOMAIN, PLATFORMS
 _LOGGER = logging.getLogger(__name__)
 
 # Versión
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 
 # Definir el esquema de configuración CONFIG_SCHEMA
 CONFIG_SCHEMA = vol.Schema(
