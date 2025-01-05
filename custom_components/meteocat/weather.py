@@ -153,6 +153,10 @@ class MeteocatWeatherEntity(CoordinatorEntity, WeatherEntity):
     @property
     def native_wind_gust_speed(self) -> Optional[float]:
         return self._get_latest_sensor_value(WIND_GUST_CODE)
+    
+    @property
+    def wind_bearing(self) -> Optional[float]:
+        return self._get_latest_sensor_value(WIND_DIRECTION_CODE)
 
     @property
     def uv_index(self) -> Optional[float]:
