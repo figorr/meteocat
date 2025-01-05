@@ -42,6 +42,8 @@ municipi.py
 update_version.py
 publish_version.py
 final_release.py
+delete_releases.py
+delete_tags.py
 
 # TEST VARIABLES .ENV
 test_dotenv.py
