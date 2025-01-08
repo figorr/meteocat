@@ -22,7 +22,17 @@ Authors:
 
 ## Installation
 
-#### HACS
+#### HACS - Install using the custom repository method.
+
+1. First of all you need to add a custom repository like [this](https://hacs.xyz/docs/faq/custom_repositories/).
+1. Then download the integration from HACS.
+1. Restart Home Assistant.
+1. Go to `Settings > Devices & Services`
+1. Click `+ Add Integration`
+1. Search for `Meteocat` and follow the configuration instructions
+
+
+#### HACS - Install from the store
 1. Go to `HACS`
 1. Search for `Meteocat` and add it to HACS
 1. Restart Home Assistant
