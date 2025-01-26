@@ -1,10 +1,11 @@
-## [1.1.2](https://github.com/figorr/meteocat/compare/v1.1.1...v1.1.2) (2025-01-26)
+## [2.0.0](https://github.com/figorr/meteocat/compare/v1.1.1...v2.0.0) (2025-01-26)
 
 
 ### Bug Fixes
 
 * 2.0.0 ([8f9ad16](https://github.com/figorr/meteocat/commit/8f9ad169b92da1093c3cdb2ff64ad5ffae9c9b24))
 * update installation methods at README ([e588ffa](https://github.com/figorr/meteocat/commit/e588ffa17c10652992a4c26d19d26b7757b051b5))
+* new alert sensors feature
 
 ## [1.1.1](https://github.com/figorr/meteocat/compare/v1.1.0...v1.1.1) (2025-01-08)
 
