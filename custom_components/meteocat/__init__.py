@@ -20,6 +20,8 @@ from .coordinator import (
     DailyForecastCoordinator,
     MeteocatConditionCoordinator,
     MeteocatTempForecastCoordinator,
+    MeteocatAlertsCoordinator,
+    MeteocatAlertsRegionCoordinator,
 )
 
 from .const import DOMAIN, PLATFORMS
@@ -121,6 +123,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         temp_forecast_coordinator = MeteocatTempForecastCoordinator(hass=hass, entry_data=entry_data)
         await temp_forecast_coordinator.async_config_entry_first_refresh()
 
+        alerts_coordinator = MeteocatAlertsCoordinator(hass=hass, entry_data=entry_data)
+        await alerts_coordinator.async_config_entry_first_refresh()
+
+        alerts_region_coordinator = MeteocatAlertsRegionCoordinator(hass=hass, entry_data=entry_data)
+        await alerts_region_coordinator.async_config_entry_first_refresh()
+
     except Exception as err:  # Capturar todos los errores
         _LOGGER.exception(f"Error al inicializar los coordinadores: {err}")
         return False
@@ -137,6 +145,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "daily_forecast_coordinator": daily_forecast_coordinator,
         "condition_coordinator": condition_coordinator,
         "temp_forecast_coordinator": temp_forecast_coordinator,
+        "alerts_coordinator": alerts_coordinator,
+        "alerts_region_coordinator": alerts_region_coordinator,
         **entry_data,
     }
 
@@ -193,6 +203,16 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     forecast_hourly_data_file = files_folder / f"forecast_{town_id.lower()}_hourly_data.json"
     forecast_daily_data_file = files_folder / f"forecast_{town_id.lower()}_daily_data.json"
 
+    # Obtener el `region_id` para identificar el archivo a eliminar
+    region_id = entry.data.get("region_id")
+    if not region_id:
+        _LOGGER.warning("No se encontró 'region_id' en la configuración. No se puede eliminar el archivo de alertas de la comarca.")
+        return
+
+    # Archivos JSON de alertas
+    alerts_file = files_folder / "alerts.json"
+    alerts_region_file = files_folder / f"alerts_{region_id}.json"
+
     # Validar la ruta base
     if not custom_components_path.exists():
         _LOGGER.warning(f"La ruta {custom_components_path} no existe. No se realizará la limpieza.")
@@ -205,5 +225,7 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     safe_remove(town_data_file)
     safe_remove(forecast_hourly_data_file)
     safe_remove(forecast_daily_data_file)
+    safe_remove(alerts_file)
+    safe_remove(alerts_region_file)
     safe_remove(assets_folder, is_folder=True)
     safe_remove(files_folder, is_folder=True)
