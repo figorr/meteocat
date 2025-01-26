@@ -32,7 +32,9 @@ from .const import (
     REGION_NAME,
     PROVINCE_ID,
     PROVINCE_NAME,
-    STATION_STATUS
+    STATION_STATUS,
+    LIMIT_XEMA,
+	LIMIT_PREDICCIO
 )
     
 from .options_flow import MeteocatOptionsFlowHandler
@@ -193,43 +195,20 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
                 infostation_client = MeteocatInfoStation(self.api_key)
                 try:
                     station_metadata = await infostation_client.get_infostation(self.station_id)
+                    # Extraer los valores necesarios de los metadatos
+                    self.station_type = station_metadata.get("tipus", "")
+                    self.latitude = station_metadata.get("coordenades", {}).get("latitud", 0.0)
+                    self.longitude = station_metadata.get("coordenades", {}).get("longitud", 0.0)
+                    self.altitude = station_metadata.get("altitud", 0)
+                    self.region_id = station_metadata.get("comarca", {}).get("codi", "")
+                    self.region_name = station_metadata.get("comarca", {}).get("nom", "")
+                    self.province_id = station_metadata.get("provincia", {}).get("codi", "")
+                    self.province_name = station_metadata.get("provincia", {}).get("nom", "")
+                    self.station_status = station_metadata.get("estats", [{}])[0].get("codi", "")
+                    return await self.async_step_set_api_limits()
                 except Exception as ex:
                     _LOGGER.error("Error al obtener los metadatos de la estación: %s", ex)
                     errors["base"] = "metadata_fetch_failed"
-                    station_metadata = {}
-
-                # Extraer los valores necesarios de los metadatos
-                self.station_type = station_metadata.get("tipus", "")
-                self.latitude = station_metadata.get("coordenades", {}).get("latitud", 0.0)
-                self.longitude = station_metadata.get("coordenades", {}).get("longitud", 0.0)
-                self.altitude = station_metadata.get("altitud", 0)
-                self.region_id = station_metadata.get("comarca", {}).get("codi", "")
-                self.region_name = station_metadata.get("comarca", {}).get("nom", "")
-                self.province_id = station_metadata.get("provincia", {}).get("codi", "")
-                self.province_name = station_metadata.get("provincia", {}).get("nom", "")
-                self.station_status = station_metadata.get("estats", [{}])[0].get("codi", "")
-
-                return self.async_create_entry(
-                    title=self.selected_municipi["nom"],
-                    data={
-                        CONF_API_KEY: self.api_key,
-                        TOWN_NAME: self.selected_municipi["nom"],
-                        TOWN_ID: self.selected_municipi["codi"],
-                        VARIABLE_NAME: "Temperatura",
-                        VARIABLE_ID: str(self.variable_id),
-                        STATION_NAME: self.station_name,
-                        STATION_ID: self.station_id,
-                        STATION_TYPE: self.station_type,
-                        LATITUDE: self.latitude,
-                        LONGITUDE: self.longitude,
-                        ALTITUDE: self.altitude,
-                        REGION_ID: str(self.region_id),
-                        REGION_NAME: self.region_name,
-                        PROVINCE_ID: str(self.province_id),
-                        PROVINCE_NAME: self.province_name,
-                        STATION_STATUS: str(self.station_status),
-                    },
-                )
             else:
                 errors["base"] = "station_not_found"
 
@@ -243,6 +222,48 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="select_station", data_schema=schema, errors=errors
+        )
+        
+    async def async_step_set_api_limits(self, user_input=None):
+        """Cuarto paso: Introducir los límites de XEMA y PREDICCIO del plan de la API."""
+        errors = {}
+
+        if user_input is not None:
+            self.limit_xema = user_input.get(LIMIT_XEMA, 750)
+            self.limit_prediccio = user_input.get(LIMIT_PREDICCIO, 100)
+            return self.async_create_entry(
+                title=self.selected_municipi["nom"],
+                data={
+                    CONF_API_KEY: self.api_key,
+                    TOWN_NAME: self.selected_municipi["nom"],
+                    TOWN_ID: self.selected_municipi["codi"],
+                    VARIABLE_NAME: "Temperatura",
+                    VARIABLE_ID: str(self.variable_id),
+                    STATION_NAME: self.station_name,
+                    STATION_ID: self.station_id,
+                    STATION_TYPE: self.station_type,
+                    LATITUDE: self.latitude,
+                    LONGITUDE: self.longitude,
+                    ALTITUDE: self.altitude,
+                    REGION_ID: str(self.region_id),
+                    REGION_NAME: self.region_name,
+                    PROVINCE_ID: str(self.province_id),
+                    PROVINCE_NAME: self.province_name,
+                    STATION_STATUS: str(self.station_status),
+                    LIMIT_XEMA: self.limit_xema,
+                    LIMIT_PREDICCIO: self.limit_prediccio,
+                },
+            )
+
+        schema = vol.Schema(
+            {
+                vol.Required(LIMIT_XEMA, default=750): cv.positive_int,
+                vol.Required(LIMIT_PREDICCIO, default=100): cv.positive_int,
+            }
+        )
+
+        return self.async_show_form(
+            step_id="set_api_limits", data_schema=schema, errors=errors
         )
 
     @staticmethod
