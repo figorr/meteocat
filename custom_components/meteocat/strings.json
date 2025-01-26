@@ -231,71 +231,71 @@
           "alert_1": {
             "name": "Alert 1",
             "state": {
-              "Temps violent": "Violent weather",
-              "Intensitat de pluja": "Rain intensity",
-              "Acumulació de pluja": "Rain amount",
-              "Neu acumulada en 24 hores": "Snow amount in 24 hours",
-              "Vent": "Wind",
-              "Estat de la mar": "Sea state",
-              "Fred": "Cold",
-              "Calor": "Heat",
-              "Calor nocturna": "Night heat"
+              "violent_weather": "Violent weather",
+              "rain_intensity": "Rain intensity",
+              "rain_amount": "Rain amount",
+              "snow_amount_24": "Snow amount in 24 hours",
+              "wind": "Wind",
+              "sea_state": "Sea state",
+              "cold": "Cold",
+              "heat": "Heat",
+              "night_heat": "Night heat"
             }
           },
           "alert_2": {
             "name": "Alert 2",
             "state": {
-              "Temps violent": "Violent weather",
-              "Intensitat de pluja": "Rain intensity",
-              "Acumulació de pluja": "Rain amount",
-              "Neu acumulada en 24 hores": "Snow amount in 24 hours",
-              "Vent": "Wind",
-              "Estat de la mar": "Sea state",
-              "Fred": "Cold",
-              "Calor": "Heat",
-              "Calor nocturna": "Night heat"
+              "violent_weather": "Violent weather",
+              "rain_intensity": "Rain intensity",
+              "rain_amount": "Rain amount",
+              "snow_amount_24": "Snow amount in 24 hours",
+              "wind": "Wind",
+              "sea_state": "Sea state",
+              "cold": "Cold",
+              "heat": "Heat",
+              "night_heat": "Night heat"
             }
           },
           "alert_3": {
             "name": "Alert 3",
             "state": {
-              "Temps violent": "Violent weather",
-              "Intensitat de pluja": "Rain intensity",
-              "Acumulació de pluja": "Rain amount",
-              "Neu acumulada en 24 hores": "Snow amount in 24 hours",
-              "Vent": "Wind",
-              "Estat de la mar": "Sea state",
-              "Fred": "Cold",
-              "Calor": "Heat",
-              "Calor nocturna": "Night heat"
+              "violent_weather": "Violent weather",
+              "rain_intensity": "Rain intensity",
+              "rain_amount": "Rain amount",
+              "snow_amount_24": "Snow amount in 24 hours",
+              "wind": "Wind",
+              "sea_state": "Sea state",
+              "cold": "Cold",
+              "heat": "Heat",
+              "night_heat": "Night heat"
             }
           },
           "alert_4": {
             "name": "Alert 4",
             "state": {
-              "Temps violent": "Violent weather",
-              "Intensitat de pluja": "Rain intensity",
-              "Acumulació de pluja": "Rain amount",
-              "Neu acumulada en 24 hores": "Snow amount in 24 hours",
-              "Vent": "Wind",
-              "Estat de la mar": "Sea state",
-              "Fred": "Cold",
-              "Calor": "Heat",
-              "Calor nocturna": "Night heat"
+              "violent_weather": "Violent weather",
+              "rain_intensity": "Rain intensity",
+              "rain_amount": "Rain amount",
+              "snow_amount_24": "Snow amount in 24 hours",
+              "wind": "Wind",
+              "sea_state": "Sea state",
+              "cold": "Cold",
+              "heat": "Heat",
+              "night_heat": "Night heat"
             }
           },
           "alert_5": {
             "name": "Alert 5",
             "state": {
-              "Temps violent": "Violent weather",
-              "Intensitat de pluja": "Rain intensity",
-              "Acumulació de pluja": "Rain amount",
-              "Neu acumulada en 24 hores": "Snow amount in 24 hours",
-              "Vent": "Wind",
-              "Estat de la mar": "Sea state",
-              "Fred": "Cold",
-              "Calor": "Heat",
-              "Calor nocturna": "Night heat"
+              "violent_weather": "Violent weather",
+              "rain_intensity": "Rain intensity",
+              "rain_amount": "Rain amount",
+              "snow_amount_24": "Snow amount in 24 hours",
+              "wind": "Wind",
+              "sea_state": "Sea state",
+              "cold": "Cold",
+              "heat": "Heat",
+              "night_heat": "Night heat"
             }
           }
         }
@@ -303,8 +303,8 @@
       "alert_wind": {
         "name": "Alert Wind",
         "state": {
-          "Obert": "Opened",
-          "Tancat": "Closed"      
+          "opened": "Opened",
+          "closed": "Closed"      
         },
         "state_attributes": {
           "inicio": {
@@ -325,14 +325,14 @@
           "umbral": {
             "name": "Threshold",
             "state": {
-              "Ratxes de vent > 25 m/s": "Wind gusts > 25 m/s",
-              "Esclafits": "Microburst",
-              "Tornados o mànegues": "Tornadoes or waterspouts",
-              "Ratxa màxima > 40m/s": "Max. wind speed > 40 m/s",
-              "Ratxa màxima > 35m/s": "Max. wind speed > 35 m/s",
-              "Ratxa màxima > 30m/s": "Max. wind speed > 30 m/s",
-              "Ratxa màxima > 25m/s": "Max. wind speed > 25 m/s",
-              "Ratxa màxima > 20m/s": "Max. wind speed > 20 m/s"
+              "wind_gusts_25": "Wind gusts > 25 m/s",
+              "microburst": "Microburst",
+              "tornadoes": "Tornadoes or waterspouts",
+              "wind_40": "Max. wind speed > 40 m/s",
+              "wind_35": "Max. wind speed > 35 m/s",
+              "wind_30": "Max. wind speed > 30 m/s",
+              "wind_25": "Max. wind speed > 25 m/s",
+              "wind_20": "Max. wind speed > 20 m/s"
             }
           },
           "peligro": {
@@ -346,8 +346,8 @@
       "alert_rain_intensity": {
         "name": "Alert Rain Intensity",
         "state": {
-          "Obert": "Opened",
-          "Tancat": "Closed"      
+          "opened": "Opened",
+          "closed": "Closed"      
         },
         "state_attributes": {
           "inicio": {
@@ -368,10 +368,10 @@
           "umbral": {
             "name": "Threshold",
             "state": {
-              "Pedra de diàmetre > 2 cm": "Hail with diameter > 2 cm",
-              "Esclafits": "Microburst",
-              "Intensitat > 40 mm / 30 minuts": "Intensity > 40 mm / 30 minutes",
-              "Intensitat > 20 mm / 30 minuts": "Intensity > 20 mm / 30 minutes"
+              "hail_2_cm": "Hail with diameter > 2 cm",
+              "microburst": "Microburst",
+              "intensity_40_30": "Intensity > 40 mm / 30 minutes",
+              "intensity_20_30": "Intensity > 20 mm / 30 minutes"
             }
           },
           "peligro": {
@@ -385,8 +385,8 @@
       "alert_rain": {
         "name": "Alert Rain",
         "state": {
-          "Obert": "Opened",
-          "Tancat": "Closed"      
+          "opened": "Opened",
+          "closed": "Closed"      
         },
         "state_attributes": {
           "inicio": {
@@ -407,9 +407,9 @@
           "umbral": {
             "name": "Threshold",
             "state": {
-              "Esclafits": "Microburst",
-              "Acumulada > 200 mm /24 hores": "Amount > 200 mm /24 hours",
-              "Acumulada > 100 mm /24 hores": "Amount > 100 mm /24 hours"
+              "microburst": "Microburst",
+              "rain_200_24": "Amount > 200 mm /24 hours",
+              "rain_100_24": "Amount > 100 mm /24 hours"
             }
           },
           "peligro": {
@@ -423,8 +423,8 @@
       "alert_sea": {
         "name": "Alert Sea",
         "state": {
-          "Obert": "Opened",
-          "Tancat": "Closed"      
+          "opened": "Opened",
+          "closed": "Closed"      
         },
         "state_attributes": {
           "inicio": {
@@ -445,10 +445,10 @@
           "umbral": {
             "name": "Threshold",
             "state": {
-              "Esclafits": "Microburst",
-              "Tornados o mànegues": "Tornadoes or waterspouts",
-              "Onades > 4.00 metres (mar brava)": "Waves > 4.00 meters (rough sea)",
-              "Onades > 2.50 metres (maregassa)": "Waves > 2.50 meters (tidal)"
+              "microburst": "Microburst",
+              "tornadoes": "Tornadoes or waterspouts",
+              "waves_4": "Waves > 4.00 meters (rough sea)",
+              "waves_2_50": "Waves > 2.50 meters (tidal)"
             }
           },
           "peligro": {
@@ -462,8 +462,8 @@
       "alert_cold": {
         "name": "Alert Cold",
         "state": {
-          "Obert": "Opened",
-          "Tancat": "Closed"      
+          "opened": "Opened",
+          "closed": "Closed"      
         },
         "state_attributes": {
           "inicio": {
@@ -484,8 +484,8 @@
           "umbral": {
             "name": "Threshold",
             "state": {
-              "Fred molt intens": "Very intense cold",
-              "Fred intens": "Intense cold"
+              "cold_very_intense": "Very intense cold",
+              "cold_intense": "Intense cold"
             }
           },
           "peligro": {
@@ -499,8 +499,8 @@
       "alert_warm": {
         "name": "Alert Warm",
         "state": {
-          "Obert": "Opened",
-          "Tancat": "Closed"      
+          "opened": "Opened",
+          "closed": "Closed"      
         },
         "state_attributes": {
           "inicio": {
@@ -521,8 +521,8 @@
           "umbral": {
             "name": "Threshold",
             "state": {
-              "Calor molt intensa": "Very intense hot",
-              "Calor intensa": "Intense heat"
+              "heat_very_intense": "Very intense hot",
+              "heat_intense": "Intense heat"
             }
           },
           "peligro": {
@@ -536,8 +536,8 @@
       "alert_warm_night": {
         "name": "Alert Warm Night",
         "state": {
-          "Obert": "Opened",
-          "Tancat": "Closed"      
+          "opened": "Opened",
+          "closed": "Closed"      
         },
         "state_attributes": {
           "inicio": {
@@ -558,8 +558,8 @@
           "umbral": {
             "name": "Threshold",
             "state": {
-              "Calor nocturna molt intensa": "Very intense night heat",
-              "Calor nocturna intensa": "Intense night heat"
+              "heat_night_very_intense": "Very intense night heat",
+              "heat_night_intense": "Intense night heat"
             }
           },
           "peligro": {
@@ -573,8 +573,8 @@
       "alert_snow": {
         "name": "Alert Snow",
         "state": {
-          "Obert": "Opened",
-          "Tancat": "Closed"      
+          "opened": "Opened",
+          "closed": "Closed"      
         },
         "state_attributes": {
           "inicio": {
@@ -595,17 +595,17 @@
           "umbral": {
             "name": "Threshold",
             "state": {
-              "Pedra de diàmetre > 2 cm": "Hail with diameter > 2 cm",
-              "gruix > 50 cm a cotes superiors a 1000 metres fins a 1500 metres": "thickness > 50 cm at altitudes above 1000 meters up to 1500 meters",
-              "gruix > 30 cm a cotes superiors a 800 metres fins a 1000 metres": "thickness > 30 cm at altitudes above 800 meters up to 1000 meters",
-              "gruix > 20 cm a cotes superiors a 600 metres fins a 800 metres": "thickness > 20 cm at altitudes above 600 meters up to 800 meters",
-              "gruix > 20 cm a cotes superiors a 1000 metres fins a 1500 metres": "thickness > 20 cm at altitudes above 1000 meters up to 1500 meters",
-              "gruix > 15 cm a cotes superiors a 300 metres fins a 600 metres": "thickness > 15 cm at altitudes above 300 meters up to 600 meters",
-              "gruix > 10 cm a cotes superiors a 800 metres fins a 1000 metres": "thickness > 10 cm at altitudes above 800 meters up to 1000 meters",
-              "gruix > 5 cm a cotes inferiors a 300 metres": "thickness > 5 cm at altitudes below 300 meters",
-              "gruix > 5 cm a cotes superiors a 600 metres fins a 800 metres": "thickness > 5 cm at altitudes above 600 meters up to 800 meters",
-              "gruix > 2 cm a cotes superiors a 300 metres fins a 600 metres": "thickness > 2 cm at altitudes above 300 meters up to 600 meters",
-              "gruix ≥ 0 cm a cotes inferiors a 300 metres": "thickness ≥ 0 cm at altitudes below 300 meters"
+              "hail_2_cm": "Hail with diameter > 2 cm",
+              "thickness_50_at_1000": "thickness > 50 cm at altitudes above 1000 meters up to 1500 meters",
+              "thickness_30_at_800": "thickness > 30 cm at altitudes above 800 meters up to 1000 meters",
+              "thickness_20_at_600": "thickness > 20 cm at altitudes above 600 meters up to 800 meters",
+              "thickness_20_at_1000": "thickness > 20 cm at altitudes above 1000 meters up to 1500 meters",
+              "thickness_15_at_300": "thickness > 15 cm at altitudes above 300 meters up to 600 meters",
+              "thickness_10_at_800": "thickness > 10 cm at altitudes above 800 meters up to 1000 meters",
+              "thickness_5_at_300": "thickness > 5 cm at altitudes below 300 meters",
+              "thickness_5_at_600": "thickness > 5 cm at altitudes above 600 meters up to 800 meters",
+              "thickness_2_at_300": "thickness > 2 cm at altitudes above 300 meters up to 600 meters",
+              "thickness_0_at_300": "thickness ≥ 0 cm at altitudes below 300 meters"
             }
           },
           "peligro": {
