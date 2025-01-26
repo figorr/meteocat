@@ -17,6 +17,7 @@ from homeassistant.components.weather import Forecast
 from meteocatpy.data import MeteocatStationData
 from meteocatpy.uvi import MeteocatUviData
 from meteocatpy.forecast import MeteocatForecast
+from meteocatpy.alerts import MeteocatAlerts
 
 from meteocatpy.exceptions import (
     BadRequestError,
@@ -33,6 +34,11 @@ from .const import (
     DEFAULT_VALIDITY_DAYS,
     DEFAULT_VALIDITY_HOURS,
     DEFAULT_VALIDITY_MINUTES,
+    DEFAULT_ALERT_VALIDITY_TIME,
+    ALERT_VALIDITY_MULTIPLIER_100,
+    ALERT_VALIDITY_MULTIPLIER_200,
+    ALERT_VALIDITY_MULTIPLIER_500,
+    ALERT_VALIDITY_MULTIPLIER_DEFAULT
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -47,6 +53,8 @@ DEFAULT_UVI_UPDATE_INTERVAL = timedelta(minutes=60)
 DEFAULT_UVI_SENSOR_UPDATE_INTERVAL = timedelta(minutes=5)
 DEFAULT_CONDITION_SENSOR_UPDATE_INTERVAL = timedelta(minutes=5)
 DEFAULT_TEMP_FORECAST_UPDATE_INTERVAL = timedelta(minutes=5)
+DEFAULT_ALERTS_UPDATE_INTERVAL = timedelta(minutes=10)
+DEFAULT_ALERTS_REGION_UPDATE_INTERVAL = timedelta(minutes=5)
 
 # Definir la zona horaria local
 TIMEZONE = ZoneInfo("Europe/Madrid")
@@ -1102,3 +1110,450 @@ class MeteocatTempForecastCoordinator(DataUpdateCoordinator):
             "min_temp_forecast": float(variables.get("tmin", {}).get("valor", 0.0)),
         }
         return temp_forecast_data
+    
+class MeteocatAlertsCoordinator(DataUpdateCoordinator):
+    """Coordinator para manejar la actualización de alertas."""
+
+    def __init__(self, hass: HomeAssistant, entry_data: dict):
+        """
+        Inicializa el coordinador de alertas de Meteocat.
+
+        Args:
+            hass (HomeAssistant): Instancia de Home Assistant.
+            entry_data (dict): Datos de configuración obtenidos de core.config_entries.
+        """
+        self.api_key = entry_data["api_key"]
+        self.region_id = entry_data["region_id"]  # ID de la región o comarca
+        self.limit_prediccio = entry_data["limit_prediccio"]  # Límite de llamada a la API para PREDICCIONES
+        self.alerts_data = MeteocatAlerts(self.api_key)
+
+        # Define la ruta del archivo JSON principal donde se guardarán las alertas
+        self.alerts_file = os.path.join(
+            hass.config.path(),
+            "custom_components",
+            "meteocat",
+            "files",
+            "alerts.json"
+        )
+
+        # Define la ruta del archivo JSON filtrado por región
+        self.alerts_region_file = os.path.join(
+            hass.config.path(),
+            "custom_components",
+            "meteocat",
+            "files",
+            f"alerts_{self.region_id}.json"
+        )
+
+        super().__init__(
+            hass,
+            _LOGGER,
+            name=f"{DOMAIN} Alerts Coordinator",
+            update_interval=DEFAULT_ALERTS_UPDATE_INTERVAL,
+        )
+
+    async def _async_update_data(self) -> Dict:
+        """Actualiza los datos de alertas desde la API de Meteocat o desde el archivo local según las condiciones especificadas."""
+        # Comprobar si existe el archivo 'alerts.json'
+        existing_data = await load_json_from_file(self.alerts_file)
+
+        # Calcular el tiempo de validez basado en el límite de predicción
+        if self.limit_prediccio <= 100:
+            multiplier = ALERT_VALIDITY_MULTIPLIER_100
+        elif 100 < self.limit_prediccio <= 200:
+            multiplier = ALERT_VALIDITY_MULTIPLIER_200
+        elif 200 < self.limit_prediccio <= 500:
+            multiplier = ALERT_VALIDITY_MULTIPLIER_500
+        else:
+            multiplier = ALERT_VALIDITY_MULTIPLIER_DEFAULT
+
+        validity_duration = timedelta(minutes=DEFAULT_ALERT_VALIDITY_TIME * multiplier)
+        
+        # Si no existe el archivo
+        if not existing_data:
+            return await self._fetch_and_save_new_data()
+        else:
+            # Comprobar la antigüedad de los datos
+            last_update = datetime.fromisoformat(existing_data['actualitzat']['dataUpdate'])
+            now = datetime.now(timezone.utc).astimezone(TIMEZONE)
+
+            # Comparar la antigüedad de los datos
+            if now - last_update > validity_duration:
+                return await self._fetch_and_save_new_data()
+            else:
+                # Devolver los datos del archivo existente
+                _LOGGER.debug("Usando datos existentes de alertas: %s", existing_data)
+                return {
+                "actualizado": existing_data['actualitzat']['dataUpdate']
+                }
+
+    async def _fetch_and_save_new_data(self):
+        """Obtiene nuevos datos de la API y los guarda en el archivo JSON."""
+        try:
+            # Obtener los datos de alertas desde la API
+            data = await asyncio.wait_for(self.alerts_data.get_alerts(), timeout=30)
+            _LOGGER.debug("Datos de alertas actualizados exitosamente: %s", data)
+
+            # Validar que los datos sean una lista de diccionarios o una lista vacía
+            if not isinstance(data, list) or (data and not all(isinstance(item, dict) for item in data)):
+                _LOGGER.error(
+                    "Formato inválido: Se esperaba una lista de diccionarios, pero se obtuvo %s. Datos: %s",
+                    type(data).__name__,
+                    data,
+                )
+                raise ValueError("Formato de datos inválido")
+            
+            # Añadir la clave 'actualitzat' con la fecha y hora actual de la zona horaria local
+            current_time = datetime.now(timezone.utc).astimezone(TIMEZONE).isoformat()
+            data_with_timestamp = {
+                "actualitzat": {
+                    "dataUpdate": current_time
+                },
+                "dades": data
+            }
+
+            # Guardar los datos de alertas en un archivo JSON
+            await save_json_to_file(data_with_timestamp, self.alerts_file)
+
+            # Filtrar los datos por región y guardar en un nuevo archivo JSON
+            await self._filter_alerts_by_region()
+
+            # Devolver tanto los datos de alertas como la fecha de actualización
+            return {
+                "actualizado": data_with_timestamp['actualitzat']['dataUpdate']
+            }
+        except asyncio.TimeoutError as err:
+            _LOGGER.warning("Tiempo de espera agotado al obtener datos de alertas.")
+            raise ConfigEntryNotReady from err
+        except ForbiddenError as err:
+            _LOGGER.error("Acceso denegado al obtener datos de alertas: %s", err)
+            raise ConfigEntryNotReady from err
+        except TooManyRequestsError as err:
+            _LOGGER.warning("Límite de solicitudes alcanzado al obtener datos de alertas: %s", err)
+            raise ConfigEntryNotReady from err
+        except (BadRequestError, InternalServerError, UnknownAPIError) as err:
+            _LOGGER.error("Error al obtener datos de alertas: %s", err)
+            raise
+        except Exception as err:
+            _LOGGER.exception("Error inesperado al obtener datos de alertas: %s", err)
+
+        # Intentar cargar datos en caché si hay un error
+        cached_data = await load_json_from_file(self.alerts_file)
+        if self._is_valid_alert_data(cached_data):
+            _LOGGER.warning(
+                "Usando datos en caché para las alertas. Última actualización: %s",
+                cached_data["actualitzat"]["dataUpdate"],
+            )
+            return cached_data
+
+        # Si no se puede actualizar ni cargar datos en caché, retornar None
+        _LOGGER.error("No se pudo obtener datos actualizados ni cargar datos en caché de alertas.")
+        return None
+
+    @staticmethod
+    def _is_valid_alert_data(data: dict) -> bool:
+        """Valida que los datos de alertas tengan el formato esperado."""
+        return (
+            isinstance(data, dict)
+            and "dades" in data
+            and isinstance(data["dades"], list)
+            and (not data["dades"] or all(isinstance(item, dict) for item in data["dades"]))
+            and "actualitzat" in data
+            and isinstance(data["actualitzat"], dict)
+            and "dataUpdate" in data["actualitzat"]
+        )
+    
+    async def _filter_alerts_by_region(self):
+        """Filtra las alertas por la región y guarda los resultados en un archivo JSON."""
+        # Obtener el momento actual
+        now = datetime.now(timezone.utc).astimezone(TIMEZONE).isoformat()
+
+        # Carga el archivo alerts.json
+        data = await load_json_from_file(self.alerts_file)
+        if not data:
+            _LOGGER.error("El archivo de alertas %s no existe o está vacío.", self.alerts_file)
+            return
+
+        filtered_alerts = []
+
+        for item in data.get("dades", []):
+            avisos_filtrados = []
+
+            for aviso in item.get("avisos", []):
+                evolucions = []
+                data_inici = None
+                data_fi = None
+
+                for evolucion in aviso.get("evolucions", []):
+                    periodes = []
+                    for periode in evolucion.get("periodes", []):
+                        afectacions = [
+                            afectacio for afectacio in (periode.get("afectacions") or [])
+                            if afectacio and str(afectacio.get("idComarca")) == self.region_id
+                        ]
+                        if afectacions:
+                            if not data_inici:
+                                dia = evolucion.get("dia")[:-6]
+                                data_inici = f"{dia}{periode.get('nom').split('-')[0]}:00Z"
+                            
+                            # Calcular dataFi
+                            dia = evolucion.get('dia')[:-6]  # Eliminar "T00:00Z"
+                            hora_fin = periode.get('nom').split('-')[1]
+                            # Ajustar dataFi correctamente si termina a medianoche
+                            if hora_fin == "00":
+                                dia = evolucion.get('dia')[:-6]  # Eliminar "T00:00Z"
+                                data_fi = f"{dia}23:59Z"
+                            else:
+                                dia = evolucion.get('dia')[:-6]  # Eliminar "T00:00Z"
+                                data_fi = f"{dia}{hora_fin}:00Z"
+
+                        periodes.append({
+                            "nom": periode.get("nom"),
+                            "afectacions": afectacions if afectacions else None
+                        })
+
+                    if any(p.get("afectacions") for p in periodes):
+                        evolucions.append({
+                            "dia": evolucion.get("dia"),
+                            "comentari": evolucion.get("comentari"),
+                            "representatiu": evolucion.get("representatiu"),
+                            "llindar1": evolucion.get("llindar1"),
+                            "llindar2": evolucion.get("llindar2"),
+                            "distribucioGeografica": evolucion.get("distribucioGeografica"),
+                            "periodes": periodes,
+                            "valorMaxim": evolucion.get("valorMaxim")
+                        })
+
+                # Comprobar si la fecha de fin ya ha pasado
+                if evolucions and data_fi >= now:
+                    avisos_filtrados.append({
+                        "tipus": aviso.get("tipus"),
+                        "dataEmisio": aviso.get("dataEmisio"),
+                        "dataInici": data_inici,
+                        "dataFi": data_fi,
+                        "evolucions": evolucions,
+                        "estat": aviso.get("estat")
+                    })
+
+            if avisos_filtrados:
+                filtered_alerts.append({
+                    "estat": item.get("estat"),
+                    "meteor": item.get("meteor"),
+                    "avisos": avisos_filtrados
+                })
+
+        # Guardar los datos filtrados en un archivo JSON
+        await save_json_to_file({
+            "actualitzat": data.get("actualitzat"),
+            "dades": filtered_alerts
+        }, self.alerts_region_file)
+
+class MeteocatAlertsRegionCoordinator(DataUpdateCoordinator):
+    """Coordinator para manejar la actualización de alertas por región."""
+
+    def __init__(self, hass: HomeAssistant, entry_data: dict):
+        """Inicializa el coordinador para alertas de una comarca."""
+        self.town_name = entry_data["town_name"]
+        self.town_id = entry_data["town_id"]
+        self.station_name = entry_data["station_name"]
+        self.station_id = entry_data["station_id"]
+        self.region_name = entry_data["region_name"]
+        self.region_id = entry_data["region_id"]
+        super().__init__(
+            hass,
+            _LOGGER,
+            name=f"{DOMAIN} Alerts Region Coordinator",
+            update_interval=DEFAULT_ALERTS_REGION_UPDATE_INTERVAL,
+        )
+        self._file_path = os.path.join(
+            hass.config.path(),
+            "custom_components",
+            "meteocat",
+            "files",
+            f"alerts_{self.region_id}.json",
+        )
+
+    def _convert_to_local_time(self, time_str: str) -> datetime:
+        """Convierte una cadena de tiempo UTC a la zona horaria de Madrid."""
+        if not time_str:
+            return None
+        # Convertir el tiempo de ISO a datetime con zona horaria UTC
+        utc_time = datetime.fromisoformat(time_str.replace("Z", "+00:00"))
+        # Convertir la hora UTC a la hora local
+        local_time = utc_time.astimezone(TIMEZONE)
+        return local_time
+    
+    def _count_active_alerts(self, data: dict) -> int:
+        """Cuenta las alertas activas procesando todas las alertas, sin detenerse en la primera coincidencia."""
+        if not isinstance(data, dict) or "dades" not in data:
+            _LOGGER.warning("Formato inesperado: 'dades' no es un diccionario o no contiene 'dades'.")
+            return 0
+
+        active_alerts = 0
+        current_time = datetime.now(TIMEZONE)  # Hora local de Madrid
+
+        for item in data["dades"]:  # Directamente acceder a 'dades' ya que sabemos que existe
+            # Obtener el estado global de la alerta desde "dades"
+            estat = item.get("estat", {}).get("nom")
+            
+            # Proceder solo si el estado es "Obert"
+            if estat == "Obert":
+                avisos = item.get("avisos", [])
+                for aviso in avisos:
+                    # Convertir las fechas de inicio y fin a hora local
+                    start_time = self._convert_to_local_time(aviso.get("dataInici"))
+                    end_time = self._convert_to_local_time(aviso.get("dataFi"))
+                    
+                    # Verificar las condiciones para contar como alerta activa
+                    if start_time and end_time and start_time <= current_time <= end_time + timedelta(seconds=1):
+                        _LOGGER.debug(
+                            f"Alerta activa encontrada: {item.get('meteor', {}).get('nom', 'Desconocido')}"
+                        )
+                        active_alerts += 1
+
+        return active_alerts
+
+    def _get_time_period(self, current_hour: int) -> str:
+        """Devuelve la franja horaria actual en formato 'nom'."""
+        periods = ["00-06", "06-12", "12-18", "18-00"]
+        if 0 <= current_hour < 6:
+            return periods[0]
+        elif 6 <= current_hour < 12:
+            return periods[1]
+        elif 12 <= current_hour < 18:
+            return periods[2]
+        else:
+            return periods[3]
+    
+    def _convert_period_to_local_time(self, period: str, date: str) -> str:
+        """Convierte un periodo UTC a la hora local para una fecha específica."""
+        utc_times = period.split("-")
+        # Manejar la transición de "18-00" como "18-24" para el cálculo
+        start_utc = utc_times[0]
+        end_utc = "24" if utc_times[1] == "00" else utc_times[1]
+        
+        # Convertir los tiempos UTC a datetime
+        date_utc = datetime.fromisoformat(f"{date}T00:00+00:00")  # Fecha base en UTC
+        start_local = (date_utc + timedelta(hours=int(start_utc))).astimezone(TIMEZONE)
+        end_local = (date_utc + timedelta(hours=int(end_utc))).astimezone(TIMEZONE)
+        
+        # Formatear los tiempos a "HH:MM"
+        return f"{start_local.strftime('%H:%M')} - {end_local.strftime('%H:%M')}"
+
+    async def _async_update_data(self) -> Dict[str, Any]:
+        """Carga y procesa los datos de alertas desde el archivo JSON."""
+        try:
+            async with aiofiles.open(self._file_path, "r", encoding="utf-8") as file:
+                raw_data = await file.read()
+                data = json.loads(raw_data)
+                _LOGGER.info("Datos cargados desde %s: %s", self._file_path, data)  # Log de la carga de datos
+        except FileNotFoundError:
+            _LOGGER.error("No se encontró el archivo JSON de alertas en %s.", self._file_path)
+            return {}
+        except json.JSONDecodeError:
+            _LOGGER.error("Error al decodificar el archivo JSON de alertas en %s.", self._file_path)
+            return {}
+
+        return self._process_alerts_data(data)
+
+    def _process_alerts_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Procesa los datos de alertas y devuelve un diccionario filtrado por región."""
+        if not data.get("dades"):
+            _LOGGER.info("No hay alertas activas para la región %s.", self.region_id)
+            return {
+                "estado": "Tancat",
+                "actualizado": data.get("actualitzat", {}).get("dataUpdate", ""),
+                "activas": 0,  # Sin alertas activas
+                "detalles": {"meteor": {}}
+            }
+
+        # Obtener la fecha de actualización y añadirla a detalles
+        data_update = data.get("actualitzat", {}).get("dataUpdate", "")
+        current_time = datetime.now(TIMEZONE)
+        current_date = current_time.date()
+        current_hour = current_time.hour
+        current_period = self._get_time_period(current_hour)
+
+        periods = ["00-06", "06-12", "12-18", "18-00"]
+        current_period_index = periods.index(current_period)
+
+        alert_data = {
+            "estado": "Obert",
+            "actualizado": data_update,
+            "activas": 0,  # Inicializamos a 0 y actualizamos al final
+            "detalles": {"meteor": {}}
+        }
+
+        for alert in data["dades"]:
+            estat = alert.get("estat", {}).get("nom", "Desconocido")
+            meteor = alert.get("meteor", {}).get("nom", "Desconocido")
+            avisos = alert.get("avisos", [])
+            alert_found = False  # Bandera para saber si encontramos una alerta para este meteor
+
+            for aviso in avisos:
+                data_inici = self._convert_to_local_time(aviso.get("dataInici"))
+                data_fi = self._convert_to_local_time(aviso.get("dataFi"))
+                _LOGGER.info("Procesando aviso: inicio=%s, fin=%s", data_inici, data_fi)  # Log del aviso
+
+                if data_inici and data_fi and data_inici <= data_fi:  # Asegurarse que data_inici no sea mayor que data_fi
+                    evoluciones = aviso.get("evolucions", [])
+                    for evolucion in evoluciones:
+                        evolucion_date = datetime.fromisoformat(evolucion["dia"].replace("Z", "+00:00")).date()
+                        comentario = evolucion.get("comentari", "")
+
+                        if evolucion_date >= current_date:  # Mirar desde el día actual hacia adelante
+                            if evolucion_date == current_date:
+                                # Mirar el periodo actual y el siguiente si no hay alerta
+                                periodos_a_revisar = evolucion.get("periodes", [])[current_period_index:]
+                                if len(periodos_a_revisar) == 0 or not any(periodo.get("afectacions") for periodo in periodos_a_revisar):
+                                    # Si no hay alertas en los periodos actuales o siguientes, miramos el siguiente periodo
+                                    if current_period_index + 1 < len(periods):
+                                        next_period = next((p for p in evolucion.get("periodes", []) if p.get("nom") == periods[current_period_index + 1]), None)
+                                        if next_period and next_period.get("afectacions"):
+                                            periodos_a_revisar = [next_period]
+                                        else:
+                                            periodos_a_revisar = []
+                                    else:
+                                        # Si estamos en el último periodo, miramos a días futuros
+                                        periodos_a_revisar = []
+                            else:
+                                periodos_a_revisar = evolucion.get("periodes", [])
+
+                            for periodo in periodos_a_revisar:
+                                local_period = self._convert_period_to_local_time(periodo["nom"], evolucion["dia"][:10])
+                                afectaciones = periodo.get("afectacions", [])
+                                if not afectaciones:
+                                    _LOGGER.debug("No se encontraron afectaciones en el período: %s", periodo["nom"])
+                                    continue
+
+                                for afectacion in afectaciones:
+                                    if afectacion.get("idComarca") == int(self.region_id):  # Filtrar por idComarca de la región
+                                        if not alert_found:  # Solo agregamos la primera alerta encontrada para este meteor
+                                            alert_data["detalles"]["meteor"][meteor] = {
+                                                "fecha": evolucion["dia"][:10],
+                                                "periodo": local_period,
+                                                "estado": estat,
+                                                "motivo": meteor,
+                                                "inicio": data_inici,
+                                                "fin": data_fi,
+                                                "comentario": comentario,
+                                                "umbral": afectacion.get("llindar", "Desconocido"),
+                                                "peligro": afectacion.get("perill", 0),
+                                                "nivel": afectacion.get("nivell", 0),
+                                            }
+                                            alert_found = True
+                                            _LOGGER.info(
+                                                "Alerta encontrada y agregada para %s: %s",
+                                                meteor,
+                                                alert_data["detalles"]["meteor"][meteor],
+                                            )
+                                            break  # Salimos del ciclo de afectaciones ya que encontramos una alerta
+                                if alert_found:
+                                    break  # Salimos del ciclo de periodos ya que encontramos una alerta
+                        if alert_found:
+                            break  # Salimos del ciclo de evoluciones si ya encontramos una alerta
+
+        alert_data["activas"] = len(alert_data["detalles"]["meteor"])  # Actualizar el número de alertas activas
+        _LOGGER.info("Detalles recibidos: %s", alert_data.get("detalles", []))
+
+        return alert_data
