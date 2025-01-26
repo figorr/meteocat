@@ -16,10 +16,22 @@ REGION_ID = "region_id"
 REGION_NAME = "region_name"
 PROVINCE_ID = "province_id"
 PROVINCE_NAME = "province_name"
+LIMIT_XEMA = "limit_xema"
+LIMIT_PREDICCIO = "limit_prediccio"
 STATION_STATUS = "station_status"
 HOURLY_FORECAST_FILE_STATUS = "hourly_forecast_file_status"
 DAILY_FORECAST_FILE_STATUS = "daily_forecast_file_status"
 UVI_FILE_STATUS = "uvi_file_status"
+ALERTS = "alerts"
+ALERT_FILE_STATUS = "alert_file_status"
+ALERT_WIND = "alert_wind"
+ALERT_RAIN_INTENSITY = "alert_rain_intensity"
+ALERT_RAIN = "alert_rain"
+ALERT_SEA = "alert_sea"
+ALERT_COLD = "alert_cold"
+ALERT_WARM = "alert_warm"
+ALERT_WARM_NIGHT = "alert_warm_night"
+ALERT_SNOW = "alert_snow"
 
 from homeassistant.const import Platform
 
@@ -29,8 +41,15 @@ DEFAULT_NAME = "METEOCAT"
 
 # Tiempos para validación de API
 DEFAULT_VALIDITY_DAYS = 1  # Número de días a partir de los cuales se considera que el archivo de información está obsoleto
-DEFAULT_VALIDITY_HOURS = 5  # Hora a partir de la cuall la API tiene la información actualizada de predicciones disponible para descarga
-DEFAULT_VALIDITY_MINUTES = 0 # Minutos a partir de los cuales la API tiene la información actualizada de predicciones disponible para descarga
+DEFAULT_VALIDITY_HOURS = 5  # Hora a partir de la cual la API tiene la información actualizada de predicciones disponible para descarga
+DEFAULT_VALIDITY_MINUTES = 0  # Minutos a partir de los cuales la API tiene la información actualizada de predicciones disponible para descarga
+DEFAULT_ALERT_VALIDITY_TIME = 120  # Minutos a partir de los cuales las alertas están obsoletas y se se debe proceder a una nueva llamada a la API
+
+# Multiplicadores para la duración de validez basada en limit_prediccio
+ALERT_VALIDITY_MULTIPLIER_100 = 12  # para limit_prediccio <= 100
+ALERT_VALIDITY_MULTIPLIER_200 = 6   # para 100 < limit_prediccio <= 200
+ALERT_VALIDITY_MULTIPLIER_500 = 3   # para 200 < limit_prediccio <= 500
+ALERT_VALIDITY_MULTIPLIER_DEFAULT = 1  # para limit_prediccio > 500
 
 # Códigos de sensores de la API
 WIND_SPEED = "wind_speed"  # Velocidad del viento
