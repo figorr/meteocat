@@ -1189,6 +1189,19 @@ class MeteocatAlertStatusSensor(CoordinatorEntity[MeteocatAlertsCoordinator], Se
 
 class MeteocatAlertRegionSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinator], SensorEntity):
     """Sensor dinámico que muestra el estado de las alertas por región."""
+
+    METEOR_MAPPING = {
+        "Temps violent": "violent_weather",
+        "Intensitat de pluja": "rain_intensity",
+        "Acumulació de pluja": "rain_amount",
+        "Neu acumulada en 24 hores": "snow_amount_24",
+        "Vent": "wind",
+        "Estat de la mar": "sea_state",
+        "Fred": "cold",
+        "Calor": "heat",
+        "Calor nocturna": "night_heat",
+    }
+
     _attr_has_entity_name = True  # Activa el uso de nombres basados en el dispositivo
 
     def __init__(self, alerts_region_coordinator, description, entry_data):
@@ -1212,10 +1225,16 @@ class MeteocatAlertRegionSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
 
     @property
     def extra_state_attributes(self):
-        """Devuelve los atributos extra del sensor."""
+        """Devuelve los atributos extra del sensor con los nombres traducidos."""
         meteor_details = self.coordinator.data.get("detalles", {}).get("meteor", {})
-        attributes = {f"alert_{i+1}": meteor for i, meteor in enumerate(meteor_details.keys())}
-        _LOGGER.info("Atributos simplificados del sensor: %s", attributes)
+        
+        # Convertimos las claves al formato deseado usando el mapping
+        attributes = {
+            f"alert_{i+1}": self.METEOR_MAPPING.get(meteor, "unknown")
+            for i, meteor in enumerate(meteor_details.keys())
+        }
+
+        _LOGGER.info("Atributos traducidos del sensor: %s", attributes)
         return attributes
     
     @property
@@ -1239,6 +1258,45 @@ class MeteocatAlertMeteorSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
         ALERT_WARM: "Calor",
         ALERT_WARM_NIGHT: "Calor nocturna",
         ALERT_SNOW: "Neu acumulada en 24 hores",
+    }
+
+    STATE_MAPPING = {
+        "Obert": "opened",
+        "Tancat": "closed",
+    }
+
+    UMBRAL_MAPPING = {
+        "Ratxes de vent > 25 m/s": "wind_gusts_25",
+        "Esclafits": "microburst",
+        "Tornados o mànegues": "tornadoes",
+        "Ratxa màxima > 40m/s": "wind_40",
+        "Ratxa màxima > 35m/s": "wind_35",
+        "Ratxa màxima > 30m/s": "wind_30",
+        "Ratxa màxima > 25m/s": "wind_25",
+        "Ratxa màxima > 20m/s": "wind_20",
+        "Pedra de diàmetre > 2 cm": "hail_2_cm",
+        "Intensitat > 40 mm / 30 minuts": "intensity_40_30",
+        "Intensitat > 20 mm / 30 minuts": "intensity_20_30",
+        "Acumulada > 200 mm /24 hores": "rain_200_24",
+        "Acumulada > 100 mm /24 hores": "rain_100_24",
+        "Onades > 4.00 metres (mar brava)": "waves_4",
+        "Onades > 2.50 metres (maregassa)": "waves_2_50",
+        "Fred molt intens": "cold_very_intense",
+        "Fred intens": "cold_intense",
+        "Calor molt intensa": "heat_very_intense",
+        "Calor intensa": "heat_intense",
+        "Calor nocturna molt intensa": "heat_night_very_intense",
+        "Calor nocturna intensa": "heat_night_intense",
+        "gruix > 50 cm a cotes superiors a 1000 metres fins a 1500 metres": "thickness_50_at_1000",
+        "gruix > 30 cm a cotes superiors a 800 metres fins a 1000 metres": "thickness_30_at_800",
+        "gruix > 20 cm a cotes superiors a 600 metres fins a 800 metres": "thickness_20_at_600",
+        "gruix > 20 cm a cotes superiors a 1000 metres fins a 1500 metres": "thickness_20_at_1000",
+        "gruix > 15 cm a cotes superiors a 300 metres fins a 600 metres": "thickness_15_at_300",
+        "gruix > 10 cm a cotes superiors a 800 metres fins a 1000 metres": "thickness_10_at_800",
+        "gruix > 5 cm a cotes inferiors a 300 metres": "thickness_5_at_300",
+        "gruix > 5 cm a cotes superiors a 600 metres fins a 800 metres": "thickness_5_at_600",
+        "gruix > 2 cm a cotes superiors a 300 metres fins a 600 metres": "thickness_2_at_300",
+        "gruix ≥ 0 cm a cotes inferiors a 300 metres": "thickness_0_at_300",
     }
     
     _attr_has_entity_name = True  # Activa el uso de nombres basados en el dispositivo
@@ -1272,7 +1330,10 @@ class MeteocatAlertMeteorSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
             return "Desconocido"
 
         meteor_data = self.coordinator.data.get("detalles", {}).get("meteor", {}).get(meteor_type, {})
-        return meteor_data.get("estado", "Tancat")
+
+        # Convertir estado para translation_key
+        estado_original = meteor_data.get("estado", "Tancat")
+        return self.STATE_MAPPING.get(estado_original, "unknown")
 
     @property
     def extra_state_attributes(self):
@@ -1284,13 +1345,17 @@ class MeteocatAlertMeteorSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
         meteor_data = self.coordinator.data.get("detalles", {}).get("meteor", {}).get(meteor_type, {})
         if not meteor_data:
             return {}
+        
+        # Convertir umbral para translation_key
+        umbral_original = meteor_data.get("umbral")
+        umbral_convertido = self.UMBRAL_MAPPING.get(umbral_original, "unknown")
 
         return {
             "inicio": meteor_data.get("inicio"),
             "fin": meteor_data.get("fin"),
             "fecha": meteor_data.get("fecha"),
             "periodo": meteor_data.get("periodo"),
-            "umbral": meteor_data.get("umbral"),
+            "umbral": umbral_convertido,
             "nivel": meteor_data.get("nivel"),
             "peligro": meteor_data.get("peligro"),
             "comentario": meteor_data.get("comentario"),
