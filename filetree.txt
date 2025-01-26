@@ -35,6 +35,7 @@
 ├── filetree.txt
 ├── hacs.json
 └── images/
+    ├── api_limits.png
     ├── banner.png
     ├── change_units.png
     ├── devices.png
