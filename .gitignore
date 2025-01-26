@@ -67,6 +67,11 @@ custom_components/meteocat/test_condition.py
 custom_components/meteocat/test_condition_hour.py
 custom_components/meteocat/test_hourly_forecast.py
 custom_components/meteocat/test_read_json_date.py
+custom_components/meteocat/test_alerts.py
+custom_components/meteocat/test_alerts_new.py
+custom_components/meteocat/test_alerts_coordinator.py
+custom_components/meteocat/test_alerts_coordinator_meteor.py
+custom_components/meteocat/test_valid.py
 
 # VERSIONS
 current_version.txt
