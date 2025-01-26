@@ -54,7 +54,11 @@ After submitting your API Key you will either be prompted to pick a town from th
 
 Once you pick the town you will be prompted to pick a station from the list. These are the nearest stations to the picked town.
 
-![Meteocat component station picker dialog](images/pick_station.png)
+![Meteocat custom component station picker dialog](images/pick_station.png)
+
+Then you will be asked to set the XEMA and PREDICTIONS limits from the API.
+
+![Meteocat custom component api limits setting dialog](images/api_limits.png)
 
 Then you will be asked to pick an area for the device.
 
