@@ -1,11 +1,3 @@
-## [2.0.1](https://github.com/figorr/meteocat/compare/v2.0.0...v2.0.1) (2025-01-26)
-
-
-### Bug Fixes
-
-* fix translations method ([fbcbfd6](https://github.com/figorr/meteocat/commit/fbcbfd6feeff41f616a1eefdbbc1b2cb177349f1))
-* include mapping for translation key ([c28a18e](https://github.com/figorr/meteocat/commit/c28a18ec25933d9f720bc9da6c789f50736e7a7d))
-
 ## [2.0.0](https://github.com/figorr/meteocat/compare/v1.1.1...v2.0.0) (2025-01-26)
 
 
