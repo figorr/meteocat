@@ -5,6 +5,7 @@ import json
 import aiofiles
 import logging
 import asyncio
+import unicodedata
 from datetime import datetime, timedelta, timezone, time
 from zoneinfo import ZoneInfo
 from typing import Dict, Any
@@ -18,6 +19,7 @@ from meteocatpy.data import MeteocatStationData
 from meteocatpy.uvi import MeteocatUviData
 from meteocatpy.forecast import MeteocatForecast
 from meteocatpy.alerts import MeteocatAlerts
+from meteocatpy.quotes import MeteocatQuotes
 
 from meteocatpy.exceptions import (
     BadRequestError,
@@ -35,6 +37,7 @@ from .const import (
     DEFAULT_VALIDITY_HOURS,
     DEFAULT_VALIDITY_MINUTES,
     DEFAULT_ALERT_VALIDITY_TIME,
+    DEFAULT_QUOTES_VALIDITY_TIME,
     ALERT_VALIDITY_MULTIPLIER_100,
     ALERT_VALIDITY_MULTIPLIER_200,
     ALERT_VALIDITY_MULTIPLIER_500,
@@ -55,6 +58,8 @@ DEFAULT_CONDITION_SENSOR_UPDATE_INTERVAL = timedelta(minutes=5)
 DEFAULT_TEMP_FORECAST_UPDATE_INTERVAL = timedelta(minutes=5)
 DEFAULT_ALERTS_UPDATE_INTERVAL = timedelta(minutes=10)
 DEFAULT_ALERTS_REGION_UPDATE_INTERVAL = timedelta(minutes=5)
+DEFAULT_QUOTES_UPDATE_INTERVAL = timedelta(minutes=10)
+DEFAULT_QUOTES_FILE_UPDATE_INTERVAL = timedelta(minutes=5)
 
 # Definir la zona horaria local
 TIMEZONE = ZoneInfo("Europe/Madrid")
@@ -91,6 +96,52 @@ async def load_json_from_file(input_file: str) -> dict:
     except json.JSONDecodeError as err:
         _LOGGER.error("Error al decodificar JSON del archivo %s: %s", input_file, err)
         return {}
+
+def normalize_name(name):
+    """Normaliza el nombre eliminando acentos y convirtiendo a minúsculas."""
+    name = unicodedata.normalize("NFKD", name).encode("ASCII", "ignore").decode("utf-8")
+    return name.lower()
+
+# Definir _quotes_lock para evitar que varios coordinadores inicien una carrera para modificar quotes.json al mismo tiempo
+_quotes_lock = asyncio.Lock()
+
+async def _update_quotes(hass: HomeAssistant, plan_name: str) -> None:
+    """Actualiza las cuotas en quotes.json después de una consulta."""
+    async with _quotes_lock:
+        quotes_file = hass.config.path(
+            "custom_components", "meteocat", "files", "quotes.json"
+        )
+        try:
+            data = await load_json_from_file(quotes_file)
+            
+            # Validar estructura del archivo
+            if not data or not isinstance(data, dict):
+                _LOGGER.warning("quotes.json está vacío o tiene un formato inválido: %s", data)
+                return
+            if "plans" not in data or not isinstance(data["plans"], list):
+                _LOGGER.warning("Estructura inesperada en quotes.json: %s", data)
+                return
+            
+            # Buscar el plan y actualizar las cuotas
+            for plan in data["plans"]:
+                if plan.get("nom") == plan_name:
+                    plan["consultesRealitzades"] += 1
+                    plan["consultesRestants"] = max(0, plan["consultesRestants"] - 1)
+                    _LOGGER.debug(
+                        "Cuota actualizada para el plan %s: Consultas realizadas %s, restantes %s",
+                        plan_name, plan["consultesRealitzades"], plan["consultesRestants"]
+                    )
+                    break  # Salimos del bucle al encontrar el plan
+            
+            # Guardar cambios en el archivo
+            await save_json_to_file(data, quotes_file)
+
+        except FileNotFoundError:
+            _LOGGER.error("El archivo quotes.json no fue encontrado en la ruta esperada: %s", quotes_file)
+        except json.JSONDecodeError:
+            _LOGGER.error("Error al decodificar quotes.json, posiblemente el archivo está corrupto.")
+        except Exception as e:
+            _LOGGER.exception("Error inesperado al actualizar las cuotas en quotes.json: %s", str(e))
 
 class MeteocatSensorCoordinator(DataUpdateCoordinator):
     """Coordinator para manejar la actualización de datos de los sensores."""
@@ -141,6 +192,9 @@ class MeteocatSensorCoordinator(DataUpdateCoordinator):
                 timeout=30  # Tiempo límite de 30 segundos
             )
             _LOGGER.debug("Datos de sensores actualizados exitosamente: %s", data)
+
+            # Actualizar las cuotas usando la función externa
+            await _update_quotes(self.hass, "XEMA")  # Asegúrate de usar el nombre correcto del plan aquí
 
             # Validar que los datos sean una lista de diccionarios
             if not isinstance(data, list) or not all(isinstance(item, dict) for item in data):
@@ -196,7 +250,7 @@ class MeteocatSensorCoordinator(DataUpdateCoordinator):
                     err,
                 )
         # Intentar cargar datos en caché si hay un error
-        cached_data = load_json_from_file(self.station_file)
+        cached_data = await load_json_from_file(self.station_file)
         if cached_data:
             _LOGGER.warning("Usando datos en caché para la estación %s.", self.station_id)
             return cached_data
@@ -340,6 +394,9 @@ class MeteocatUviCoordinator(DataUpdateCoordinator):
             )
             _LOGGER.debug("Datos actualizados exitosamente: %s", data)
 
+            # Actualizar las cuotas usando la función externa
+            await _update_quotes(self.hass, "Prediccio")  # Asegúrate de usar el nombre correcto del plan aquí
+
             # Validar que los datos sean un dict con una clave 'uvi'
             if not isinstance(data, dict) or 'uvi' not in data:
                 _LOGGER.error("Formato inválido: Se esperaba un dict con la clave 'uvi'. Datos: %s", data)
@@ -380,7 +437,7 @@ class MeteocatUviCoordinator(DataUpdateCoordinator):
                 err,
             )
         # Intentar cargar datos en caché si hay un error
-        cached_data = load_json_from_file(self.uvi_file)
+        cached_data = await load_json_from_file(self.uvi_file)
         if cached_data:
             _LOGGER.warning("Usando datos en caché para la ciudad %s.", self.town_id)
             return cached_data.get('uvi', [])
@@ -551,9 +608,27 @@ class MeteocatEntityCoordinator(DataUpdateCoordinator):
 
     async def _fetch_and_save_data(self, api_method, file_path: str) -> dict:
         """Obtiene datos de la API y los guarda en un archivo JSON."""
-        data = await asyncio.wait_for(api_method(self.town_id), timeout=30)
-        await save_json_to_file(data, file_path)
-        return data
+        try:
+            data = await asyncio.wait_for(api_method(self.town_id), timeout=30)
+
+            # Procesar los datos antes de guardarlos
+            for day in data.get('dies', []):
+                for var, details in day.get('variables', {}).items():
+                    if var == 'precipitacio' and isinstance(details.get('valor'), str) and details['valor'].startswith('-'):
+                        details['valor'] = '0.0'
+
+            await save_json_to_file(data, file_path)
+            
+            # Actualizar cuotas dependiendo del tipo de predicción
+            if api_method.__name__ == 'get_prediccion_horaria':
+                await _update_quotes(self.hass, "Prediccio")
+            elif api_method.__name__ == 'get_prediccion_diaria':
+                await _update_quotes(self.hass, "Prediccio")
+            
+            return data
+        except Exception as err:
+            _LOGGER.error(f"Error al obtener datos de la API para {file_path}: {err}")
+            raise
 
     async def _async_update_data(self) -> dict:
         """Actualiza los datos de predicción horaria y diaria."""
@@ -602,8 +677,8 @@ class MeteocatEntityCoordinator(DataUpdateCoordinator):
             _LOGGER.exception("Error inesperado al obtener datos de predicción: %s", err)
 
         # Si ocurre un error, intentar cargar datos desde los archivos locales
-        hourly_cache = load_json_from_file(self.hourly_file) or {}
-        daily_cache = load_json_from_file(self.daily_file) or {}
+        hourly_cache = await load_json_from_file(self.hourly_file) or {}
+        daily_cache = await load_json_from_file(self.daily_file) or {}
 
         _LOGGER.warning(
             "Cargando datos desde caché para %s. Datos horarios: %s, Datos diarios: %s",
@@ -1203,6 +1278,9 @@ class MeteocatAlertsCoordinator(DataUpdateCoordinator):
                 )
                 raise ValueError("Formato de datos inválido")
             
+            # Actualizar cuotas usando la función externa
+            await _update_quotes(self.hass, "Prediccio")  # Asegúrate de usar el nombre correcto del plan aquí
+            
             # Añadir la clave 'actualitzat' con la fecha y hora actual de la zona horaria local
             current_time = datetime.now(timezone.utc).astimezone(TIMEZONE).isoformat()
             data_with_timestamp = {
@@ -1557,3 +1635,221 @@ class MeteocatAlertsRegionCoordinator(DataUpdateCoordinator):
         _LOGGER.info("Detalles recibidos: %s", alert_data.get("detalles", []))
 
         return alert_data
+
+class MeteocatQuotesCoordinator(DataUpdateCoordinator):
+    """Coordinator para manejar la actualización de las cuotas de la API de Meteocat."""
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        entry_data: dict,
+    ):
+        """
+        Inicializa el coordinador de cuotas de Meteocat.
+
+        Args:
+            hass (HomeAssistant): Instancia de Home Assistant.
+            entry_data (dict): Datos de configuración obtenidos de core.config_entries.
+        """
+        self.api_key = entry_data["api_key"]  # Usamos la API key de la configuración
+        self.meteocat_quotes = MeteocatQuotes(self.api_key)
+
+        self.quotes_file = os.path.join(
+            hass.config.path(),
+            "custom_components",
+            "meteocat",
+            "files",
+            "quotes.json"
+        )
+
+        super().__init__(
+            hass,
+            _LOGGER,
+            name=f"{DOMAIN} Quotes Coordinator",
+            update_interval=DEFAULT_QUOTES_UPDATE_INTERVAL,
+        )
+
+    async def _async_update_data(self) -> Dict:
+        """Actualiza los datos de las cuotas desde la API de Meteocat o usa datos en caché según la antigüedad."""
+        existing_data = await load_json_from_file(self.quotes_file) or {}
+
+        # Definir la duración de validez de los datos
+        validity_duration = timedelta(minutes=DEFAULT_QUOTES_VALIDITY_TIME)
+
+        # Si no existe el archivo
+        if not existing_data:
+            return await self._fetch_and_save_new_data()
+        else:
+            # Comprobar la antigüedad de los datos
+            last_update = datetime.fromisoformat(existing_data['actualitzat']['dataUpdate'])
+            now = datetime.now(timezone.utc).astimezone(TIMEZONE)
+
+            # Comparar la antigüedad de los datos
+            if now - last_update >= validity_duration:
+                return await self._fetch_and_save_new_data()
+            else:
+                # Devolver los datos del archivo existente
+                _LOGGER.debug("Usando datos existentes de cuotas: %s", existing_data)
+                return {
+                "actualizado": existing_data['actualitzat']['dataUpdate']
+                }
+
+    async def _fetch_and_save_new_data(self):
+        """Obtiene nuevos datos de la API y los guarda en el archivo JSON."""
+        try:
+            data = await asyncio.wait_for(
+                self.meteocat_quotes.get_quotes(),
+                timeout=30  # Tiempo límite de 30 segundos
+            )
+            _LOGGER.debug("Datos de cuotas actualizados exitosamente: %s", data)
+
+            if not isinstance(data, dict):
+                _LOGGER.error("Formato inválido: Se esperaba un diccionario, pero se obtuvo %s", type(data).__name__)
+                raise ValueError("Formato de datos inválido")
+            
+            # Modificar los nombres de los planes con normalización
+            plan_mapping = {
+                "xdde_": "XDDE",
+                "prediccio_": "Prediccio",
+                "referencia basic": "Basic",
+                "xema_": "XEMA",
+                "quota": "Quota"
+            }
+
+            modified_plans = []
+            for plan in data["plans"]:
+                normalized_nom = normalize_name(plan["nom"])
+                new_name = next((v for k, v in plan_mapping.items() if normalized_nom.startswith(k)), plan["nom"])
+
+                modified_plans.append({
+                    "nom": new_name,
+                    "periode": plan["periode"],
+                    "maxConsultes": plan["maxConsultes"],
+                    "consultesRestants": plan["consultesRestants"],
+                    "consultesRealitzades": plan["consultesRealitzades"]
+                })
+
+            # Añadir la clave 'actualitzat' con la fecha y hora actual de la zona horaria local
+            current_time = datetime.now(timezone.utc).astimezone(TIMEZONE).isoformat()
+            data_with_timestamp = {
+                "actualitzat": {
+                    "dataUpdate": current_time
+                },
+                "client": data["client"],
+                "plans": modified_plans
+            }
+
+            # Guardar los datos en un archivo JSON
+            await save_json_to_file(data_with_timestamp, self.quotes_file)
+
+            # Devolver tanto los datos de alertas como la fecha de actualización
+            return {
+                "actualizado": data_with_timestamp['actualitzat']['dataUpdate']
+            }
+
+        except asyncio.TimeoutError as err:
+            _LOGGER.warning("Tiempo de espera agotado al obtener las cuotas de la API de Meteocat.")
+            raise ConfigEntryNotReady from err
+        except ForbiddenError as err:
+            _LOGGER.error("Acceso denegado al obtener cuotas de la API de Meteocat: %s", err)
+            raise ConfigEntryNotReady from err
+        except TooManyRequestsError as err:
+            _LOGGER.warning("Límite de solicitudes alcanzado al obtener cuotas de la API de Meteocat: %s", err)
+            raise ConfigEntryNotReady from err
+        except (BadRequestError, InternalServerError, UnknownAPIError) as err:
+            _LOGGER.error("Error al obtener cuotas de la API de Meteocat: %s", err)
+            raise
+        except Exception as err:
+            _LOGGER.exception("Error inesperado al obtener cuotas de la API de Meteocat: %s", err)
+        
+        # Intentar cargar datos en caché si hay un error
+        cached_data = await load_json_from_file(self.quotes_file)
+        if cached_data:
+            _LOGGER.warning("Usando datos en caché para las cuotas de la API de Meteocat.")
+            return cached_data
+
+        _LOGGER.error("No se pudo obtener datos actualizados ni cargar datos en caché.")
+        return None
+    
+class MeteocatQuotesFileCoordinator(DataUpdateCoordinator):
+    """Coordinator para manejar la actualización de las cuotas desde quotes.json."""
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        entry_data: dict,
+    ):
+        """
+        Inicializa el coordinador del sensor de cuotas de la API de Meteocat.
+
+        Args:
+            hass (HomeAssistant): Instancia de Home Assistant.
+            entry_data (dict): Datos de configuración obtenidos de core.config_entries.
+            update_interval (timedelta): Intervalo de actualización.
+        """
+        self.town_id = entry_data["town_id"]  # Usamos el ID del municipio
+
+        super().__init__(
+            hass,
+            _LOGGER,
+            name="Meteocat Quotes File Coordinator",
+            update_interval=DEFAULT_QUOTES_FILE_UPDATE_INTERVAL,
+        )
+        self.quotes_file = os.path.join(
+            hass.config.path(),
+            "custom_components",
+            "meteocat",
+            "files",
+            "quotes.json"
+        )
+
+    async def _async_update_data(self) -> Dict[str, Any]:
+        """Carga los datos de quotes.json y devuelve el estado de las cuotas."""
+        existing_data = await self._load_json_file()
+
+        if not existing_data:
+            _LOGGER.warning("No se encontraron datos en quotes.json.")
+            return {}
+
+        return {
+            "actualizado": existing_data.get("actualitzat", {}).get("dataUpdate"),
+            "client": existing_data.get("client", {}).get("nom"),
+            "plans": [
+                {
+                    "nom": plan.get("nom"),
+                    "periode": plan.get("periode"),
+                    "maxConsultes": plan.get("maxConsultes"),
+                    "consultesRestants": plan.get("consultesRestants"),
+                    "consultesRealitzades": plan.get("consultesRealitzades"),
+                }
+                for plan in existing_data.get("plans", [])
+            ]
+        }
+
+    async def _load_json_file(self) -> dict:
+        """Carga el archivo JSON de forma asincrónica."""
+        try:
+            async with aiofiles.open(self.quotes_file, "r", encoding="utf-8") as f:
+                data = await f.read()
+                return json.loads(data)
+        except FileNotFoundError:
+            _LOGGER.warning("El archivo %s no existe.", self.quotes_file)
+            return {}
+        except json.JSONDecodeError as err:
+            _LOGGER.error("Error al decodificar JSON del archivo %s: %s", self.quotes_file, err)
+            return {}
+
+    async def get_plan_info(self, plan_name: str) -> dict:
+        """Obtiene la información de un plan específico."""
+        data = await self._async_update_data()
+        for plan in data.get("plans", []):
+            if plan.get("nom") == plan_name:
+                return {
+                    "nom": plan.get("nom"),
+                    "periode": plan.get("periode"),
+                    "maxConsultes": plan.get("maxConsultes"),
+                    "consultesRestants": plan.get("consultesRestants"),
+                    "consultesRealitzades": plan.get("consultesRealitzades"),
+                }
+        _LOGGER.warning("Plan %s no encontrado en quotes.json.", plan_name)
+        return {}

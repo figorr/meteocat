@@ -60,6 +60,12 @@ from .const import (
     HOURLY_FORECAST_FILE_STATUS,
     DAILY_FORECAST_FILE_STATUS,
     UVI_FILE_STATUS,
+    QUOTA_FILE_STATUS,
+    QUOTA_XDDE,
+    QUOTA_PREDICCIO,
+    QUOTA_BASIC,
+    QUOTA_XEMA,
+    QUOTA_QUERIES,
     ALERTS,
     ALERT_FILE_STATUS,
     ALERT_WIND,
@@ -86,6 +92,11 @@ from .const import (
     DEFAULT_VALIDITY_HOURS,
     DEFAULT_VALIDITY_MINUTES,
     DEFAULT_ALERT_VALIDITY_TIME,
+    DEFAULT_QUOTES_VALIDITY_TIME,
+    ALERT_VALIDITY_MULTIPLIER_100,
+    ALERT_VALIDITY_MULTIPLIER_200,
+    ALERT_VALIDITY_MULTIPLIER_500,
+    ALERT_VALIDITY_MULTIPLIER_DEFAULT,
 )
 
 from .coordinator import (
@@ -99,6 +110,8 @@ from .coordinator import (
     MeteocatUviCoordinator,
     MeteocatAlertsCoordinator,
     MeteocatAlertsRegionCoordinator,
+    MeteocatQuotesCoordinator,
+    MeteocatQuotesFileCoordinator,
 )
 
 # Definir la zona horaria local
@@ -295,6 +308,12 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     MeteocatSensorEntityDescription(
+        key=QUOTA_FILE_STATUS,
+        translation_key="quota_file_status",
+        icon="mdi:update",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    MeteocatSensorEntityDescription(
         key=ALERTS,
         translation_key="alerts",
         icon="mdi:alert-outline",
@@ -344,6 +363,36 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         key=ALERT_SNOW,
         translation_key="alert_snow",
         icon="mdi:alert-outline",
+    ),
+    MeteocatSensorEntityDescription(
+        key=QUOTA_XDDE,
+        translation_key="quota_xdde",
+        icon="mdi:counter",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    MeteocatSensorEntityDescription(
+        key=QUOTA_PREDICCIO,
+        translation_key="quota_prediccio",
+        icon="mdi:counter",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    MeteocatSensorEntityDescription(
+        key=QUOTA_BASIC,
+        translation_key="quota_basic",
+        icon="mdi:counter",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    MeteocatSensorEntityDescription(
+        key=QUOTA_XEMA,
+        translation_key="quota_xema",
+        icon="mdi:counter",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    MeteocatSensorEntityDescription(
+        key=QUOTA_QUERIES,
+        translation_key="quota_queries",
+        icon="mdi:counter",
+        entity_category=EntityCategory.DIAGNOSTIC,
     )
 )
 
@@ -363,6 +412,8 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
     uvi_coordinator = entry_data.get("uvi_coordinator")
     alerts_coordinator = entry_data.get("alerts_coordinator")
     alerts_region_coordinator = entry_data.get("alerts_region_coordinator")
+    quotes_coordinator = entry_data.get("quotes_coordinator")
+    quotes_file_coordinator = entry_data.get("quotes_file_coordinator")
 
     # Sensores generales
     async_add_entities(
@@ -446,6 +497,20 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
         MeteocatAlertMeteorSensor(alerts_region_coordinator, description, entry_data)
         for description in SENSOR_TYPES
         if description.key in {ALERT_WIND, ALERT_RAIN_INTENSITY, ALERT_RAIN, ALERT_SEA, ALERT_COLD, ALERT_WARM, ALERT_WARM_NIGHT, ALERT_SNOW}
+    )
+
+    # Sensores de estado de cuotas
+    async_add_entities(
+        MeteocatQuotaStatusSensor(quotes_coordinator, description, entry_data)
+        for description in SENSOR_TYPES
+        if description.key == QUOTA_FILE_STATUS
+    )
+
+    # Sensores cuotas
+    async_add_entities(
+        MeteocatQuotaSensor(quotes_file_coordinator, description, entry_data)
+        for description in SENSOR_TYPES
+        if description.key in {QUOTA_XDDE, QUOTA_PREDICCIO, QUOTA_BASIC, QUOTA_XEMA, QUOTA_QUERIES}
     )
 
 # Cambiar UTC a la zona horaria local
@@ -1136,6 +1201,7 @@ class MeteocatAlertStatusSensor(CoordinatorEntity[MeteocatAlertsCoordinator], Se
         self._town_id = entry_data["town_id"]
         self._station_id = entry_data["station_id"]
         self._region_id = entry_data["region_id"]
+        self._limit_prediccio = entry_data["limit_prediccio"]
 
         # Unique ID for the entity
         self._attr_unique_id = f"sensor.{DOMAIN}_{self._region_id}_alert_status"
@@ -1152,6 +1218,19 @@ class MeteocatAlertStatusSensor(CoordinatorEntity[MeteocatAlertsCoordinator], Se
             except ValueError:
                 _LOGGER.error("Formato de fecha de actualización inválido: %s", data_update)
         return None
+    
+    def _get_validity_duration(self):
+        """Calcula la duración de validez basada en el límite de predicción."""
+        if self._limit_prediccio <= 100:
+            multiplier = ALERT_VALIDITY_MULTIPLIER_100
+        elif 100 < self._limit_prediccio <= 200:
+            multiplier = ALERT_VALIDITY_MULTIPLIER_200
+        elif 200 < self._limit_prediccio <= 500:
+            multiplier = ALERT_VALIDITY_MULTIPLIER_500
+        else:
+            multiplier = ALERT_VALIDITY_MULTIPLIER_DEFAULT
+
+        return timedelta(minutes=DEFAULT_ALERT_VALIDITY_TIME * multiplier)
 
     @property
     def native_value(self):
@@ -1161,11 +1240,11 @@ class MeteocatAlertStatusSensor(CoordinatorEntity[MeteocatAlertsCoordinator], Se
             return "unknown"
 
         current_time = datetime.now(ZoneInfo("UTC"))
+        validity_duration = self._get_validity_duration()
 
         # Comprobar si el archivo de alertas está obsoleto
-        if current_time - data_update >= timedelta(hours=DEFAULT_ALERT_VALIDITY_TIME):
+        if current_time - data_update >= validity_duration:
             return "obsolete"
-
         return "updated"
 
     @property
@@ -1367,6 +1446,168 @@ class MeteocatAlertMeteorSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
         return DeviceInfo(
             identifiers={(DOMAIN, self._town_id)},
             name="Meteocat " + self._station_id + " " + self._town_name,
+            manufacturer="Meteocat",
+            model="Meteocat API",
+        )
+
+class MeteocatQuotaStatusSensor(CoordinatorEntity[MeteocatQuotesCoordinator], SensorEntity):
+    _attr_has_entity_name = True  # Activa el uso de nombres basados en el dispositivo
+
+    def __init__(self, quotes_coordinator, description, entry_data):
+        super().__init__(quotes_coordinator)
+        self.entity_description = description
+        self._town_name = entry_data["town_name"]
+        self._town_id = entry_data["town_id"]
+        self._station_id = entry_data["station_id"]
+
+        # Unique ID for the entity
+        self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_quota_status"
+
+        # Assign entity_category if defined in the description
+        self._attr_entity_category = getattr(description, "entity_category", None)
+
+    def _get_data_update(self):
+        """Obtiene la fecha de actualización directamente desde el coordinador."""
+        data_update = self.coordinator.data.get("actualizado")
+        if data_update:
+            try:
+                return datetime.fromisoformat(data_update.rstrip("Z"))
+            except ValueError:
+                _LOGGER.error("Formato de fecha de actualización inválido: %s", data_update)
+        return None
+
+    @property
+    def native_value(self):
+        """Devuelve el estado actual de las alertas basado en la fecha de actualización."""
+        data_update = self._get_data_update()
+        if not data_update:
+            return "unknown"
+
+        current_time = datetime.now(ZoneInfo("UTC"))
+
+        # Comprobar si el archivo de alertas está obsoleto
+        if current_time - data_update >= timedelta(minutes=DEFAULT_QUOTES_VALIDITY_TIME):
+            return "obsolete"
+
+        return "updated"
+
+    @property
+    def extra_state_attributes(self):
+        """Devuelve los atributos adicionales del estado."""
+        attributes = super().extra_state_attributes or {}
+        data_update = self._get_data_update()
+        if data_update:
+            attributes["update_date"] = data_update.isoformat()
+        return attributes
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Devuelve la información del dispositivo."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._town_id)},
+            name=f"Meteocat {self._station_id} {self._town_name}",
+            manufacturer="Meteocat",
+            model="Meteocat API",
+        )
+
+class MeteocatQuotaSensor(CoordinatorEntity[MeteocatQuotesFileCoordinator], SensorEntity):
+    """Representation of Meteocat Quota sensors."""
+
+    # Mapeo de claves en sensor.py a nombres en quotes.json
+    QUOTA_MAPPING = {
+        "quota_xdde": "XDDE",
+        "quota_prediccio": "Prediccio",
+        "quota_basic": "Basic",
+        "quota_xema": "XEMA",
+        "quota_queries": "Quota",
+    }
+
+    # Mapeo de periodos para facilitar la traducción del estado
+    PERIOD_STATE_MAPPING = {
+        "Setmanal": "weekly",
+        "Mensual": "monthly",
+        "Anual": "annual",
+    }
+
+    _attr_has_entity_name = True  # Activa el uso de nombres basados en el dispositivo
+
+    def __init__(self, quotes_file_coordinator, description, entry_data):
+        super().__init__(quotes_file_coordinator)
+        self.entity_description = description
+        self._town_name = entry_data["town_name"]
+        self._town_id = entry_data["town_id"]
+        self._station_id = entry_data["station_id"]
+
+        # Unique ID for the entity
+        self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_{self.entity_description.key}"
+
+        # Assign entity_category if defined in the description
+        self._attr_entity_category = getattr(description, "entity_category", None)
+    
+    def _get_plan_data(self):
+        """Encuentra los datos del plan correspondiente al sensor actual."""
+        if not self.coordinator.data:
+            return None
+
+        plan_name = self.QUOTA_MAPPING.get(self.entity_description.key)
+
+        if not plan_name:
+            _LOGGER.error(f"No se encontró un mapeo para la clave: {self.entity_description.key}")
+            return None
+
+        for plan in self.coordinator.data.get("plans", []):
+            if plan.get("nom") == plan_name:
+                return plan  # Retorna el plan encontrado
+
+        _LOGGER.warning(f"No se encontró el plan '{plan_name}' en los datos del coordinador.")
+        return None
+
+    @property
+    def native_value(self):
+        """Devuelve el estado de la cuota: 'ok' si no se ha excedido, 'exceeded' si se ha superado."""
+        plan = self._get_plan_data()
+
+        if not plan:
+            return None
+
+        max_consultes = plan.get("maxConsultes")
+        consultes_realitzades = plan.get("consultesRealitzades")
+
+        if max_consultes is None or consultes_realitzades is None or \
+            not isinstance(max_consultes, (int, float)) or not isinstance(consultes_realitzades, (int, float)):
+                _LOGGER.warning(f"Datos inválidos para el plan '{plan.get('nom', 'unknown')}': {plan}")
+                return None
+
+        return "ok" if consultes_realitzades <= max_consultes else "exceeded"
+
+    @property
+    def extra_state_attributes(self):
+        """Devuelve atributos adicionales del estado del sensor."""
+        attributes = super().extra_state_attributes or {}
+        plan = self._get_plan_data()
+
+        if not plan:
+            return {}
+        
+        # Aplicar el mapeo de periodos
+        period = plan.get("periode", "desconocido")
+        translated_period = self.PERIOD_STATE_MAPPING.get(period, period)  # Si no está en el mapping, dejar el original
+
+        attributes.update({
+            "period": translated_period,
+            "max_queries": plan.get("maxConsultes"),
+            "made_queries": plan.get("consultesRealitzades"),
+            "remain_queries": plan.get("consultesRestants"),
+        })
+
+        return attributes
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Devuelve la información del dispositivo."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._town_id)},
+            name=f"Meteocat {self._station_id} {self._town_name}",
             manufacturer="Meteocat",
             model="Meteocat API",
         )

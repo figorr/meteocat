@@ -20,7 +20,7 @@
         }
       },
       "set_api_limits": {
-        "description": "Defineix els límits del pla de l'API per XEMA i PREDICCIONS.",
+        "description": "Defineix els límits del pla de l'API.",
         "title": "API límits"
       }
     },
@@ -36,18 +36,18 @@
   "options": {
     "step":{
       "init": {
-        "description": "Configura l'API Key i els límits de l'API per a XEMA i PREDICCIONS.",
+        "description": "Configura l'API Key i els límits de l'API.",
         "title": "Opcions de configuració",
         "data": {
           "option": "Opcions"
         }
       },
       "update_api_and_limits": {
-        "description": "Configura l'API Key i els límits per a XEMA i PREDICCIONS.",
+        "description": "Configura l'API Key i els límits de l'API.",
         "title": "API Key i límits"
       },
       "update_limits_only": {
-        "description": "Configura els límits per a XEMA i PREDICCIONS.",
+        "description": "Configura els límits de l'API.",
         "title": "Límits de l'API"
       }
     },
@@ -222,6 +222,153 @@
         "state_attributes": {
           "update_date": {
             "name": "Data"
+          }
+        }
+      },
+      "quota_file_status": {
+        "name": "Arxiu Quota",
+        "state": {
+          "updated": "Actualitzat",
+          "obsolete": "Obsolet"      
+        },
+        "state_attributes": {
+          "update_date": {
+            "name": "Data"
+          }
+        }
+      },
+      "quota_xdde": {
+        "name": "Quota XDDE",
+        "state": {
+          "ok": "Ok",
+          "exceeded": "Superada",
+          "unknown": "Desconegut"      
+        },
+        "state_attributes": {
+          "period": {
+            "name": "Periode",
+            "state": {
+              "weekly": "Setmanal",
+              "monthly": "Mensual",
+              "annual": "Anual"
+            }
+          },
+          "max_queries": {
+            "name": "Màxim"
+          },
+          "remain_queries": {
+            "name": "Restants"
+          },
+          "made_queries": {
+            "name": "Realitzades"
+          }
+        }
+      },
+      "quota_prediccio": {
+        "name": "Quota Predicció",
+        "state": {
+          "ok": "Ok",
+          "exceeded": "Superada",
+          "unknown": "Desconegut"      
+        },
+        "state_attributes": {
+          "period": {
+            "name": "Periode",
+            "state": {
+              "weekly": "Setmanal",
+              "monthly": "Mensual",
+              "annual": "Anual"
+            }
+          },
+          "max_queries": {
+            "name": "Màxim"
+          },
+          "remain_queries": {
+            "name": "Restants"
+          },
+          "made_queries": {
+            "name": "Realitzades"
+          }
+        }
+      },
+      "quota_basic": {
+        "name": "Quota Bàsica",
+        "state": {
+          "ok": "Ok",
+          "exceeded": "Superada",
+          "unknown": "Desconegut"      
+        },
+        "state_attributes": {
+          "period": {
+            "name": "Periode",
+            "state": {
+              "weekly": "Setmanal",
+              "monthly": "Mensual",
+              "annual": "Anual"
+            }
+          },
+          "max_queries": {
+            "name": "Màxim"
+          },
+          "remain_queries": {
+            "name": "Restants"
+          },
+          "made_queries": {
+            "name": "Realitzades"
+          }
+        }
+      },
+      "quota_xema": {
+        "name": "Quota XEMA",
+        "state": {
+          "ok": "Ok",
+          "exceeded": "Superada",
+          "unknown": "Desconegut"      
+        },
+        "state_attributes": {
+          "period": {
+            "name": "Periode",
+            "state": {
+              "weekly": "Setmanal",
+              "monthly": "Mensual",
+              "annual": "Anual"
+            }
+          },
+          "max_queries": {
+            "name": "Màxim"
+          },
+          "remain_queries": {
+            "name": "Restants"
+          },
+          "made_queries": {
+            "name": "Realitzades"
+          }
+        }
+      },
+      "quota_queries": {
+        "name": "Quota Consultes",
+        "state": {
+          "ok": "Ok",
+          "exceeded": "Superada",
+          "unknown": "Desconegut"      
+        },
+        "state_attributes": {
+          "period": {
+            "name": "Periode",
+            "state": {
+              "weekly": "Setmanal",
+              "monthly": "Mensual",
+              "annual": "Anual"
+            }
+          },
+          "max_queries": {
+            "name": "Màxim"
+          },
+          "remain_queries": {
+            "name": "Restants"
+          },
+          "made_queries": {
+            "name": "Realitzades"
           }
         }
       },

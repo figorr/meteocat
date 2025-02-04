@@ -20,7 +20,7 @@
         }
       },
       "set_api_limits": {
-        "description": "Set the API limits for XEMA and PREDICTIONS.",
+        "description": "Set the API limits.",
         "title": "API limits"
       }
     },
@@ -36,18 +36,18 @@
   "options": {
     "step":{
       "init": {
-        "description": "Setup the API Key and the limits for XEMA and PREDICTIONS.",
+        "description": "Setup the API Key and the API limits.",
         "title": "Setup options",
         "data": {
           "option": "Options"
         }
       },
       "update_api_and_limits": {
-        "description": "Setup the API Key and the limits for XEMA and PREDICTIONS.",
+        "description": "Setup the API Key and the API limits.",
         "title": "API Key and limits"
       },
       "update_limits_only": {
-        "description": "Setup the limits for XEMA and PREDICTIONS.",
+        "description": "Setup the API limits.",
         "title": "API limits"
       }
     },
@@ -222,6 +222,153 @@
         "state_attributes": {
           "update_date": {
             "name": "Date"
+          }
+        }
+      },
+      "quota_file_status": {
+        "name": "Quota File",
+        "state": {
+          "updated": "Updated",
+          "obsolete": "Obsolete"      
+        },
+        "state_attributes": {
+          "update_date": {
+            "name": "Date"
+          }
+        }
+      },
+      "quota_xdde": {
+        "name": "Quota XDDE",
+        "state": {
+          "ok": "Ok",
+          "exceeded": "Exceeded",
+          "unknown": "Unknown"      
+        },
+        "state_attributes": {
+          "period": {
+            "name": "Period",
+            "state": {
+              "weekly": "Weekly",
+              "monthly": "Monthly",
+              "annual": "Annual"
+            }
+          },
+          "max_queries": {
+            "name": "Max Queries"
+          },
+          "remain_queries": {
+            "name": "Remaining"
+          },
+          "made_queries": {
+            "name": "Made"
+          }
+        }
+      },
+      "quota_prediccio": {
+        "name": "Quota Prediction",
+        "state": {
+          "ok": "Ok",
+          "exceeded": "Exceeded",
+          "unknown": "Unknown"      
+        },
+        "state_attributes": {
+          "period": {
+            "name": "Period",
+            "state": {
+              "weekly": "Weekly",
+              "monthly": "Monthly",
+              "annual": "Annual"
+            }
+          },
+          "max_queries": {
+            "name": "Max Queries"
+          },
+          "remain_queries": {
+            "name": "Remaining"
+          },
+          "made_queries": {
+            "name": "Made"
+          }
+        }
+      },
+      "quota_basic": {
+        "name": "Quota Basic",
+        "state": {
+          "ok": "Ok",
+          "exceeded": "Exceeded",
+          "unknown": "Unknown"      
+        },
+        "state_attributes": {
+          "period": {
+            "name": "Period",
+            "state": {
+              "weekly": "Weekly",
+              "monthly": "Monthly",
+              "annual": "Annual"
+            }
+          },
+          "max_queries": {
+            "name": "Max Queries"
+          },
+          "remain_queries": {
+            "name": "Remaining"
+          },
+          "made_queries": {
+            "name": "Made"
+          }
+        }
+      },
+      "quota_xema": {
+        "name": "Quota XEMA",
+        "state": {
+          "ok": "Ok",
+          "exceeded": "Exceeded",
+          "unknown": "Unknown"      
+        },
+        "state_attributes": {
+          "period": {
+            "name": "Period",
+            "state": {
+              "weekly": "Weekly",
+              "monthly": "Monthly",
+              "annual": "Annual"
+            }
+          },
+          "max_queries": {
+            "name": "Max Queries"
+          },
+          "remain_queries": {
+            "name": "Remaining"
+          },
+          "made_queries": {
+            "name": "Made"
+          }
+        }
+      },
+      "quota_queries": {
+        "name": "Quota Queries",
+        "state": {
+          "ok": "Ok",
+          "exceeded": "Exceeded",
+          "unknown": "Unknown"      
+        },
+        "state_attributes": {
+          "period": {
+            "name": "Period",
+            "state": {
+              "weekly": "Weekly",
+              "monthly": "Monthly",
+              "annual": "Annual"
+            }
+          },
+          "max_queries": {
+            "name": "Max Queries"
+          },
+          "remain_queries": {
+            "name": "Remaining"
+          },
+          "made_queries": {
+            "name": "Made"
           }
         }
       },

@@ -18,6 +18,9 @@ PROVINCE_ID = "province_id"
 PROVINCE_NAME = "province_name"
 LIMIT_XEMA = "limit_xema"
 LIMIT_PREDICCIO = "limit_prediccio"
+LIMIT_XDDE = "limit_xdde"
+LIMIT_BASIC = "limit_basic"
+LIMIT_QUOTA = "limit_quota"
 STATION_STATUS = "station_status"
 HOURLY_FORECAST_FILE_STATUS = "hourly_forecast_file_status"
 DAILY_FORECAST_FILE_STATUS = "daily_forecast_file_status"
@@ -32,6 +35,12 @@ ALERT_COLD = "alert_cold"
 ALERT_WARM = "alert_warm"
 ALERT_WARM_NIGHT = "alert_warm_night"
 ALERT_SNOW = "alert_snow"
+QUOTA_FILE_STATUS = "quota_file_status"
+QUOTA_XDDE = "quota_xdde"
+QUOTA_PREDICCIO = "quota_prediccio"
+QUOTA_BASIC = "quota_basic"
+QUOTA_XEMA = "quota_xema"
+QUOTA_QUERIES = "quota_queries"
 
 from homeassistant.const import Platform
 
@@ -44,6 +53,7 @@ DEFAULT_VALIDITY_DAYS = 1  # Número de días a partir de los cuales se consider
 DEFAULT_VALIDITY_HOURS = 5  # Hora a partir de la cual la API tiene la información actualizada de predicciones disponible para descarga
 DEFAULT_VALIDITY_MINUTES = 0  # Minutos a partir de los cuales la API tiene la información actualizada de predicciones disponible para descarga
 DEFAULT_ALERT_VALIDITY_TIME = 120  # Minutos a partir de los cuales las alertas están obsoletas y se se debe proceder a una nueva llamada a la API
+DEFAULT_QUOTES_VALIDITY_TIME = 240 # Minutos a partir de los cuales los datos de cuotas están obsoletos y se se debe proceder a una nueva llamada a la API
 
 # Multiplicadores para la duración de validez basada en limit_prediccio
 ALERT_VALIDITY_MULTIPLIER_100 = 12  # para limit_prediccio <= 100

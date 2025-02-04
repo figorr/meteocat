@@ -20,7 +20,7 @@
         }
       },
       "set_api_limits": {
-        "description": "Define los límites del plan de la API para XEMA y PREDICCIONES.",
+        "description": "Define los límites del plan de la API.",
         "title": "API límites"
       }
     },
@@ -36,18 +36,18 @@
   "options": {
     "step":{
       "init": {
-        "description": "Configura el API Key y los límites de la API para XEMA y PREDICCIONES.",
+        "description": "Configura el API Key y los límites de la API.",
         "title": "Opciones de configuración",
         "data": {
           "option": "Opciones"
         }
       },
       "update_api_and_limits": {
-        "description": "Configura el API Key y los límites para XEMA y PREDICCIONES.",
+        "description": "Configura el API Key y los límites de la API.",
         "title": "API Key y límites"
       },
       "update_limits_only": {
-        "description": "Configura los límites para XEMA y PREDICCIONES.",
+        "description": "Configura los límites de la API.",
         "title": "Límites de la API"
       }
     },
@@ -222,6 +222,153 @@
         "state_attributes": {
           "update_date": {
             "name": "Fecha"
+          }
+        }
+      },
+      "quota_file_status": {
+        "name": "Archivo Cuota",
+        "state": {
+          "updated": "Actualizado",
+          "obsolete": "Obsoleto"      
+        },
+        "state_attributes": {
+          "update_date": {
+            "name": "Fecha"
+          }
+        }
+      },
+      "quota_xdde": {
+        "name": "Cuota XDDE",
+        "state": {
+          "ok": "Ok",
+          "exceeded": "Superada",
+          "unknown": "Desconocido"      
+        },
+        "state_attributes": {
+          "period": {
+            "name": "Periodo",
+            "state": {
+              "weekly": "Semanal",
+              "monthly": "Mensual",
+              "annual": "Anual"
+            }
+          },
+          "max_queries": {
+            "name": "Máximo"
+          },
+          "remain_queries": {
+            "name": "Restantes"
+          },
+          "made_queries": {
+            "name": "Realizadas"
+          }
+        }
+      },
+      "quota_prediccio": {
+        "name": "Cuota Predicción",
+        "state": {
+          "ok": "Ok",
+          "exceeded": "Superada",
+          "unknown": "Desconocido"      
+        },
+        "state_attributes": {
+          "period": {
+            "name": "Periodo",
+            "state": {
+              "weekly": "Semanal",
+              "monthly": "Mensual",
+              "annual": "Anual"
+            }
+          },
+          "max_queries": {
+            "name": "Máximo"
+          },
+          "remain_queries": {
+            "name": "Restantes"
+          },
+          "made_queries": {
+            "name": "Realizadas"
+          }
+        }
+      },
+      "quota_basic": {
+        "name": "Cuota Básica",
+        "state": {
+          "ok": "Ok",
+          "exceeded": "Superada",
+          "unknown": "Desconocido"      
+        },
+        "state_attributes": {
+          "period": {
+            "name": "Periodo",
+            "state": {
+              "weekly": "Semanal",
+              "monthly": "Mensual",
+              "annual": "Anual"
+            }
+          },
+          "max_queries": {
+            "name": "Máximo"
+          },
+          "remain_queries": {
+            "name": "Restantes"
+          },
+          "made_queries": {
+            "name": "Realizadas"
+          }
+        }
+      },
+      "quota_xema": {
+        "name": "Cuota XEMA",
+        "state": {
+          "ok": "Ok",
+          "exceeded": "Superada",
+          "unknown": "Desconocido"      
+        },
+        "state_attributes": {
+          "period": {
+            "name": "Periodo",
+            "state": {
+              "weekly": "Semanal",
+              "monthly": "Mensual",
+              "annual": "Anual"
+            }
+          },
+          "max_queries": {
+            "name": "Máximo"
+          },
+          "remain_queries": {
+            "name": "Restantes"
+          },
+          "made_queries": {
+            "name": "Realizadas"
+          }
+        }
+      },
+      "quota_queries": {
+        "name": "Cuota Consultas",
+        "state": {
+          "ok": "Ok",
+          "exceeded": "Superada",
+          "unknown": "Desconocido"      
+        },
+        "state_attributes": {
+          "period": {
+            "name": "Periodo",
+            "state": {
+              "weekly": "Semanal",
+              "monthly": "Mensual",
+              "annual": "Anual"
+            }
+          },
+          "max_queries": {
+            "name": "Máximo"
+          },
+          "remain_queries": {
+            "name": "Restantes"
+          },
+          "made_queries": {
+            "name": "Realizadas"
           }
         }
       },
