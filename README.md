@@ -56,7 +56,7 @@ Once you pick the town you will be prompted to pick a station from the list. The
 
 ![Meteocat custom component station picker dialog](images/pick_station.png)
 
-Then you will be asked to set the XEMA and PREDICTIONS limits from the API.
+Then you will be asked to set the API limits from your plan.
 
 ![Meteocat custom component api limits setting dialog](images/api_limits.png)
 
