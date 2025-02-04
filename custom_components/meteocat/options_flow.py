@@ -10,7 +10,10 @@ import voluptuous as vol
 from .const import (
     CONF_API_KEY,
     LIMIT_XEMA,
-    LIMIT_PREDICCIO
+    LIMIT_PREDICCIO,
+    LIMIT_XDDE,
+    LIMIT_QUOTA,
+    LIMIT_BASIC
 )
 from meteocatpy.town import MeteocatTown
 from meteocatpy.exceptions import (
@@ -64,6 +67,9 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
             self.api_key = user_input.get(CONF_API_KEY)
             self.limit_xema = user_input.get(LIMIT_XEMA)
             self.limit_prediccio = user_input.get(LIMIT_PREDICCIO)
+            self.limit_xdde = user_input.get(LIMIT_XDDE)
+            self.limit_quota = user_input.get(LIMIT_QUOTA)
+            self.limit_basic = user_input.get(LIMIT_BASIC)
 
             # Validar la nueva API Key utilizando MeteocatTown
             if self.api_key:
@@ -84,7 +90,8 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
                     errors["base"] = "unknown"
 
             # Validar que los límites sean números positivos
-            if not cv.positive_int(self.limit_xema) or not cv.positive_int(self.limit_prediccio):
+            limits_to_validate = [self.limit_xema, self.limit_prediccio, self.limit_xdde, self.limit_quota, self.limit_basic]
+            if not all(cv.positive_int(limit) for limit in limits_to_validate if limit is not None):
                 errors["base"] = "invalid_limit"
 
             if not errors:
@@ -96,6 +103,12 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
                     data_update[LIMIT_XEMA] = self.limit_xema
                 if self.limit_prediccio:
                     data_update[LIMIT_PREDICCIO] = self.limit_prediccio
+                if self.limit_xdde:
+                    data_update[LIMIT_XDDE] = self.limit_xdde
+                if self.limit_quota:
+                    data_update[LIMIT_QUOTA] = self.limit_quota
+                if self.limit_basic:
+                    data_update[LIMIT_BASIC] = self.limit_basic
 
                 self.hass.config_entries.async_update_entry(
                     self._config_entry,
@@ -110,6 +123,9 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
             vol.Required(CONF_API_KEY): str,
             vol.Required(LIMIT_XEMA, default=self._config_entry.data.get(LIMIT_XEMA)): cv.positive_int,
             vol.Required(LIMIT_PREDICCIO, default=self._config_entry.data.get(LIMIT_PREDICCIO)): cv.positive_int,
+            vol.Required(LIMIT_XDDE, default=self._config_entry.data.get(LIMIT_XDDE)): cv.positive_int,
+            vol.Required(LIMIT_QUOTA, default=self._config_entry.data.get(LIMIT_QUOTA)): cv.positive_int,
+            vol.Required(LIMIT_BASIC, default=self._config_entry.data.get(LIMIT_BASIC)): cv.positive_int,
         })
         return self.async_show_form(
             step_id="update_api_and_limits", data_schema=schema, errors=errors
@@ -122,9 +138,13 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
         if user_input is not None:
             self.limit_xema = user_input.get(LIMIT_XEMA)
             self.limit_prediccio = user_input.get(LIMIT_PREDICCIO)
+            self.limit_xdde = user_input.get(LIMIT_XDDE)
+            self.limit_quota = user_input.get(LIMIT_QUOTA)
+            self.limit_basic = user_input.get(LIMIT_BASIC)
 
             # Validar que los límites sean números positivos
-            if not cv.positive_int(self.limit_xema) or not cv.positive_int(self.limit_prediccio):
+            limits_to_validate = [self.limit_xema, self.limit_prediccio, self.limit_xdde, self.limit_quota, self.limit_basic]
+            if not all(cv.positive_int(limit) for limit in limits_to_validate if limit is not None):
                 errors["base"] = "invalid_limit"
 
             if not errors:
@@ -133,7 +153,10 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
                     data={
                         **self._config_entry.data,
                         LIMIT_XEMA: self.limit_xema,
-                        LIMIT_PREDICCIO: self.limit_prediccio
+                        LIMIT_PREDICCIO: self.limit_prediccio,
+                        LIMIT_XDDE: self.limit_xdde,
+                        LIMIT_QUOTA: self.limit_quota,
+                        LIMIT_BASIC: self.limit_basic
                     },
                 )
                 # Recargar la integración para aplicar los cambios dinámicamente
@@ -144,6 +167,9 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
         schema = vol.Schema({
             vol.Required(LIMIT_XEMA, default=self._config_entry.data.get(LIMIT_XEMA)): cv.positive_int,
             vol.Required(LIMIT_PREDICCIO, default=self._config_entry.data.get(LIMIT_PREDICCIO)): cv.positive_int,
+            vol.Required(LIMIT_XDDE, default=self._config_entry.data.get(LIMIT_XDDE)): cv.positive_int,
+            vol.Required(LIMIT_QUOTA, default=self._config_entry.data.get(LIMIT_QUOTA)): cv.positive_int,
+            vol.Required(LIMIT_BASIC, default=self._config_entry.data.get(LIMIT_BASIC)): cv.positive_int,
         })
         return self.async_show_form(
             step_id="update_limits_only", data_schema=schema, errors=errors
