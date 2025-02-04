@@ -1,14 +1,18 @@
 from __future__ import annotations
 
 import os
+import asyncio
 import json
 import logging
 from pathlib import Path
 from typing import Any
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 import voluptuous as vol
 from aiohttp import ClientError
 import aiofiles
+import unicodedata
 
 from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResult
 from homeassistant.core import callback
@@ -34,7 +38,10 @@ from .const import (
     PROVINCE_NAME,
     STATION_STATUS,
     LIMIT_XEMA,
-	LIMIT_PREDICCIO
+	LIMIT_PREDICCIO,
+    LIMIT_XDDE,
+    LIMIT_BASIC,
+    LIMIT_QUOTA
 )
     
 from .options_flow import MeteocatOptionsFlowHandler
@@ -43,10 +50,18 @@ from meteocatpy.symbols import MeteocatSymbols
 from meteocatpy.variables import MeteocatVariables
 from meteocatpy.townstations import MeteocatTownStations
 from meteocatpy.infostation import MeteocatInfoStation
+from meteocatpy.quotes import MeteocatQuotes
 
 from meteocatpy.exceptions import BadRequestError, ForbiddenError, TooManyRequestsError, InternalServerError, UnknownAPIError
 
 _LOGGER = logging.getLogger(__name__)
+
+TIMEZONE = ZoneInfo("Europe/Madrid")
+
+def normalize_name(name):
+    """Normaliza el nombre eliminando acentos y convirtiendo a minúsculas."""
+    name = unicodedata.normalize("NFKD", name).encode("ASCII", "ignore").decode("utf-8")
+    return name.lower()
 
 class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
     """Flujo de configuración para Meteocat."""
@@ -62,6 +77,89 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
         self.station_name: str | None = None
         self._cache = {}
 
+    async def fetch_and_save_quotes(self, api_key):
+        """Obtiene las cuotas de la API de Meteocat y las guarda en quotes.json."""
+        meteocat_quotes = MeteocatQuotes(api_key)
+        quotes_dir = os.path.join(
+            self.hass.config.path(),
+            "custom_components",
+            "meteocat",
+            "files"
+        )
+        os.makedirs(quotes_dir, exist_ok=True)
+        quotes_file = os.path.join(quotes_dir, "quotes.json")
+
+        try:
+            data = await asyncio.wait_for(
+                meteocat_quotes.get_quotes(),
+                timeout=30
+            )
+            
+            # Modificar los nombres de los planes con normalización
+            plan_mapping = {
+                "xdde_": "XDDE",
+                "prediccio_": "Prediccio",
+                "referencia basic": "Basic",
+                "xema_": "XEMA",
+                "quota": "Quota"
+            }
+
+            modified_plans = []
+            for plan in data["plans"]:
+                normalized_nom = normalize_name(plan["nom"])
+                new_name = next((v for k, v in plan_mapping.items() if normalized_nom.startswith(k)), plan["nom"])
+
+                modified_plans.append({
+                    "nom": new_name,
+                    "periode": plan["periode"],
+                    "maxConsultes": plan["maxConsultes"],
+                    "consultesRestants": plan["consultesRestants"],
+                    "consultesRealitzades": plan["consultesRealitzades"]
+                })
+
+            # Añadir la clave 'actualitzat' con la fecha y hora actual de la zona horaria local
+            current_time = datetime.now(timezone.utc).astimezone(TIMEZONE).isoformat()
+            data_with_timestamp = {
+                "actualitzat": {
+                    "dataUpdate": current_time
+                },
+                "client": data["client"],
+                "plans": modified_plans
+            }
+
+            # Guardar los datos en el archivo JSON
+            async with aiofiles.open(quotes_file, "w", encoding="utf-8") as file:
+                await file.write(json.dumps(data_with_timestamp, ensure_ascii=False, indent=4))
+            
+            _LOGGER.info("Cuotas guardadas exitosamente en %s", quotes_file)
+
+        except Exception as ex:
+            _LOGGER.error("Error al obtener o guardar las cuotas: %s", ex)
+            raise HomeAssistantError("No se pudieron obtener las cuotas de la API")
+    
+    async def create_alerts_file(self):
+        """Crea el archivo alerts.json si no existe."""
+        alerts_dir = os.path.join(
+            self.hass.config.path(),
+            "custom_components",
+            "meteocat",
+            "files"
+        )
+        os.makedirs(alerts_dir, exist_ok=True)
+        alerts_file = os.path.join(alerts_dir, "alerts.json")
+
+        if not os.path.exists(alerts_file):
+            initial_data = {
+                "actualitzat": {
+                    "dataUpdate": "1970-01-01T00:00:00+00:00"
+                },
+                "dades": []
+            }
+            async with aiofiles.open(alerts_file, "w", encoding="utf-8") as file:
+                await file.write(json.dumps(initial_data, ensure_ascii=False, indent=4))
+            
+            _LOGGER.info("Archivo alerts.json creado en %s", alerts_file)
+
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
@@ -75,6 +173,10 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
 
             try:
                 self.municipis = await town_client.get_municipis()
+                # Aquí obtenemos y guardamos las cuotas
+                await self.fetch_and_save_quotes(self.api_key)
+                # Aquí creamos el archivo alerts.json si no existe
+                await self.create_alerts_file()
             except (BadRequestError, ForbiddenError, TooManyRequestsError, InternalServerError, UnknownAPIError) as ex:
                 _LOGGER.error("Error al conectar con la API de Meteocat: %s", ex)
                 errors["base"] = "cannot_connect"
@@ -231,6 +333,9 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             self.limit_xema = user_input.get(LIMIT_XEMA, 750)
             self.limit_prediccio = user_input.get(LIMIT_PREDICCIO, 100)
+            self.limit_xdde = user_input.get(LIMIT_XDDE, 250)
+            self.limit_quota = user_input.get(LIMIT_QUOTA, 300)
+            self.limit_basic = user_input.get(LIMIT_BASIC, 300)
             return self.async_create_entry(
                 title=self.selected_municipi["nom"],
                 data={
@@ -252,6 +357,9 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
                     STATION_STATUS: str(self.station_status),
                     LIMIT_XEMA: self.limit_xema,
                     LIMIT_PREDICCIO: self.limit_prediccio,
+                    LIMIT_XDDE: self.limit_xdde,
+                    LIMIT_QUOTA: self.limit_quota,
+                    LIMIT_BASIC: self.limit_basic,
                 },
             )
 
@@ -259,6 +367,9 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
             {
                 vol.Required(LIMIT_XEMA, default=750): cv.positive_int,
                 vol.Required(LIMIT_PREDICCIO, default=100): cv.positive_int,
+                vol.Required(LIMIT_XDDE, default=250): cv.positive_int,
+                vol.Required(LIMIT_QUOTA, default=300): cv.positive_int,
+                vol.Required(LIMIT_BASIC, default=2000): cv.positive_int,
             }
         )
 
