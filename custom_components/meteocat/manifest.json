@@ -8,6 +8,6 @@
     "iot_class": "cloud_polling",
     "issue_tracker": "https://github.com/figorr/meteocat/issues",
     "loggers": ["meteocatpy"],
-    "requirements": ["meteocatpy==1.0.0", "packaging>=20.3", "wrapt>=1.14.0"],
+    "requirements": ["meteocatpy==1.0.1", "packaging>=20.3", "wrapt>=1.14.0"],
     "version": "2.2.2"
 }
