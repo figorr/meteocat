@@ -39,6 +39,8 @@ from .const import (
     TOWN_ID,
     STATION_NAME,
     STATION_ID,
+    REGION_NAME,
+    REGION_ID,
     WIND_SPEED,
     WIND_DIRECTION,
     WIND_DIRECTION_CARDINAL,
@@ -76,6 +78,9 @@ from .const import (
 	ALERT_WARM,
 	ALERT_WARM_NIGHT,
 	ALERT_SNOW,
+    LIGHTNING_FILE_STATUS,
+    LIGHTNING_REGION,
+    LIGHTNING_TOWN,
     WIND_SPEED_CODE,
     WIND_DIRECTION_CODE,
     TEMPERATURE_CODE,
@@ -97,6 +102,7 @@ from .const import (
     ALERT_VALIDITY_MULTIPLIER_200,
     ALERT_VALIDITY_MULTIPLIER_500,
     ALERT_VALIDITY_MULTIPLIER_DEFAULT,
+    DEFAULT_LIGHTNING_VALIDITY_TIME,
 )
 
 from .coordinator import (
@@ -112,6 +118,8 @@ from .coordinator import (
     MeteocatAlertsRegionCoordinator,
     MeteocatQuotesCoordinator,
     MeteocatQuotesFileCoordinator,
+    MeteocatLightningCoordinator,
+    MeteocatLightningFileCoordinator,
 )
 
 # Definir la zona horaria local
@@ -237,6 +245,16 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfSpeed.KILOMETERS_PER_HOUR,
     ),
+    MeteocatSensorEntityDescription(
+        key=LIGHTNING_REGION,
+        translation_key="lightning_region",
+        icon="mdi:weather-lightning",
+    ),
+    MeteocatSensorEntityDescription(
+        key=LIGHTNING_TOWN,
+        translation_key="lightning_town",
+        icon="mdi:weather-lightning",
+    ),
     # Sensores estáticos
     MeteocatSensorEntityDescription(
         key=TOWN_NAME,
@@ -259,6 +277,18 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
     MeteocatSensorEntityDescription(
         key=STATION_ID,
         translation_key="station_id",
+        icon="mdi:identifier",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    MeteocatSensorEntityDescription(
+        key=REGION_NAME,
+        translation_key="region_name",
+        icon="mdi:broadcast",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    MeteocatSensorEntityDescription(
+        key=REGION_ID,
+        translation_key="region_id",
         icon="mdi:identifier",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
@@ -310,6 +340,12 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
     MeteocatSensorEntityDescription(
         key=QUOTA_FILE_STATUS,
         translation_key="quota_file_status",
+        icon="mdi:update",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    MeteocatSensorEntityDescription(
+        key=LIGHTNING_FILE_STATUS,
+        translation_key="lightning_file_status",
         icon="mdi:update",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
@@ -414,6 +450,8 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
     alerts_region_coordinator = entry_data.get("alerts_region_coordinator")
     quotes_coordinator = entry_data.get("quotes_coordinator")
     quotes_file_coordinator = entry_data.get("quotes_file_coordinator")
+    lightning_coordinator = entry_data.get("lightning_coordinator")
+    lightning_file_coordinator = entry_data.get("lightning_file_coordinator")
 
     # Sensores generales
     async_add_entities(
@@ -426,7 +464,7 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
     async_add_entities(
         MeteocatStaticSensor(static_sensor_coordinator, description, entry_data)
         for description in SENSOR_TYPES
-        if description.key in {TOWN_NAME, TOWN_ID, STATION_NAME, STATION_ID}
+        if description.key in {TOWN_NAME, TOWN_ID, STATION_NAME, STATION_ID, REGION_NAME, REGION_ID}
     )
 
     # Sensor UVI
@@ -513,6 +551,20 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
         if description.key in {QUOTA_XDDE, QUOTA_PREDICCIO, QUOTA_BASIC, QUOTA_XEMA, QUOTA_QUERIES}
     )
 
+    # Sensores de estado de rayos
+    async_add_entities(
+        MeteocatLightningStatusSensor(lightning_coordinator, description, entry_data)
+        for description in SENSOR_TYPES
+        if description.key == LIGHTNING_FILE_STATUS
+    )
+
+    # Sensores de rayos en comarca y municipio
+    async_add_entities(
+        MeteocatLightningSensor(lightning_file_coordinator, description, entry_data)
+        for description in SENSOR_TYPES
+        if description.key in {LIGHTNING_REGION, LIGHTNING_TOWN}
+    )
+
 # Cambiar UTC a la zona horaria local
 def convert_to_local_time(utc_time: str, local_tz: str = "Europe/Madrid") -> datetime | None:
     """
@@ -538,7 +590,7 @@ def convert_to_local_time(utc_time: str, local_tz: str = "Europe/Madrid") -> dat
 
 class MeteocatStaticSensor(CoordinatorEntity[MeteocatStaticSensorCoordinator], SensorEntity):
     """Representation of a static Meteocat sensor."""
-    STATIC_KEYS = {TOWN_NAME, TOWN_ID, STATION_NAME, STATION_ID}
+    STATIC_KEYS = {TOWN_NAME, TOWN_ID, STATION_NAME, STATION_ID, REGION_NAME, REGION_ID}
     
     _attr_has_entity_name = True  # Activa el uso de nombres basados en el dispositivo
 
@@ -550,6 +602,8 @@ class MeteocatStaticSensor(CoordinatorEntity[MeteocatStaticSensorCoordinator], S
         self._town_id = entry_data["town_id"]
         self._station_name = entry_data["station_name"]
         self._station_id = entry_data["station_id"]
+        self._region_name = entry_data["region_name"]
+        self._region_id = entry_data["region_id"]
 
         # Unique ID for the entity
         self._attr_unique_id = f"sensor.{DOMAIN}_{self._station_id}_{self.entity_description.key}"
@@ -578,6 +632,10 @@ class MeteocatStaticSensor(CoordinatorEntity[MeteocatStaticSensorCoordinator], S
                 return self._station_name
             if self.entity_description.key == STATION_ID:
                 return self._station_id
+            if self.entity_description.key == REGION_NAME:
+                return self._region_name
+            if self.entity_description.key == REGION_ID:
+                return self._region_id
     
     @property
     def device_info(self) -> DeviceInfo:
@@ -1605,6 +1663,123 @@ class MeteocatQuotaSensor(CoordinatorEntity[MeteocatQuotesFileCoordinator], Sens
     @property
     def device_info(self) -> DeviceInfo:
         """Devuelve la información del dispositivo."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._town_id)},
+            name=f"Meteocat {self._station_id} {self._town_name}",
+            manufacturer="Meteocat",
+            model="Meteocat API",
+        )
+
+class MeteocatLightningStatusSensor(CoordinatorEntity[MeteocatLightningCoordinator], SensorEntity):
+    _attr_has_entity_name = True  # Activa el uso de nombres basados en el dispositivo
+
+    def __init__(self, lightning_coordinator, description, entry_data):
+        super().__init__(lightning_coordinator)
+        self.entity_description = description
+        self._town_name = entry_data["town_name"]
+        self._town_id = entry_data["town_id"]
+        self._station_id = entry_data["station_id"]
+
+        # Unique ID for the entity
+        self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_lightning_status"
+
+        # Assign entity_category if defined in the description
+        self._attr_entity_category = getattr(description, "entity_category", None)
+
+    def _get_data_update(self):
+        """Obtiene la fecha de actualización directamente desde el coordinador."""
+        data_update = self.coordinator.data.get("actualizado")
+        if data_update:
+            try:
+                return datetime.fromisoformat(data_update.rstrip("Z"))
+            except ValueError:
+                _LOGGER.error("Formato de fecha de actualización inválido: %s", data_update)
+        return None
+
+    @property
+    def native_value(self):
+        """Devuelve el estado actual de las alertas basado en la fecha de actualización."""
+        data_update = self._get_data_update()
+        if not data_update:
+            return "unknown"
+
+        current_time = datetime.now(ZoneInfo("UTC"))
+
+        # Comprobar si el archivo de alertas está obsoleto
+        if current_time - data_update >= timedelta(minutes=DEFAULT_LIGHTNING_VALIDITY_TIME):
+            return "obsolete"
+
+        return "updated"
+
+    @property
+    def extra_state_attributes(self):
+        """Devuelve los atributos adicionales del estado."""
+        attributes = super().extra_state_attributes or {}
+        data_update = self._get_data_update()
+        if data_update:
+            attributes["update_date"] = data_update.isoformat()
+        return attributes
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Devuelve la información del dispositivo."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._town_id)},
+            name=f"Meteocat {self._station_id} {self._town_name}",
+            manufacturer="Meteocat",
+            model="Meteocat API",
+        )
+
+class MeteocatLightningSensor(CoordinatorEntity[MeteocatLightningFileCoordinator], SensorEntity):
+    """Representation of Meteocat Lightning sensors."""
+
+    _attr_has_entity_name = True  # Activa el uso de nombres basados en el dispositivo
+
+    def __init__(self, lightning_file_coordinator, description, entry_data):
+        super().__init__(lightning_file_coordinator)
+        self.entity_description = description
+        self._town_name = entry_data["town_name"]
+        self._town_id = entry_data["town_id"]
+        self._station_id = entry_data["station_id"]
+        self._region_id = entry_data["region_id"]
+
+        # Unique ID for the entity
+        self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_{self.entity_description.key}"
+
+        # Assign entity_category if defined in the description
+        self._attr_entity_category = getattr(description, "entity_category", None)
+
+    @property
+    def native_value(self):
+        """Return the total number of lightning strikes."""
+        if self.entity_description.key == LIGHTNING_REGION:
+            return self.coordinator.data.get("region", {}).get("total", 0)
+        elif self.entity_description.key == LIGHTNING_TOWN:
+            return self.coordinator.data.get("town", {}).get("total", 0)
+        return None
+
+    @property
+    def extra_state_attributes(self):
+        """Return additional attributes for the sensor."""
+        attributes = super().extra_state_attributes or {}
+        if self.entity_description.key == LIGHTNING_REGION:
+            data = self.coordinator.data.get("region", {})
+        elif self.entity_description.key == LIGHTNING_TOWN:
+            data = self.coordinator.data.get("town", {})
+        else:
+            return attributes
+
+        # Agregar atributos específicos
+        attributes.update({
+            "cloud_cloud": data.get("cc", 0),
+            "cloud_ground_neg": data.get("cg-", 0),
+            "cloud_ground_pos": data.get("cg+", 0),
+        })
+        return attributes
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return the device info."""
         return DeviceInfo(
             identifiers={(DOMAIN, self._town_id)},
             name=f"Meteocat {self._station_id} {self._town_name}",

@@ -151,6 +151,12 @@
       "station_timestamp": {
         "name": "Estación Timestamp"
       },
+      "region_name": {
+        "name": "Comarca Nombre"
+      },
+      "region_id": {
+        "name": "Comarca ID"
+      },
       "condition": {
         "name": "Estado del cielo",
         "state": {
@@ -234,6 +240,46 @@
         "state_attributes": {
           "update_date": {
             "name": "Fecha"
+          }
+        }
+      },
+      "lightning_file_status": {
+        "name": "Archivo Rayos",
+        "state": {
+          "updated": "Actualizado",
+          "obsolete": "Obsoleto"      
+        },
+        "state_attributes": {
+          "update_date": {
+            "name": "Fecha"
+          }
+        }
+      },
+      "lightning_region": {
+        "name": "Rayos Comarca",
+        "state_attributes": {
+          "cloud_cloud": {
+            "name": "Nube-Nube"
+          },
+          "cloud_ground_neg":{
+            "name": "Nube-Tierra Negativo"
+          },
+          "cloud_ground_pos": {
+            "name": "Nube-Tierra Positivo"
+          }
+        }
+      },
+      "lightning_town": {
+        "name": "Rayos Municipio",
+        "state_attributes": {
+          "cloud_cloud": {
+            "name": "Nube-Nube"
+          },
+          "cloud_ground_neg":{
+            "name": "Nube-Tierra Negativo"
+          },
+          "cloud_ground_pos": {
+            "name": "Nube-Tierra Positivo"
           }
         }
       },

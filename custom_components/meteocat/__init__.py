@@ -24,6 +24,8 @@ from .coordinator import (
     MeteocatAlertsRegionCoordinator,
     MeteocatQuotesCoordinator,
     MeteocatQuotesFileCoordinator,
+    MeteocatLightningCoordinator,
+    MeteocatLightningFileCoordinator,
 )
 
 from .const import DOMAIN, PLATFORMS
@@ -137,6 +139,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         quotes_file_coordinator = MeteocatQuotesFileCoordinator(hass=hass, entry_data=entry_data)
         await quotes_file_coordinator.async_config_entry_first_refresh()
 
+        lightning_coordinator = MeteocatLightningCoordinator(hass=hass, entry_data=entry_data)
+        await lightning_coordinator.async_config_entry_first_refresh()
+
+        lightning_file_coordinator = MeteocatLightningFileCoordinator(hass=hass, entry_data=entry_data)
+        await lightning_file_coordinator.async_config_entry_first_refresh()
+
     except Exception as err:  # Capturar todos los errores
         _LOGGER.exception(f"Error al inicializar los coordinadores: {err}")
         return False
@@ -157,6 +165,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "alerts_region_coordinator": alerts_region_coordinator,
         "quotes_coordinator": quotes_coordinator,
         "quotes_file_coordinator": quotes_file_coordinator,
+        "lightning_coordinator": lightning_coordinator,
+        "lightning_file_coordinator": lightning_file_coordinator,
         **entry_data,
     }
 
@@ -223,8 +233,11 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     alerts_file = files_folder / "alerts.json"
     alerts_region_file = files_folder / f"alerts_{region_id}.json"
 
-    # Archivos JSON de cuotas
+    # Archivo JSON de cuotas
     quotes_file = files_folder / f"quotes.json"
+
+    # Archivo JSON de rayos
+    lightning_file = files_folder / f"lightning_{region_id}.json"
 
     # Validar la ruta base
     if not custom_components_path.exists():
@@ -241,5 +254,6 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     safe_remove(alerts_file)
     safe_remove(quotes_file)
     safe_remove(alerts_region_file)
+    safe_remove(lightning_file)
     safe_remove(assets_folder, is_folder=True)
     safe_remove(files_folder, is_folder=True)

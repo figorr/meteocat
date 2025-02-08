@@ -151,6 +151,12 @@
       "station_timestamp": {
         "name": "Station Timestamp"
       },
+      "region_name": {
+        "name": "Region Name"
+      },
+      "region_id": {
+        "name": "Region ID"
+      },
       "condition": {
         "name": "Condition",
         "state": {
@@ -234,6 +240,46 @@
         "state_attributes": {
           "update_date": {
             "name": "Date"
+          }
+        }
+      },
+      "lightning_file_status": {
+        "name": "Lightning File",
+        "state": {
+          "updated": "Updated",
+          "obsolete": "Obsolete"      
+        },
+        "state_attributes": {
+          "update_date": {
+            "name": "Date"
+          }
+        }
+      },
+      "lightning_region": {
+        "name": "Lightning Region",
+        "state_attributes": {
+          "cloud_cloud": {
+            "name": "Cloud-Cloud"
+          },
+          "cloud_ground_neg":{
+            "name": "Cloud-Ground Negative"
+          },
+          "cloud_ground_pos": {
+            "name": "Cloud-Ground Positive"
+          }
+        }
+      },
+      "lightning_town": {
+        "name": "Lightning Town",
+        "state_attributes": {
+          "cloud_cloud": {
+            "name": "Cloud-Cloud"
+          },
+          "cloud_ground_neg":{
+            "name": "Cloud-Ground Negative"
+          },
+          "cloud_ground_pos": {
+            "name": "Cloud-Ground Positive"
           }
         }
       },

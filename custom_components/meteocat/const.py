@@ -41,6 +41,7 @@ QUOTA_PREDICCIO = "quota_prediccio"
 QUOTA_BASIC = "quota_basic"
 QUOTA_XEMA = "quota_xema"
 QUOTA_QUERIES = "quota_queries"
+LIGHTNING_FILE_STATUS = "lightning_file_status"
 
 from homeassistant.const import Platform
 
@@ -54,6 +55,7 @@ DEFAULT_VALIDITY_HOURS = 5  # Hora a partir de la cual la API tiene la informaci
 DEFAULT_VALIDITY_MINUTES = 0  # Minutos a partir de los cuales la API tiene la información actualizada de predicciones disponible para descarga
 DEFAULT_ALERT_VALIDITY_TIME = 120  # Minutos a partir de los cuales las alertas están obsoletas y se se debe proceder a una nueva llamada a la API
 DEFAULT_QUOTES_VALIDITY_TIME = 240 # Minutos a partir de los cuales los datos de cuotas están obsoletos y se se debe proceder a una nueva llamada a la API
+DEFAULT_LIGHTNING_VALIDITY_TIME = 240 # Minutos a partir de los cuales los datos de rayos están obsoletos y se se debe proceder a una nueva llamada a la API
 
 # Multiplicadores para la duración de validez basada en limit_prediccio
 ALERT_VALIDITY_MULTIPLIER_100 = 12  # para limit_prediccio <= 100
@@ -81,6 +83,8 @@ STATION_TIMESTAMP = "station_timestamp"  # Código de tiempo de la estación
 CONDITION = "condition"  # Estado del cielo
 MAX_TEMPERATURE_FORECAST = "max_temperature_forecast"  # Temperatura máxima prevista
 MIN_TEMPERATURE_FORECAST = "min_temperature_forecast"  # Temperatura mínima prevista
+LIGHTNING_REGION = "lightning_region"  # Rayos de la comarca
+LIGHTNING_TOWN = "lightning_town"  # Rayos de la población
 
 # Definición de códigos para variables
 WIND_SPEED_CODE = 30

@@ -151,6 +151,12 @@
       "station_timestamp": {
         "name": "Estació Timestamp"
       },
+      "region_name": {
+        "name": "Comarca Nom"
+      },
+      "region_id": {
+        "name": "Comarca ID"
+      },
       "condition": {
         "name": "Estat del Cel",
         "state": {
@@ -234,6 +240,46 @@
         "state_attributes": {
           "update_date": {
             "name": "Data"
+          }
+        }
+      },
+      "lightning_file_status": {
+        "name": "Arxiu Llamps",
+        "state": {
+          "updated": "Actualitzat",
+          "obsolete": "Obsolet"      
+        },
+        "state_attributes": {
+          "update_date": {
+            "name": "Data"
+          }
+        }
+      },
+      "lightning_region": {
+        "name": "Llamps Comarca",
+        "state_attributes": {
+          "cloud_cloud": {
+            "name": "Núvol-Núvol"
+          },
+          "cloud_ground_neg":{
+            "name": "Núvol-Terra Negatiu"
+          },
+          "cloud_ground_pos": {
+            "name": "Núvol-Terra Positiu"
+          }
+        }
+      },
+      "lightning_town": {
+        "name": "Llamps Municipi",
+        "state_attributes": {
+          "cloud_cloud": {
+            "name": "Núvol-Núvol"
+          },
+          "cloud_ground_neg":{
+            "name": "Núvol-Terra Negatiu"
+          },
+          "cloud_ground_pos": {
+            "name": "Núvol-Terra Positiu"
           }
         }
       },

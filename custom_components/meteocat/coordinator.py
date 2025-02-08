@@ -20,6 +20,7 @@ from meteocatpy.uvi import MeteocatUviData
 from meteocatpy.forecast import MeteocatForecast
 from meteocatpy.alerts import MeteocatAlerts
 from meteocatpy.quotes import MeteocatQuotes
+from meteocatpy.lightning import MeteocatLightning
 
 from meteocatpy.exceptions import (
     BadRequestError,
@@ -41,7 +42,8 @@ from .const import (
     ALERT_VALIDITY_MULTIPLIER_100,
     ALERT_VALIDITY_MULTIPLIER_200,
     ALERT_VALIDITY_MULTIPLIER_500,
-    ALERT_VALIDITY_MULTIPLIER_DEFAULT
+    ALERT_VALIDITY_MULTIPLIER_DEFAULT,
+    DEFAULT_LIGHTNING_VALIDITY_TIME
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -60,6 +62,8 @@ DEFAULT_ALERTS_UPDATE_INTERVAL = timedelta(minutes=10)
 DEFAULT_ALERTS_REGION_UPDATE_INTERVAL = timedelta(minutes=5)
 DEFAULT_QUOTES_UPDATE_INTERVAL = timedelta(minutes=10)
 DEFAULT_QUOTES_FILE_UPDATE_INTERVAL = timedelta(minutes=5)
+DEFAULT_LIGHTNING_UPDATE_INTERVAL = timedelta(minutes=10)
+DEFAULT_LIGHTNING_FILE_UPDATE_INTERVAL = timedelta(minutes=5)
 
 # Definir la zona horaria local
 TIMEZONE = ZoneInfo("Europe/Madrid")
@@ -278,6 +282,8 @@ class MeteocatStaticSensorCoordinator(DataUpdateCoordinator):
         self.town_id = entry_data["town_id"]  # ID del municipio
         self.station_name = entry_data["station_name"]  # Nombre de la estación
         self.station_id = entry_data["station_id"]  # ID de la estación
+        self.region_name = entry_data["region_name"]  # Nombre de la región
+        self.region_id = entry_data["region_id"]  # ID de la región
 
         super().__init__(
             hass,
@@ -293,17 +299,21 @@ class MeteocatStaticSensorCoordinator(DataUpdateCoordinator):
         Since static sensors use entry_data, this method simply logs the process.
         """
         _LOGGER.debug(
-            "Updating static sensor data for town: %s (ID: %s), station: %s (ID: %s)",
+            "Updating static sensor data for town: %s (ID: %s), station: %s (ID: %s), region: %s (ID: %s)",
             self.town_name,
             self.town_id,
             self.station_name,
             self.station_id,
+            self.region_name,
+            self.region_id,
         )
         return {
             "town_name": self.town_name,
             "town_id": self.town_id,
             "station_name": self.station_name,
             "station_id": self.station_id,
+            "region_name": self.region_name,
+            "region_id": self.region_id,
         }
 
 class MeteocatUviCoordinator(DataUpdateCoordinator):
@@ -1721,6 +1731,11 @@ class MeteocatQuotesCoordinator(DataUpdateCoordinator):
                 normalized_nom = normalize_name(plan["nom"])
                 new_name = next((v for k, v in plan_mapping.items() if normalized_nom.startswith(k)), plan["nom"])
 
+                # Si el plan es "Quota", actualizamos las consultas realizadas y restantes
+                if new_name == "Quota":
+                    plan["consultesRealitzades"] += 1
+                    plan["consultesRestants"] = max(0, plan["consultesRestants"] - 1)
+
                 modified_plans.append({
                     "nom": new_name,
                     "periode": plan["periode"],
@@ -1853,3 +1868,207 @@ class MeteocatQuotesFileCoordinator(DataUpdateCoordinator):
                 }
         _LOGGER.warning("Plan %s no encontrado en quotes.json.", plan_name)
         return {}
+
+class MeteocatLightningCoordinator(DataUpdateCoordinator):
+    """Coordinator para manejar la actualización de los datos de rayos de la API de Meteocat."""
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        entry_data: dict,
+    ):
+        """
+        Inicializa el coordinador de rayos de Meteocat.
+        
+        Args:
+            hass (HomeAssistant): Instancia de Home Assistant.
+            entry_data (dict): Datos de configuración obtenidos de core.config_entries.
+        """
+        self.api_key = entry_data["api_key"]  # API Key de la configuración
+        self.region_id = entry_data["region_id"]  # Región de la configuración
+        self.meteocat_lightning = MeteocatLightning(self.api_key)
+
+        self.lightning_file = os.path.join(
+            hass.config.path(),
+            "custom_components",
+            "meteocat",
+            "files",
+            f"lightning_{self.region_id}.json",
+        )
+
+        super().__init__(
+            hass,
+            _LOGGER,
+            name=f"{DOMAIN} Lightning Coordinator",
+            update_interval=DEFAULT_LIGHTNING_UPDATE_INTERVAL,
+        )
+
+    async def _async_update_data(self) -> Dict:
+        """Actualiza los datos de rayos desde la API de Meteocat o usa datos en caché según la antigüedad."""
+        existing_data = await load_json_from_file(self.lightning_file) or {}
+
+        # Definir la duración de validez de los datos
+        validity_duration = timedelta(minutes=DEFAULT_LIGHTNING_VALIDITY_TIME)
+
+        if not existing_data:
+            return await self._fetch_and_save_new_data()
+        else:
+            last_update = datetime.fromisoformat(existing_data['actualitzat']['dataUpdate'])
+            now = datetime.now(timezone.utc).astimezone(TIMEZONE)
+            
+            if now - last_update >= validity_duration:
+                return await self._fetch_and_save_new_data()
+            else:
+                _LOGGER.debug("Usando datos existentes de rayos: %s", existing_data)
+                return {"actualizado": existing_data['actualitzat']['dataUpdate']}
+
+    async def _fetch_and_save_new_data(self):
+        """Obtiene nuevos datos de la API y los guarda en el archivo JSON."""
+        try:
+            data = await asyncio.wait_for(
+                self.meteocat_lightning.get_lightning_data(self.region_id),
+                timeout=30  # Tiempo límite de 30 segundos
+            )
+            _LOGGER.debug("Datos de rayos actualizados exitosamente: %s", data)
+
+            # Verificar que `data` sea una lista (como la API de Meteocat devuelve)
+            if not isinstance(data, list):
+                _LOGGER.error("Formato inválido: Se esperaba una lista, pero se obtuvo %s", type(data).__name__)
+                raise ValueError("Formato de datos inválido")
+
+            # Estructurar los datos en el formato correcto
+            current_time = datetime.now(timezone.utc).astimezone(TIMEZONE).isoformat()
+            data_with_timestamp = {
+                "actualitzat": {
+                    "dataUpdate": current_time
+                },
+                "dades": data  # Siempre será una lista
+            }
+
+            # Guardar los datos en un archivo JSON
+            await save_json_to_file(data_with_timestamp, self.lightning_file)
+
+            # Actualizar cuotas usando la función externa
+            await _update_quotes(self.hass, "XDDE")  # Asegúrate de usar el nombre correcto del plan aquí
+
+            return {"actualizado": data_with_timestamp['actualitzat']['dataUpdate']}
+
+        except asyncio.TimeoutError as err:
+            _LOGGER.warning("Tiempo de espera agotado al obtener los datos de rayos de la API de Meteocat.")
+            raise ConfigEntryNotReady from err
+        except Exception as err:
+            _LOGGER.exception("Error inesperado al obtener los datos de rayos de la API de Meteocat: %s", err)
+
+        # Intentar cargar datos en caché si la API falla
+        cached_data = await load_json_from_file(self.lightning_file)
+        if cached_data:
+            _LOGGER.warning("Usando datos en caché para los datos de rayos de la API de Meteocat.")
+            return cached_data
+
+        _LOGGER.error("No se pudo obtener datos actualizados ni cargar datos en caché.")
+        return None
+
+class MeteocatLightningFileCoordinator(DataUpdateCoordinator):
+    """Coordinator para manejar la actualización de los datos de rayos desde lightning_{region_id}.json."""
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        entry_data: dict,
+    ):
+        """
+        Inicializa el coordinador de rayos desde archivo.
+
+        Args:
+            hass (HomeAssistant): Instancia de Home Assistant.
+            entry_data (dict): Datos de configuración de la entrada.
+        """
+        self.region_id = entry_data["region_id"]
+        self.town_id = entry_data["town_id"]
+
+        self.lightning_file = os.path.join(
+            hass.config.path(),
+            "custom_components",
+            "meteocat",
+            "files",
+            f"lightning_{self.region_id}.json",
+        )
+
+        super().__init__(
+            hass,
+            _LOGGER,
+            name="Meteocat Lightning File Coordinator",
+            update_interval=DEFAULT_LIGHTNING_FILE_UPDATE_INTERVAL,
+        )
+
+    async def _async_update_data(self) -> Dict[str, Any]:
+        """Carga los datos de rayos desde el archivo JSON y procesa la información."""
+        existing_data = await load_json_from_file(self.lightning_file)
+
+        if not existing_data:
+            _LOGGER.warning("No se encontraron datos en %s.", self.lightning_file)
+            return {
+                "actualizado": datetime.now(ZoneInfo("Europe/Madrid")).isoformat(),
+                "region": self._reset_data(),
+                "town": self._reset_data()
+            }
+
+        # Convertir la cadena de fecha a un objeto datetime y ajustar a la zona horaria local
+        update_date = datetime.fromisoformat(existing_data.get("actualitzat", {}).get("dataUpdate", ""))
+        update_date = update_date.astimezone(ZoneInfo("Europe/Madrid"))
+        now = datetime.now(ZoneInfo("Europe/Madrid"))
+
+        if update_date.date() != now.date():  # Si la fecha no es la de hoy
+            _LOGGER.info("Los datos de rayos son de un día diferente. Reiniciando valores a cero.")
+            region_data = town_data = self._reset_data()
+            update_date = datetime.now(ZoneInfo("Europe/Madrid")).isoformat()  # Usar la fecha actual
+        else:
+            region_data = self._process_region_data(existing_data.get("dades", []))
+            town_data = self._process_town_data(existing_data.get("dades", []))
+
+        return {
+            "actualizado": update_date,
+            "region": region_data,
+            "town": town_data
+        }
+
+    def _process_region_data(self, data_list):
+        """Suma los tipos de descargas para toda la región."""
+        region_counts = {
+            "cc": 0, 
+            "cg-": 0, 
+            "cg+": 0
+        }
+        for town in data_list:
+            for discharge in town.get("descarregues", []):
+                if discharge["tipus"] in region_counts:
+                    region_counts[discharge["tipus"]] += discharge["recompte"]
+        
+        region_counts["total"] = sum(region_counts.values())
+        return region_counts
+
+    def _process_town_data(self, data_list):
+        """Encuentra y suma los tipos de descargas para un municipio específico."""
+        town_counts = {
+            "cc": 0, 
+            "cg-": 0, 
+            "cg+": 0
+        }
+        for town in data_list:
+            if town["codi"] == self.town_id:
+                for discharge in town.get("descarregues", []):
+                    if discharge["tipus"] in town_counts:
+                        town_counts[discharge["tipus"]] += discharge["recompte"]
+                break  # Solo necesitamos datos de un municipio
+        
+        town_counts["total"] = sum(town_counts.values())
+        return town_counts
+
+    def _reset_data(self):
+        """Resetea los datos a cero."""
+        return {
+            "cc": 0,
+            "cg-": 0,
+            "cg+": 0,
+            "total": 0
+        }

@@ -75,6 +75,7 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
         self.variable_id: str | None = None
         self.station_id: str | None = None
         self.station_name: str | None = None
+        self.region_id: str | None = None
         self._cache = {}
 
     async def fetch_and_save_quotes(self, api_key):
@@ -159,6 +160,29 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
                 await file.write(json.dumps(initial_data, ensure_ascii=False, indent=4))
             
             _LOGGER.info("Archivo alerts.json creado en %s", alerts_file)
+    
+    async def create_lightning_file(self):
+        """Crea el archivo lightning_{self.region_id}.json si no existe."""
+        lightning_dir = os.path.join(
+            self.hass.config.path(),
+            "custom_components",
+            "meteocat",
+            "files"
+        )
+        os.makedirs(lightning_dir, exist_ok=True)
+        lightning_file = os.path.join(lightning_dir, f"lightning_{self.region_id}.json")
+
+        if not os.path.exists(lightning_file):
+            initial_data = {
+                "actualitzat": {
+                    "dataUpdate": "1970-01-01T00:00:00+00:00"
+                },
+                "dades": []
+            }
+            async with aiofiles.open(lightning_file, "w", encoding="utf-8") as file:
+                await file.write(json.dumps(initial_data, ensure_ascii=False, indent=4))
+            
+            _LOGGER.info("Archivo %s creado", lightning_file)
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -307,6 +331,10 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
                     self.province_id = station_metadata.get("provincia", {}).get("codi", "")
                     self.province_name = station_metadata.get("provincia", {}).get("nom", "")
                     self.station_status = station_metadata.get("estats", [{}])[0].get("codi", "")
+
+                    # Crear el archivo lightning después de obtener region_id
+                    await self.create_lightning_file()
+                    
                     return await self.async_step_set_api_limits()
                 except Exception as ex:
                     _LOGGER.error("Error al obtener los metadatos de la estación: %s", ex)
