@@ -1,3 +1,13 @@
+## [2.2.3](https://github.com/figorr/meteocat/compare/v2.2.2...v2.2.3) (2025-02-08)
+
+
+### Bug Fixes
+
+* 2.2.3 ([ce224a0](https://github.com/figorr/meteocat/commit/ce224a097e7c879c46985ff3a16143de1b822006))
+* bump meteocatpy to 1.0.1 ([7119065](https://github.com/figorr/meteocat/commit/711906534fca5c61a9a3ab968a3572e70f05929e))
+* new lightning sensors ([8528f57](https://github.com/figorr/meteocat/commit/8528f57d688f7fc21f66715ffeac086895afd1aa))
+* update README ([10c86e5](https://github.com/figorr/meteocat/commit/10c86e5e373c661cf23524421c756374711d89fe))
+
 ## [2.2.2](https://github.com/figorr/meteocat/compare/v2.2.1...v2.2.2) (2025-02-04)
 
 
