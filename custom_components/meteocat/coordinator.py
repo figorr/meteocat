@@ -43,7 +43,9 @@ from .const import (
     ALERT_VALIDITY_MULTIPLIER_200,
     ALERT_VALIDITY_MULTIPLIER_500,
     ALERT_VALIDITY_MULTIPLIER_DEFAULT,
-    DEFAULT_LIGHTNING_VALIDITY_TIME
+    DEFAULT_LIGHTNING_VALIDITY_TIME,
+    DEFAULT_LIGHTNING_VALIDITY_HOURS,
+    DEFAULT_LIGHTNING_VALIDITY_MINUTES
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -1908,6 +1910,8 @@ class MeteocatLightningCoordinator(DataUpdateCoordinator):
         existing_data = await load_json_from_file(self.lightning_file) or {}
 
         # Definir la duración de validez de los datos
+        current_time = datetime.now(timezone.utc).time()
+        validity_start_time = time(DEFAULT_LIGHTNING_VALIDITY_HOURS, DEFAULT_LIGHTNING_VALIDITY_MINUTES)
         validity_duration = timedelta(minutes=DEFAULT_LIGHTNING_VALIDITY_TIME)
 
         if not existing_data:
@@ -1916,7 +1920,7 @@ class MeteocatLightningCoordinator(DataUpdateCoordinator):
             last_update = datetime.fromisoformat(existing_data['actualitzat']['dataUpdate'])
             now = datetime.now(timezone.utc).astimezone(TIMEZONE)
             
-            if now - last_update >= validity_duration:
+            if now - last_update >= validity_duration and current_time >= validity_start_time:
                 return await self._fetch_and_save_new_data()
             else:
                 _LOGGER.debug("Usando datos existentes de rayos: %s", existing_data)
