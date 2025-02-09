@@ -1,3 +1,11 @@
+## [2.2.4](https://github.com/figorr/meteocat/compare/v2.2.3...v2.2.4) (2025-02-09)
+
+
+### Bug Fixes
+
+* 2.2.4 ([59183ea](https://github.com/figorr/meteocat/commit/59183ea082f6d963e46d3f8a51e0867b3f32060d))
+* fix valid lightning data for download from API ([4e4a8ae](https://github.com/figorr/meteocat/commit/4e4a8ae110b72b6e6ff560921f88ea7fb4640a29))
+
 ## [2.2.3](https://github.com/figorr/meteocat/compare/v2.2.2...v2.2.3) (2025-02-08)
 
 
