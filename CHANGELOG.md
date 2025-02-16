@@ -1,3 +1,13 @@
+## [2.2.5](https://github.com/figorr/meteocat/compare/v2.2.4...v2.2.5) (2025-02-16)
+
+
+### Bug Fixes
+
+* 2.2.5 ([cd8fb52](https://github.com/figorr/meteocat/commit/cd8fb52c607e3a74308246136b6ac2d47b51e125))
+* fix lightning status sensor native value ([dc3badc](https://github.com/figorr/meteocat/commit/dc3badc7b66d9afbcc14e23da3f0909f845cef2f))
+* fix validity at lightning coordinator and cached data ([d959bc5](https://github.com/figorr/meteocat/commit/d959bc56dfb19a475b2e34a2649bbabd803ab41e))
+* new lighting validity hour ([eab0215](https://github.com/figorr/meteocat/commit/eab0215cc3d68de9f900a4ecf1844ef3c6c22610))
+
 ## [2.2.4](https://github.com/figorr/meteocat/compare/v2.2.3...v2.2.4) (2025-02-09)
 
 
