@@ -103,6 +103,8 @@ from .const import (
     ALERT_VALIDITY_MULTIPLIER_500,
     ALERT_VALIDITY_MULTIPLIER_DEFAULT,
     DEFAULT_LIGHTNING_VALIDITY_TIME,
+    DEFAULT_LIGHTNING_VALIDITY_HOURS,
+    DEFAULT_LIGHTNING_VALIDITY_MINUTES,
 )
 
 from .coordinator import (
@@ -1687,29 +1689,40 @@ class MeteocatLightningStatusSensor(CoordinatorEntity[MeteocatLightningCoordinat
         self._attr_entity_category = getattr(description, "entity_category", None)
 
     def _get_data_update(self):
-        """Obtiene la fecha de actualización directamente desde el coordinador."""
+        """Obtiene la fecha de actualización directamente desde el coordinador y la convierte a UTC."""
         data_update = self.coordinator.data.get("actualizado")
         if data_update:
             try:
-                return datetime.fromisoformat(data_update.rstrip("Z"))
+                local_time = datetime.fromisoformat(data_update)  # Ya tiene offset (+01:00 o +02:00)
+                return local_time.astimezone(ZoneInfo("UTC"))  # Convertir a UTC
             except ValueError:
                 _LOGGER.error("Formato de fecha de actualización inválido: %s", data_update)
         return None
+    
+    def _determine_status(self, now, data_update, current_time, validity_start_time, validity_duration):
+        """Determina el estado basado en la fecha de actualización."""
+        if now - data_update > timedelta(days=1):
+            return "obsolete"
+        elif now - data_update < validity_duration or current_time < validity_start_time:
+            return "updated"
+        return "obsolete"
 
     @property
     def native_value(self):
-        """Devuelve el estado actual de las alertas basado en la fecha de actualización."""
+        """Devuelve el estado del archivo de rayos basado en la fecha de actualización."""
         data_update = self._get_data_update()
         if not data_update:
             return "unknown"
 
-        current_time = datetime.now(ZoneInfo("UTC"))
+        now = datetime.now(timezone.utc).astimezone(TIMEZONE)
+        current_time = now.time()  # Extraer solo la parte de la hora
+        offset = now.utcoffset().total_seconds() / 3600  # Obtener el offset en horas
 
-        # Comprobar si el archivo de alertas está obsoleto
-        if current_time - data_update >= timedelta(minutes=DEFAULT_LIGHTNING_VALIDITY_TIME):
-            return "obsolete"
+        # Determinar la hora de validez considerando el offset horario, el horario de verano (+02:00) o invierno (+01:00)
+        validity_start_time = time(int(DEFAULT_LIGHTNING_VALIDITY_HOURS + offset), DEFAULT_LIGHTNING_VALIDITY_MINUTES)
+        validity_duration = timedelta(minutes=DEFAULT_LIGHTNING_VALIDITY_TIME)
 
-        return "updated"
+        return self._determine_status(now, data_update, current_time, validity_start_time, validity_duration)
 
     @property
     def extra_state_attributes(self):
