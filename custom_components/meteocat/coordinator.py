@@ -1334,7 +1334,7 @@ class MeteocatAlertsCoordinator(DataUpdateCoordinator):
                 "Usando datos en caché para las alertas. Última actualización: %s",
                 cached_data["actualitzat"]["dataUpdate"],
             )
-            return cached_data
+            return {"actualizado": cached_data['actualitzat']['dataUpdate']}
 
         # Si no se puede actualizar ni cargar datos en caché, retornar None
         _LOGGER.error("No se pudo obtener datos actualizados ni cargar datos en caché de alertas.")
@@ -1783,7 +1783,7 @@ class MeteocatQuotesCoordinator(DataUpdateCoordinator):
         cached_data = await load_json_from_file(self.quotes_file)
         if cached_data:
             _LOGGER.warning("Usando datos en caché para las cuotas de la API de Meteocat.")
-            return cached_data
+            return {"actualizado": cached_data['actualitzat']['dataUpdate']}
 
         _LOGGER.error("No se pudo obtener datos actualizados ni cargar datos en caché.")
         return None
@@ -1910,15 +1910,19 @@ class MeteocatLightningCoordinator(DataUpdateCoordinator):
         existing_data = await load_json_from_file(self.lightning_file) or {}
 
         # Definir la duración de validez de los datos
-        current_time = datetime.now(timezone.utc).time()
-        validity_start_time = time(DEFAULT_LIGHTNING_VALIDITY_HOURS, DEFAULT_LIGHTNING_VALIDITY_MINUTES)
+        now = datetime.now(timezone.utc).astimezone(TIMEZONE)
+        current_time = now.time()  # Extraer solo la parte de la hora
+        offset = now.utcoffset().total_seconds() / 3600  # Obtener el offset en horas
+        
+        # Determinar la hora de validez considerando el offset horario, el horario de verano (+02:00) o invierno (+01:00)
+        validity_start_time = time(int(DEFAULT_LIGHTNING_VALIDITY_HOURS + offset), DEFAULT_LIGHTNING_VALIDITY_MINUTES)
+        
         validity_duration = timedelta(minutes=DEFAULT_LIGHTNING_VALIDITY_TIME)
 
         if not existing_data:
             return await self._fetch_and_save_new_data()
         else:
             last_update = datetime.fromisoformat(existing_data['actualitzat']['dataUpdate'])
-            now = datetime.now(timezone.utc).astimezone(TIMEZONE)
             
             if now - last_update >= validity_duration and current_time >= validity_start_time:
                 return await self._fetch_and_save_new_data()
@@ -1967,7 +1971,7 @@ class MeteocatLightningCoordinator(DataUpdateCoordinator):
         cached_data = await load_json_from_file(self.lightning_file)
         if cached_data:
             _LOGGER.warning("Usando datos en caché para los datos de rayos de la API de Meteocat.")
-            return cached_data
+            return {"actualizado": cached_data['actualitzat']['dataUpdate']}
 
         _LOGGER.error("No se pudo obtener datos actualizados ni cargar datos en caché.")
         return None
@@ -2012,20 +2016,20 @@ class MeteocatLightningFileCoordinator(DataUpdateCoordinator):
         if not existing_data:
             _LOGGER.warning("No se encontraron datos en %s.", self.lightning_file)
             return {
-                "actualizado": datetime.now(ZoneInfo("Europe/Madrid")).isoformat(),
+                "actualizado": datetime.now(TIMEZONE).isoformat(),
                 "region": self._reset_data(),
                 "town": self._reset_data()
             }
 
         # Convertir la cadena de fecha a un objeto datetime y ajustar a la zona horaria local
         update_date = datetime.fromisoformat(existing_data.get("actualitzat", {}).get("dataUpdate", ""))
-        update_date = update_date.astimezone(ZoneInfo("Europe/Madrid"))
-        now = datetime.now(ZoneInfo("Europe/Madrid"))
+        update_date = update_date.astimezone(TIMEZONE)
+        now = datetime.now(TIMEZONE)
 
         if update_date.date() != now.date():  # Si la fecha no es la de hoy
             _LOGGER.info("Los datos de rayos son de un día diferente. Reiniciando valores a cero.")
             region_data = town_data = self._reset_data()
-            update_date = datetime.now(ZoneInfo("Europe/Madrid")).isoformat()  # Usar la fecha actual
+            update_date = datetime.now(TIMEZONE).isoformat()  # Usar la fecha actual
         else:
             region_data = self._process_region_data(existing_data.get("dades", []))
             town_data = self._process_town_data(existing_data.get("dades", []))
