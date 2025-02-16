@@ -56,7 +56,7 @@ DEFAULT_VALIDITY_MINUTES = 0  # Minutos a partir de los cuales la API tiene la i
 DEFAULT_ALERT_VALIDITY_TIME = 120  # Minutos a partir de los cuales las alertas están obsoletas y se se debe proceder a una nueva llamada a la API
 DEFAULT_QUOTES_VALIDITY_TIME = 240 # Minutos a partir de los cuales los datos de cuotas están obsoletos y se se debe proceder a una nueva llamada a la API
 DEFAULT_LIGHTNING_VALIDITY_TIME = 240 # Minutos a partir de los cuales los datos de rayos están obsoletos y se se debe proceder a una nueva llamada a la API
-DEFAULT_LIGHTNING_VALIDITY_HOURS = 2  # Hora a partir de la cual la API tiene la información actualizada de rayos disponible para descarga
+DEFAULT_LIGHTNING_VALIDITY_HOURS = 1  # Hora a partir de la cual la API tiene la información actualizada de rayos disponible para descarga
 DEFAULT_LIGHTNING_VALIDITY_MINUTES = 0  # Minutos a partir de los cuales la API tiene la información actualizada de rayos disponible para descarga
 
 # Multiplicadores para la duración de validez basada en limit_prediccio
