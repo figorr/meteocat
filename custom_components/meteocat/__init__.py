@@ -192,68 +192,48 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Limpia cualquier dato adicional al desinstalar la integración."""
     _LOGGER.info(f"Eliminando datos residuales de la integración: {entry.entry_id}")
 
-    # Definir las rutas base a eliminar
+    # Definir las rutas base
     custom_components_path = Path(hass.config.path("custom_components")) / DOMAIN
     assets_folder = custom_components_path / "assets"
     files_folder = custom_components_path / "files"
 
-    # Definir archivos relacionados a eliminar
+    # Archivos comunes
     symbols_file = assets_folder / "symbols.json"
     variables_file = assets_folder / "variables.json"
-
-    # Obtener el `station_id` para identificar el archivo a eliminar
-    station_id = entry.data.get("station_id")
-    if not station_id:
-        _LOGGER.warning("No se encontró 'station_id' en la configuración. No se puede eliminar el archivo de datos de la estación.")
-        return
-
-    # Archivo JSON de la estación
-    station_data_file = files_folder / f"station_{station_id.lower()}_data.json"
-
-    # Obtener el `town_id` para identificar el archivo a eliminar
-    town_id = entry.data.get("town_id")
-    if not town_id:
-        _LOGGER.warning("No se encontró 'town_id' en la configuración. No se puede eliminar el archivo de datos de la estación.")
-        return
-
-    # Archivo JSON UVI del municipio
-    town_data_file = files_folder / f"uvi_{town_id.lower()}_data.json"
-
-    # Arhivos JSON de las predicciones del municipio a eliminar
-    forecast_hourly_data_file = files_folder / f"forecast_{town_id.lower()}_hourly_data.json"
-    forecast_daily_data_file = files_folder / f"forecast_{town_id.lower()}_daily_data.json"
-
-    # Obtener el `region_id` para identificar el archivo a eliminar
-    region_id = entry.data.get("region_id")
-    if not region_id:
-        _LOGGER.warning("No se encontró 'region_id' en la configuración. No se puede eliminar el archivo de alertas de la comarca.")
-        return
-
-    # Archivos JSON de alertas
     alerts_file = files_folder / "alerts.json"
-    alerts_region_file = files_folder / f"alerts_{region_id}.json"
+    quotes_file = files_folder / "quotes.json"
 
-    # Archivo JSON de cuotas
-    quotes_file = files_folder / f"quotes.json"
+    # Archivos específicos de cada entry
+    station_id = entry.data.get("station_id")
+    town_id = entry.data.get("town_id")
+    region_id = entry.data.get("region_id")
 
-    # Archivo JSON de rayos
-    lightning_file = files_folder / f"lightning_{region_id}.json"
-
-    # Validar la ruta base
     if not custom_components_path.exists():
         _LOGGER.warning(f"La ruta {custom_components_path} no existe. No se realizará la limpieza.")
         return
 
-    # Eliminar archivos y carpetas
+    # Eliminar archivos específicos de la entrada
+    if station_id:
+        safe_remove(files_folder / f"station_{station_id.lower()}_data.json")
+    if town_id:
+        safe_remove(files_folder / f"uvi_{town_id.lower()}_data.json")
+        safe_remove(files_folder / f"forecast_{town_id.lower()}_hourly_data.json")
+        safe_remove(files_folder / f"forecast_{town_id.lower()}_daily_data.json")
+    if region_id:
+        safe_remove(files_folder / f"alerts_{region_id}.json")
+        safe_remove(files_folder / f"lightning_{region_id}.json")
+
+    # Siempre eliminables
     safe_remove(symbols_file)
     safe_remove(variables_file)
-    safe_remove(station_data_file)
-    safe_remove(town_data_file)
-    safe_remove(forecast_hourly_data_file)
-    safe_remove(forecast_daily_data_file)
-    safe_remove(alerts_file)
-    safe_remove(quotes_file)
-    safe_remove(alerts_region_file)
-    safe_remove(lightning_file)
-    safe_remove(assets_folder, is_folder=True)
-    safe_remove(files_folder, is_folder=True)
+
+    # 🔑 Solo eliminar los archivos comunes si ya no quedan otras entradas
+    remaining_entries = [
+        e for e in hass.config_entries.async_entries(DOMAIN)
+        if e.entry_id != entry.entry_id
+    ]
+    if not remaining_entries:  # significa que estamos borrando la última
+        safe_remove(alerts_file)
+        safe_remove(quotes_file)
+        safe_remove(assets_folder, is_folder=True)
+        safe_remove(files_folder, is_folder=True)
