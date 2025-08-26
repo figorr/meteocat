@@ -1268,6 +1268,18 @@ class MeteocatAlertsCoordinator(DataUpdateCoordinator):
             if now - last_update > validity_duration:
                 return await self._fetch_and_save_new_data()
             else:
+                # Comprobar si el archivo regional sigue con INITIAL_TEMPLATE o sin datos válidos
+                region_data = await load_json_from_file(self.alerts_region_file)
+                if (
+                    not region_data
+                    or region_data.get("actualitzat", {}).get("dataUpdate") in [None, "1970-01-01T00:00:00+00:00"]
+                ):
+                    _LOGGER.info(
+                        "El archivo regional %s sigue con plantilla inicial. Regenerando a partir de alerts.json",
+                        self.alerts_region_file,
+                    )
+                    await self._filter_alerts_by_region()
+
                 # Devolver los datos del archivo existente
                 _LOGGER.debug("Usando datos existentes de alertas: %s", existing_data)
                 return {
