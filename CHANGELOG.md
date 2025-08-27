@@ -1,3 +1,13 @@
+## [2.2.6](https://github.com/figorr/meteocat/compare/v2.2.5...v2.2.6) (2025-08-27)
+
+
+### Bug Fixes
+
+* 2.2.6 ([bb92000](https://github.com/figorr/meteocat/commit/bb9200099ed951168bc891c870c6fd61b758c73d))
+* Fix alerts region data update at first setup of the next entrances ([40018dc](https://github.com/figorr/meteocat/commit/40018dc0bb703a8dc606aaedcfa27b5c3e6bbf7a))
+* Fix delete an entry but keeping common files for the rest of entries ([211e545](https://github.com/figorr/meteocat/commit/211e54510c458378ca46c465303995d1a9df0dbb))
+* Fix region alerts json file for multiple entrances ([2b7072c](https://github.com/figorr/meteocat/commit/2b7072cb6fd7eafa1ab95dcedb2c2dea8f35005d))
+
 ## [2.2.5](https://github.com/figorr/meteocat/compare/v2.2.4...v2.2.5) (2025-02-16)
 
 
