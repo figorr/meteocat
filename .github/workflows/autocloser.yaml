@@ -1,0 +1,25 @@
+name: Autocloser
+
+on:
+  issues:
+    types: [opened, edited, reopened]
+  issue_comment:
+    types: [created]
+
+jobs:
+  autoclose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Autoclose issues that did not follow issue template
+        uses: roots/issue-closer@v1.1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          issue-close-message: >
+            👋 @${{ github.event.issue.user.login }} this issue was automatically closed because it did not follow the 
+            [issue template](https://github.com/figorr/meteocat/issues/new/choose).  
+
+            ⚠️ Reminder:  
+            **IMPORTANT: Please search the issues, including closed issues before opening a new issue.  
+            The template is mandatory; failure to use it will result in issue closure.**
+          issue-pattern: >
+            (Describe the bug|To Reproduce|Expected behavior|System details|Debug Logs)
