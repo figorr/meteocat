@@ -50,7 +50,7 @@ jobs:
             It has been marked as *help wanted* and will remain open.
           stale-issue-label: "help wanted"
 
-      # 4. Issues con "logs required" sin actividad (cerrar en 7 días)
+      # 4. Issues con "logs required" sin actividad (cerrar en 14 días)
       - uses: actions/stale@v8
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
