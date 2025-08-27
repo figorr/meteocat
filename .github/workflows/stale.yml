@@ -49,3 +49,15 @@ jobs:
             This bug report has had no activity for 3 weeks.
             It has been marked as *help wanted* and will remain open.
           stale-issue-label: "help wanted"
+
+      # 4. Issues con "logs required" sin actividad (cerrar en 7 días)
+      - uses: actions/stale@v8
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          only-labels: "logs required"
+          days-before-stale: 7
+          days-before-close: 7
+          stale-issue-message: >-
+            This issue has been marked as *requiring logs*, but no activity has been detected for 7 days.
+            Since logs were not provided, this issue will now be closed.
+          stale-issue-label: "stale"
