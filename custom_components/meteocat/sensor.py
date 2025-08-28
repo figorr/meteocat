@@ -1357,6 +1357,13 @@ class MeteocatAlertRegionSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
         # Assign entity_category if defined in the description
         self._attr_entity_category = getattr(description, "entity_category", None)
 
+    def _map_meteor_case_insensitive(self, meteor: str) -> str:
+        """Busca el meteor en el mapping sin importar mayúsculas/minúsculas."""
+        for key, value in self.METEOR_MAPPING.items():
+            if key.lower() == meteor.lower():
+                return value
+        return "unknown"
+
     @property
     def native_value(self):
         """Devuelve el número de alertas activas."""
@@ -1368,10 +1375,13 @@ class MeteocatAlertRegionSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
         meteor_details = self.coordinator.data.get("detalles", {}).get("meteor", {})
         
         # Convertimos las claves al formato deseado usando el mapping
-        attributes = {
-            f"alert_{i+1}": self.METEOR_MAPPING.get(meteor, "unknown")
-            for i, meteor in enumerate(meteor_details.keys())
-        }
+        attributes = {}
+        for i, meteor in enumerate(meteor_details.keys()):
+            mapped_name = self._map_meteor_case_insensitive(meteor)
+            if not mapped_name:
+                _LOGGER.warning("Meteor desconocido sin mapeo: %s", meteor)
+                mapped_name = "unknown"
+            attributes[f"alert_{i+1}"] = mapped_name
 
         _LOGGER.info("Atributos traducidos del sensor: %s", attributes)
         return attributes
@@ -1461,6 +1471,14 @@ class MeteocatAlertMeteorSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
             self._attr_unique_id,
         )
     
+    def _get_meteor_data_case_insensitive(self, meteor_type: str) -> dict:
+        """Busca en los datos de meteor de forma case-insensitive."""
+        meteor_data_dict = self.coordinator.data.get("detalles", {}).get("meteor", {})
+        for key, value in meteor_data_dict.items():
+            if key.lower() == meteor_type.lower():
+                return value
+        return {}
+
     @property
     def native_value(self):
         """Devuelve el estado de la alerta específica."""
@@ -1468,7 +1486,7 @@ class MeteocatAlertMeteorSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
         if not meteor_type:
             return "Desconocido"
 
-        meteor_data = self.coordinator.data.get("detalles", {}).get("meteor", {}).get(meteor_type, {})
+        meteor_data = self._get_meteor_data_case_insensitive(meteor_type)
 
         # Convertir estado para translation_key
         estado_original = meteor_data.get("estado", "Tancat")
@@ -1479,9 +1497,14 @@ class MeteocatAlertMeteorSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
         """Devuelve los atributos específicos de la alerta."""
         meteor_type = self.METEOR_MAPPING.get(self.entity_description.key)
         if not meteor_type:
-            return {}
+            _LOGGER.warning(
+                "Tipo de meteor desconocido para sensor %s: %s",
+                self.entity_description.key,
+                self.coordinator.data.get("detalles", {}).get("meteor", {}).keys(),
+            )
+            return "unknown"
 
-        meteor_data = self.coordinator.data.get("detalles", {}).get("meteor", {}).get(meteor_type, {})
+        meteor_data = self._get_meteor_data_case_insensitive(meteor_type)
         if not meteor_data:
             return {}
         
