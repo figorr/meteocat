@@ -1478,6 +1478,15 @@ class MeteocatAlertMeteorSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
             if key.lower() == meteor_type.lower():
                 return value
         return {}
+    
+    def _get_umbral_case_insensitive(self, umbral: str) -> str:
+        """Convierte un umbral a su clave interna usando case-insensitive."""
+        if umbral is None:
+            return "unknown"
+        for key, value in self.UMBRAL_MAPPING.items():
+            if key.lower() == umbral.lower():
+                return value
+        return "unknown"
 
     @property
     def native_value(self):
@@ -1510,7 +1519,7 @@ class MeteocatAlertMeteorSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
         
         # Convertir umbral para translation_key
         umbral_original = meteor_data.get("umbral")
-        umbral_convertido = self.UMBRAL_MAPPING.get(umbral_original, "unknown")
+        umbral_convertido = self._get_umbral_case_insensitive(umbral_original)
 
         if umbral_convertido == "unknown" and umbral_original is not None:
             _LOGGER.warning(
