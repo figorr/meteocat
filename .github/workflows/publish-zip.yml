@@ -1,0 +1,57 @@
+name: Publish zip
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish-zip:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: master
+
+      - name: Get latest Home Assistant version
+        id: ha-version
+        run: |
+          latest=$(curl -s https://api.github.com/repos/home-assistant/core/releases/latest | jq -r .tag_name)
+          # quitamos prefijo "v" si existe
+          latest_clean=${latest#v}
+          echo "Latest HA version: $latest_clean"
+          echo "version=$latest_clean" >> $GITHUB_OUTPUT
+
+      - name: Update hacs.json
+        run: |
+          ha_version="${{ steps.ha-version.outputs.version }}"
+          echo "Updating hacs.json with HA version: $ha_version"
+          jq --arg ver "$ha_version" '.homeassistant = $ver' hacs.json > tmp.json && mv tmp.json hacs.json
+          cat hacs.json
+
+      - name: Commit updated hacs.json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add hacs.json
+          if git commit -m "chore: update hacs.json with latest Home Assistant version"; then
+            git push origin master
+          else
+            echo "No changes to commit"
+          fi
+
+      - name: Zip integration
+        run: |
+          cd custom_components/meteocat
+          zip -r meteocat.zip ./
+          mv meteocat.zip $GITHUB_WORKSPACE/
+
+      - name: Upload meteocat.zip to release
+        uses: softprops/action-gh-release@v2.2.1
+        with:
+          files: meteocat.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
