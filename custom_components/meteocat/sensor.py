@@ -1512,6 +1512,14 @@ class MeteocatAlertMeteorSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
         umbral_original = meteor_data.get("umbral")
         umbral_convertido = self.UMBRAL_MAPPING.get(umbral_original, "unknown")
 
+        if umbral_original and not umbral_convertido:
+            _LOGGER.warning(
+                "Umbral desconocido en sensor %s: '%s'. Añadirlo a UMBRAL_MAPPING si es necesario.",
+                self.entity_description.key,
+                umbral_original,
+            )
+            umbral_convertido = "unknown"
+
         return {
             "inicio": meteor_data.get("inicio"),
             "fin": meteor_data.get("fin"),
