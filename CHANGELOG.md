@@ -1,3 +1,15 @@
+## [2.2.7](https://github.com/figorr/meteocat/compare/v2.2.6...v2.2.7) (2025-08-29)
+
+
+### Bug Fixes
+
+* 2.2.7 ([ece96b9](https://github.com/figorr/meteocat/commit/ece96b983e6ba5df8a2811fdb86452857cadbb18))
+* fix HACS info ([ae829fa](https://github.com/figorr/meteocat/commit/ae829fa09047bd57d8f5aa8eae746bf31f3a30db))
+* Fix meteor case sensitive for alerts sensors ([d247476](https://github.com/figorr/meteocat/commit/d24747660175d2c305fcffbbae6472ccd490cfb1))
+* Fix umbral case insensitive ([73d6b58](https://github.com/figorr/meteocat/commit/73d6b5808acf8c896a7d822cab7640607f430b37))
+* Fix warning log when an umbral is not in UMBRAL_MAPPING ([adf3511](https://github.com/figorr/meteocat/commit/adf351111e8cb14cba3fd2f2868496701b445b97))
+* Include warning when umbral is not at UMBRAL_MAPPING ([c1b1f75](https://github.com/figorr/meteocat/commit/c1b1f75d7b6a219fbce4580a29e85e168127998e))
+
 ## [2.2.6](https://github.com/figorr/meteocat/compare/v2.2.5...v2.2.6) (2025-08-27)
 
 
