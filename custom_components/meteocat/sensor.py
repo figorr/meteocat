@@ -1379,7 +1379,7 @@ class MeteocatAlertRegionSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
         for i, meteor in enumerate(meteor_details.keys()):
             mapped_name = self._map_meteor_case_insensitive(meteor)
             if not mapped_name:
-                _LOGGER.warning("Meteor desconocido sin mapeo: %s", meteor)
+                _LOGGER.warning("Meteor desconocido sin mapeo: '%s'. Añadirlo a 'METEOR_MAPPING' del coordinador 'MeteocatAlertRegionSensor' si es necesario.", meteor)
                 mapped_name = "unknown"
             attributes[f"alert_{i+1}"] = mapped_name
 
@@ -1498,7 +1498,7 @@ class MeteocatAlertMeteorSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
         meteor_type = self.METEOR_MAPPING.get(self.entity_description.key)
         if not meteor_type:
             _LOGGER.warning(
-                "Tipo de meteor desconocido para sensor %s: %s",
+                "Tipo de meteor desconocido para sensor %s: '%s'. Añadirlo a 'METEOR_MAPPING' del coordinador 'MeteocatAlertMeteorSensor' si es necesario.",
                 self.entity_description.key,
                 self.coordinator.data.get("detalles", {}).get("meteor", {}).keys(),
             )
@@ -1512,13 +1512,12 @@ class MeteocatAlertMeteorSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
         umbral_original = meteor_data.get("umbral")
         umbral_convertido = self.UMBRAL_MAPPING.get(umbral_original, "unknown")
 
-        if umbral_original and not umbral_convertido:
+        if umbral_convertido == "unknown" and umbral_original is not None:
             _LOGGER.warning(
-                "Umbral desconocido en sensor %s: '%s'. Añadirlo a UMBRAL_MAPPING si es necesario.",
-                self.entity_description.key,
-                umbral_original,
+                "Umbral desconocido para sensor %s: '%s'. Añadirlo a 'UMBRAL_MAPPING' del coordinador 'MeteocatAlertMeteorSensor' si es necesario.", 
+                self.entity_description.key, 
+                umbral_original
             )
-            umbral_convertido = "unknown"
 
         return {
             "inicio": meteor_data.get("inicio"),
