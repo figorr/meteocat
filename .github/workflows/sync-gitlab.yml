@@ -1,0 +1,50 @@
+name: Sync to GitLab
+
+on:
+  push:
+    branches:
+      - master
+  create:
+    tags:
+      - 'v*'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout completo para evitar problemas de shallow update
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      # Configurar Git
+      - name: Configure Git
+        run: |
+          git config user.name "github-bot"
+          git config user.email "bot@github.com"
+
+      # Añadir remoto de GitLab
+      - name: Add GitLab remote
+        env:
+          GL_REMOTE_URL: ${{ secrets.GL_REMOTE_URL }}
+          GL_TOKEN: ${{ secrets.GL_TOKEN }}
+        run: |
+          git remote add gitlab "https://oauth2:${GL_TOKEN}@${GL_REMOTE_URL#https://}"
+
+      # Comprobar si master en GitLab tiene cambios que no están en GitHub
+      - name: Check for diverging commits
+        run: |
+          git fetch gitlab master
+          if ! git merge-base --is-ancestor gitlab/master master; then
+            echo "❌ GitLab master tiene commits que GitHub no tiene. Revisar antes de sincronizar."
+            exit 1
+          fi
+
+      # Push de commits nuevos a GitLab (solo si no hay divergencias)
+      - name: Push commits to GitLab
+        run: git push gitlab master
+
+      # Push de tags nuevos a GitLab
+      - name: Push new tags to GitLab
+        run: git push gitlab --tags
