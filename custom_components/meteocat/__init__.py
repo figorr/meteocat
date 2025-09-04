@@ -10,6 +10,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import async_get_platforms
 from homeassistant.helpers import config_validation as cv
 
+from .helpers import get_storage_dir
 from .coordinator import (
     MeteocatSensorCoordinator,
     MeteocatStaticSensorCoordinator,
@@ -44,6 +45,7 @@ CONFIG_SCHEMA = vol.Schema(
                 vol.Required("town_name"): cv.string,
                 vol.Required("town_id"): cv.string,
                 vol.Optional("variable_name", default="temperature"): cv.string,
+                vol.Required("variable_id"): cv.string,
                 vol.Optional("station_name"): cv.string,
                 vol.Optional("station_id"): cv.string,
                 vol.Optional("province_name"): cv.string,
@@ -56,17 +58,19 @@ CONFIG_SCHEMA = vol.Schema(
     extra=vol.ALLOW_EXTRA,
 )
 
-def safe_remove(path: Path, is_folder: bool = False):
-    """Elimina de forma segura un archivo o carpeta si existe."""
+def safe_remove(path: Path, is_folder: bool = False) -> None:
+    """Elimina un archivo o carpeta vacía de forma segura."""
     try:
-        if is_folder and path.exists() and not any(path.iterdir()):
-            path.rmdir()
-            _LOGGER.info(f"Carpeta {path.name} eliminada correctamente.")
-        elif not is_folder and path.exists():
-            path.unlink()
-            _LOGGER.info(f"Archivo {path.name} eliminado correctamente.")
-    except OSError as e:
-        _LOGGER.error(f"Error al intentar eliminar {path.name}: {e}")
+        if is_folder:
+            if path.exists() and path.is_dir():
+                path.rmdir()  # Solo elimina si está vacía
+                _LOGGER.info("Carpeta eliminada: %s", path)
+        else:
+            if path.exists():
+                path.unlink()
+                _LOGGER.info("Archivo eliminado: %s", path)
+    except Exception as e:
+        _LOGGER.error("Error eliminando %s: %s", path, e)
 
 async def async_setup(hass: core.HomeAssistant, config: dict) -> bool:
     """Configuración inicial del componente Meteocat."""
@@ -104,7 +108,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await sensor_coordinator.async_config_entry_first_refresh()
         
         static_sensor_coordinator = MeteocatStaticSensorCoordinator(hass=hass, entry_data=entry_data)
-        await sensor_coordinator.async_config_entry_first_refresh()
+        # Corregido: refrescar el coordinador estático (antes se refrescaba el de sensor otra vez)
+        await static_sensor_coordinator.async_config_entry_first_refresh()
 
         entity_coordinator = MeteocatEntityCoordinator(hass=hass, entry_data=entry_data)
         await entity_coordinator.async_config_entry_first_refresh()
@@ -192,48 +197,52 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Limpia cualquier dato adicional al desinstalar la integración."""
     _LOGGER.info(f"Eliminando datos residuales de la integración: {entry.entry_id}")
 
-    # Definir las rutas base
-    custom_components_path = Path(hass.config.path("custom_components")) / DOMAIN
-    assets_folder = custom_components_path / "assets"
-    files_folder = custom_components_path / "files"
+    # Rutas persistentes en /config/meteocat_files
+    base_folder = get_storage_dir(hass)
+    assets_folder = get_storage_dir(hass, "assets")
+    files_folder = get_storage_dir(hass, "files")
 
     # Archivos comunes
-    symbols_file = assets_folder / "symbols.json"
-    variables_file = assets_folder / "variables.json"
-    alerts_file = files_folder / "alerts.json"
-    quotes_file = files_folder / "quotes.json"
+    common_files = [
+        assets_folder / "symbols.json",
+        assets_folder / "variables.json",
+        files_folder / "alerts.json",
+        files_folder / "quotes.json",
+    ]
 
-    # Archivos específicos de cada entry
+    # Archivos específicos de la entrada
     station_id = entry.data.get("station_id")
     town_id = entry.data.get("town_id")
     region_id = entry.data.get("region_id")
 
-    if not custom_components_path.exists():
-        _LOGGER.warning(f"La ruta {custom_components_path} no existe. No se realizará la limpieza.")
-        return
-
-    # Eliminar archivos específicos de la entrada
+    specific_files = []
     if station_id:
-        safe_remove(files_folder / f"station_{station_id.lower()}_data.json")
+        specific_files.append(files_folder / f"station_{station_id.lower()}_data.json")
     if town_id:
-        safe_remove(files_folder / f"uvi_{town_id.lower()}_data.json")
-        safe_remove(files_folder / f"forecast_{town_id.lower()}_hourly_data.json")
-        safe_remove(files_folder / f"forecast_{town_id.lower()}_daily_data.json")
+        specific_files.extend([
+            files_folder / f"uvi_{town_id.lower()}_data.json",
+            files_folder / f"forecast_{town_id.lower()}_hourly_data.json",
+            files_folder / f"forecast_{town_id.lower()}_daily_data.json",
+        ])
     if region_id:
-        safe_remove(files_folder / f"alerts_{region_id}.json")
-        safe_remove(files_folder / f"lightning_{region_id}.json")
+        specific_files.extend([
+            files_folder / f"alerts_{region_id}.json",
+            files_folder / f"lightning_{region_id}.json",
+        ])
 
-    # Siempre eliminables
-    safe_remove(symbols_file)
-    safe_remove(variables_file)
+    # Eliminar archivos específicos
+    for f in specific_files:
+        safe_remove(f)
 
-    # 🔑 Solo eliminar los archivos comunes si ya no quedan otras entradas
+    # Verificar si quedan otras entradas antes de eliminar archivos comunes
     remaining_entries = [
         e for e in hass.config_entries.async_entries(DOMAIN)
         if e.entry_id != entry.entry_id
     ]
-    if not remaining_entries:  # significa que estamos borrando la última
-        safe_remove(alerts_file)
-        safe_remove(quotes_file)
-        safe_remove(assets_folder, is_folder=True)
-        safe_remove(files_folder, is_folder=True)
+    if not remaining_entries:
+        for f in common_files:
+            safe_remove(f)
+
+        # Intentar eliminar carpetas vacías
+        for folder in [assets_folder, files_folder, base_folder]:
+            safe_remove(folder, is_folder=True)

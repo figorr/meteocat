@@ -2,11 +2,23 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
+from pathlib import Path
+from homeassistant.core import HomeAssistant
 from homeassistant.util.dt import as_local, as_utc, start_of_local_day
 from homeassistant.helpers.sun import get_astral_event_date
 
 _LOGGER = logging.getLogger(__name__)
 
+# Ruta base para guardar archivos persistentes que se descargan de la API y que son utilizados por los coordinadores
+def get_storage_dir(hass: HomeAssistant, subdir: str | None = None) -> Path:
+    """Devuelve una ruta persistente en config/meteocat_files[/subdir]."""
+    base_dir = Path(hass.config.path("meteocat_files"))
+    if subdir:
+        base_dir = base_dir / subdir
+    base_dir.mkdir(parents=True, exist_ok=True)
+    return base_dir
+
+# Cálculo de amanecer y atardecer para definir cuando es de noche
 def get_sun_times(hass, current_time=None):
     """Obtén las horas de amanecer y atardecer para el día actual."""
     if current_time is None:

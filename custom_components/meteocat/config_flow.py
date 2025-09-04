@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import asyncio
 import json
 import logging
@@ -18,6 +17,7 @@ from homeassistant.core import callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 
+from .helpers import get_storage_dir
 from .const import (
     DOMAIN,
     CONF_API_KEY,
@@ -40,7 +40,7 @@ from .const import (
     LIMIT_PREDICCIO,
     LIMIT_XDDE,
     LIMIT_BASIC,
-    LIMIT_QUOTA
+    LIMIT_QUOTA,
 )
 
 from .options_flow import MeteocatOptionsFlowHandler
@@ -53,6 +53,8 @@ from meteocatpy.quotes import MeteocatQuotes
 from meteocatpy.exceptions import BadRequestError, ForbiddenError, TooManyRequestsError, InternalServerError, UnknownAPIError
 
 _LOGGER = logging.getLogger(__name__)
+
+# Definir la zona horaria local
 TIMEZONE = ZoneInfo("Europe/Madrid")
 
 INITIAL_TEMPLATE = {
@@ -64,7 +66,6 @@ def normalize_name(name: str) -> str:
     """Normaliza el nombre eliminando acentos y convirtiendo a minúsculas."""
     name = unicodedata.normalize("NFKD", name).encode("ASCII", "ignore").decode("utf-8")
     return name.lower()
-
 
 class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
     """Flujo de configuración para Meteocat."""
@@ -91,9 +92,8 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
     async def fetch_and_save_quotes(self, api_key: str):
         """Obtiene las cuotas de la API de Meteocat y las guarda en quotes.json."""
         meteocat_quotes = MeteocatQuotes(api_key)
-        quotes_dir = os.path.join(self.hass.config.path(), "custom_components", "meteocat", "files")
-        os.makedirs(quotes_dir, exist_ok=True)
-        quotes_file = os.path.join(quotes_dir, "quotes.json")
+        quotes_dir = get_storage_dir(self.hass, "files")
+        quotes_file = quotes_dir / "quotes.json"
 
         try:
             data = await asyncio.wait_for(meteocat_quotes.get_quotes(), timeout=30)
@@ -103,30 +103,43 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
                 "prediccio_": "Prediccio",
                 "referencia basic": "Basic",
                 "xema_": "XEMA",
-                "quota": "Quota"
+                "quota": "Quota",
             }
 
             modified_plans = []
             for plan in data["plans"]:
                 normalized_nom = normalize_name(plan["nom"])
-                new_name = next((v for k, v in plan_mapping.items() if normalized_nom.startswith(k)), plan["nom"])
-                modified_plans.append({
-                    "nom": new_name,
-                    "periode": plan["periode"],
-                    "maxConsultes": plan["maxConsultes"],
-                    "consultesRestants": plan["consultesRestants"],
-                    "consultesRealitzades": plan["consultesRealitzades"]
-                })
+                new_name = next(
+                    (v for k, v in plan_mapping.items() if normalized_nom.startswith(k)), None
+                )
+                if new_name is None:
+                    _LOGGER.warning(
+                        "Nombre de plan desconocido en la API: %s (se usará el original)",
+                        plan["nom"],
+                    )
+                    new_name = plan["nom"]
+
+                modified_plans.append(
+                    {
+                        "nom": new_name,
+                        "periode": plan["periode"],
+                        "maxConsultes": plan["maxConsultes"],
+                        "consultesRestants": plan["consultesRestants"],
+                        "consultesRealitzades": plan["consultesRealitzades"],
+                    }
+                )
 
             current_time = datetime.now(timezone.utc).astimezone(TIMEZONE).isoformat()
             data_with_timestamp = {
                 "actualitzat": {"dataUpdate": current_time},
                 "client": data["client"],
-                "plans": modified_plans
+                "plans": modified_plans,
             }
 
             async with aiofiles.open(quotes_file, "w", encoding="utf-8") as file:
-                await file.write(json.dumps(data_with_timestamp, ensure_ascii=False, indent=4))
+                await file.write(
+                    json.dumps(data_with_timestamp, ensure_ascii=False, indent=4)
+                )
             _LOGGER.info("Cuotas guardadas exitosamente en %s", quotes_file)
 
         except Exception as ex:
@@ -135,38 +148,44 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def create_alerts_file(self):
         """Crea los archivos de alertas global y regional si no existen."""
-        alerts_dir = os.path.join(
-            self.hass.config.path(),
-            "custom_components",
-            "meteocat",
-            "files"
-        )
-        os.makedirs(alerts_dir, exist_ok=True)
+        alerts_dir = get_storage_dir(self.hass, "files")
 
         # Archivo global de alertas
-        alerts_file = os.path.join(alerts_dir, "alerts.json")
-        if not os.path.exists(alerts_file):
+        alerts_file = alerts_dir / "alerts.json"
+        if not alerts_file.exists():
             async with aiofiles.open(alerts_file, "w", encoding="utf-8") as file:
-                await file.write(json.dumps(INITIAL_TEMPLATE, ensure_ascii=False, indent=4))
+                await file.write(
+                    json.dumps(INITIAL_TEMPLATE, ensure_ascii=False, indent=4)
+                )
             _LOGGER.info("Archivo global %s creado con plantilla inicial", alerts_file)
 
         # Solo si existe region_id
         if self.region_id:
             # Archivo regional de alertas
-            alerts_region_file = os.path.join(alerts_dir, f"alerts_{self.region_id}.json")
-            if not os.path.exists(alerts_region_file):
+            alerts_region_file = alerts_dir / f"alerts_{self.region_id}.json"
+            if not alerts_region_file.exists():
                 async with aiofiles.open(alerts_region_file, "w", encoding="utf-8") as file:
-                    await file.write(json.dumps(INITIAL_TEMPLATE, ensure_ascii=False, indent=4))
-                _LOGGER.info("Archivo regional %s creado con plantilla inicial", alerts_region_file)
+                    await file.write(
+                        json.dumps(INITIAL_TEMPLATE, ensure_ascii=False, indent=4)
+                    )
+                _LOGGER.info(
+                    "Archivo regional %s creado con plantilla inicial", alerts_region_file
+                )
 
-            # Archivo lightning regional
-            lightning_file = os.path.join(alerts_dir, f"lightning_{self.region_id}.json")
-            if not os.path.exists(lightning_file):
+             # Archivo lightning regional
+            lightning_file = alerts_dir / f"lightning_{self.region_id}.json"
+            if not lightning_file.exists():
                 async with aiofiles.open(lightning_file, "w", encoding="utf-8") as file:
-                    await file.write(json.dumps(INITIAL_TEMPLATE, ensure_ascii=False, indent=4))
-                _LOGGER.info("Archivo lightning %s creado con plantilla inicial", lightning_file)
+                    await file.write(
+                        json.dumps(INITIAL_TEMPLATE, ensure_ascii=False, indent=4)
+                    )
+                _LOGGER.info(
+                    "Archivo lightning %s creado con plantilla inicial", lightning_file
+                )
 
-    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+    async def async_step_user(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Primer paso: solicitar API Key."""
         errors = {}
         if user_input is not None:
@@ -186,54 +205,77 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
         schema = vol.Schema({vol.Required(CONF_API_KEY): str})
         return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
 
-    async def async_step_select_municipi(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+    async def async_step_select_municipi(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Segundo paso: seleccionar el municipio."""
         errors = {}
         if user_input is not None:
             selected_codi = user_input["municipi"]
-            self.selected_municipi = next((m for m in self.municipis if m["codi"] == selected_codi), None)
+            self.selected_municipi = next(
+                (m for m in self.municipis if m["codi"] == selected_codi), None
+            )
             if self.selected_municipi:
                 await self.fetch_symbols_and_variables()
 
         if self.selected_municipi:
             return await self.async_step_select_station()
 
-        schema = vol.Schema({vol.Required("municipi"): vol.In({m["codi"]: m["nom"] for m in self.municipis})})
+        schema = vol.Schema(
+            {vol.Required("municipi"): vol.In({m["codi"]: m["nom"] for m in self.municipis})}
+        )
         return self.async_show_form(step_id="select_municipi", data_schema=schema, errors=errors)
 
     async def fetch_symbols_and_variables(self):
         """Descarga y guarda los símbolos y variables después de seleccionar el municipio."""
-        assets_dir = os.path.join(self.hass.config.path(), "custom_components", "meteocat", "assets")
-        os.makedirs(assets_dir, exist_ok=True)
-        symbols_file = os.path.join(assets_dir, "symbols.json")
-        variables_file = os.path.join(assets_dir, "variables.json")
+        assets_dir = get_storage_dir(self.hass, "assets")
+        symbols_file = assets_dir / "symbols.json"
+        variables_file = assets_dir / "variables.json"
         try:
             symbols_data = await MeteocatSymbols(self.api_key).fetch_symbols()
             async with aiofiles.open(symbols_file, "w", encoding="utf-8") as file:
                 await file.write(json.dumps({"symbols": symbols_data}, ensure_ascii=False, indent=4))
+
             variables_data = await MeteocatVariables(self.api_key).get_variables()
             async with aiofiles.open(variables_file, "w", encoding="utf-8") as file:
                 await file.write(json.dumps({"variables": variables_data}, ensure_ascii=False, indent=4))
-            self.variable_id = next((v["codi"] for v in variables_data if v["nom"].lower() == "temperatura"), None)
+
+            self.variable_id = next(
+                (v["codi"] for v in variables_data if v["nom"].lower() == "temperatura"),
+                None,
+            )
+        except json.JSONDecodeError as ex:
+            _LOGGER.error("Archivo existente corrupto al cargar símbolos/variables: %s", ex)
+            raise HomeAssistantError("Archivo corrupto de símbolos o variables")
         except Exception as ex:
             _LOGGER.error("Error al descargar símbolos o variables: %s", ex)
             raise HomeAssistantError("No se pudieron obtener símbolos o variables")
 
-    async def async_step_select_station(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+    async def async_step_select_station(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
         """Tercer paso: seleccionar estación."""
         errors = {}
         townstations_client = MeteocatTownStations(self.api_key)
         try:
-            stations_data = await townstations_client.get_town_stations(self.selected_municipi["codi"], self.variable_id)
+            stations_data = await townstations_client.get_town_stations(
+                self.selected_municipi["codi"], self.variable_id
+            )
         except Exception as ex:
             _LOGGER.error("Error al obtener las estaciones: %s", ex)
             errors["base"] = "stations_fetch_failed"
             stations_data = []
 
+        if not stations_data or "variables" not in stations_data[0]:
+            errors["base"] = "no_stations"
+            return self.async_show_form(step_id="select_station", errors=errors)
+
         if user_input is not None:
             selected_station_codi = user_input["station"]
             selected_station = next(
-                (station for station in stations_data[0]["variables"][0]["estacions"] if station["codi"] == selected_station_codi), None
+                (station for station in stations_data[0]["variables"][0]["estacions"]
+                 if station["codi"] == selected_station_codi),
+                None,
             )
             if selected_station:
                 self.station_id = selected_station["codi"]
@@ -252,9 +294,7 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
                     self.province_name = station_metadata.get("provincia", {}).get("nom", "")
                     self.station_status = station_metadata.get("estats", [{}])[0].get("codi", "")
 
-                    # Crear archivos regionales de alertas y lightning
                     await self.create_alerts_file()
-
                     return await self.async_step_set_api_limits()
                 except Exception as ex:
                     _LOGGER.error("Error al obtener los metadatos de la estación: %s", ex)
@@ -262,7 +302,11 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
             else:
                 errors["base"] = "station_not_found"
 
-        schema = vol.Schema({vol.Required("station"): vol.In({station["codi"]: station["nom"] for station in stations_data[0]["variables"][0]["estacions"]})})
+        schema = vol.Schema(
+            {vol.Required("station"): vol.In(
+                {station["codi"]: station["nom"] for station in stations_data[0]["variables"][0]["estacions"]}
+            )}
+        )
         return self.async_show_form(step_id="select_station", data_schema=schema, errors=errors)
 
     async def async_step_set_api_limits(self, user_input=None):
@@ -273,7 +317,8 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
             self.limit_prediccio = user_input.get(LIMIT_PREDICCIO, 100)
             self.limit_xdde = user_input.get(LIMIT_XDDE, 250)
             self.limit_quota = user_input.get(LIMIT_QUOTA, 300)
-            self.limit_basic = user_input.get(LIMIT_BASIC, 300)
+            self.limit_basic = user_input.get(LIMIT_BASIC, 2000)
+
             return self.async_create_entry(
                 title=self.selected_municipi["nom"],
                 data={
@@ -298,7 +343,7 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
                     LIMIT_XDDE: self.limit_xdde,
                     LIMIT_QUOTA: self.limit_quota,
                     LIMIT_BASIC: self.limit_basic,
-                }
+                },
             )
 
         schema = vol.Schema({
