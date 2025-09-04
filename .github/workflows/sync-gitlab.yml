@@ -1,6 +1,5 @@
 name: Sync to GitLab
 
-# Se ejecuta al hacer push en master o al crear tags
 on:
   push:
     branches:
@@ -13,7 +12,7 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      # Checkout completo (fetch-depth: 0 evita problemas de shallow update)
+      # Checkout completo para evitar problemas de shallow update
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
@@ -33,10 +32,19 @@ jobs:
         run: |
           git remote add gitlab "https://oauth2:${GL_TOKEN}@${GL_REMOTE_URL#https://}"
 
-      # Push de commits nuevos
+      # Comprobar si master en GitLab tiene cambios que no están en GitHub
+      - name: Check for diverging commits
+        run: |
+          git fetch gitlab master
+          if ! git merge-base --is-ancestor gitlab/master master; then
+            echo "❌ GitLab master tiene commits que GitHub no tiene. Revisar antes de sincronizar."
+            exit 1
+          fi
+
+      # Push de commits nuevos a GitLab (solo si no hay divergencias)
       - name: Push commits to GitLab
         run: git push gitlab master
 
-      # Push de tags nuevos
+      # Push de tags nuevos a GitLab
       - name: Push new tags to GitLab
         run: git push gitlab --tags
