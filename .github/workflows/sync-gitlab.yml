@@ -1,5 +1,6 @@
 name: Sync to GitLab
 
+# Se ejecuta al hacer push en master o al crear tags
 on:
   push:
     branches:
@@ -12,21 +13,30 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
+      # Checkout completo (fetch-depth: 0 evita problemas de shallow update)
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
+      # Configurar Git
       - name: Configure Git
         run: |
           git config user.name "github-bot"
           git config user.email "bot@github.com"
 
-      - name: Push to GitLab mirror
+      # Añadir remoto de GitLab
+      - name: Add GitLab remote
         env:
           GL_REMOTE_URL: ${{ secrets.GL_REMOTE_URL }}
           GL_TOKEN: ${{ secrets.GL_TOKEN }}
         run: |
-          # Añadimos el remoto GitLab con autenticación por token
           git remote add gitlab "https://oauth2:${GL_TOKEN}@${GL_REMOTE_URL#https://}"
 
-          # Forzamos sincronización completa (commits, tags, ramas)
-          git push --mirror gitlab
+      # Push de commits nuevos
+      - name: Push commits to GitLab
+        run: git push gitlab master
+
+      # Push de tags nuevos
+      - name: Push new tags to GitLab
+        run: git push gitlab --tags
