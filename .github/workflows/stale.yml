@@ -56,8 +56,8 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           only-labels: "logs required"
           days-before-stale: 7
-          days-before-close: 7
+          days-before-close: 1
           stale-issue-message: >-
             This issue has been marked as *requiring logs*, but no activity has been detected for 7 days.
-            Since logs were not provided, this issue will now be closed.
+            Since logs were not provided, this issue will now be closed in 1 day.
           stale-issue-label: "stale"
