@@ -2,7 +2,11 @@
 ![Meteocat Banner](images/banner.png)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python version compatibility](https://img.shields.io/pypi/pyversions/meteocat)](https://pypi.org/project/meteocat)
-[![pipeline status](https://gitlab.com/figorr/meteocat/badges/master/pipeline.svg)](https://gitlab.com/figorr/meteocat/commits/master)
+[![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg)](https://github.com/hacs/integration)
+[![Validate](https://github.com/figorr/meteocat/actions/workflows/validate.yaml/badge.svg)](https://github.com/figorr/meteocat/actions/workflows/validate.yaml)
+[![Release](https://github.com/figorr/meteocat/actions/workflows/release.yml/badge.svg)](https://github.com/figorr/meteocat/actions/workflows/release.yml)
+![GitHub all releases](https://img.shields.io/github/downloads/figorr/meteocat/total)
+![GitHub release (latest by SemVer)](https://img.shields.io/github/downloads/figorr/meteocat/latest/total)
 
 
 This is a project to obtain meteorological data from the Meteocat API inside the Home Assistant environment.
@@ -82,9 +86,9 @@ To change units select one of the entities and open the more info dialog and cli
 
 # Contributing
 
-1.  [Check for open features/bugs](https://gitlab.com/figorr/meteocat/issues)
-    or [initiate a discussion on one](https://gitlab.com/figorr/meteocat/issues/new).
-2.  [Fork the repository](https://gitlab.com/figorr/meteocat/forks/new).
+1.  [Check for open features/bugs](https://github.com/figorr/meteocat/issues)
+    or [initiate a discussion on one](https://github.com/figorr/meteocat/issues/new/choose).
+2.  [Fork the repository](https://github.com/figorr/meteocat/fork).
 3.  Install the dev environment: `make init`.
 4.  Enter the virtual environment: `pipenv shell`
 5.  Code your new feature or bug fix.
