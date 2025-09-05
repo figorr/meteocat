@@ -193,6 +193,15 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
             town_client = MeteocatTown(self.api_key)
             try:
                 self.municipis = await town_client.get_municipis()
+
+                # Guardar lista de municipios en towns.json
+                assets_dir = get_storage_dir(self.hass, "assets")
+                towns_file = assets_dir / "towns.json"
+                async with aiofiles.open(towns_file, "w", encoding="utf-8") as file:
+                    await file.write(json.dumps({"towns": self.municipis}, ensure_ascii=False, indent=4))
+                _LOGGER.info("Towns guardados en %s", towns_file)
+
+                # Crea el archivo de cuotas
                 await self.fetch_and_save_quotes(self.api_key)
                 # Crea solo el archivo global de alertas (regional se hará después)
                 await self.create_alerts_file()
@@ -257,10 +266,26 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
         """Tercer paso: seleccionar estación."""
         errors = {}
         townstations_client = MeteocatTownStations(self.api_key)
+
         try:
+            # Obtener la lista completa de estaciones de la API
+            all_stations = await townstations_client.stations_service.get_stations()
+            assets_dir = get_storage_dir(self.hass, "assets")
+            stations_file = assets_dir / "stations.json"
+            async with aiofiles.open(stations_file, "w", encoding="utf-8") as file:
+                await file.write(json.dumps({"stations": all_stations}, ensure_ascii=False, indent=4))
+            _LOGGER.info("Lista completa de estaciones guardadas en %s", stations_file)
+
+            # Obtener estaciones filtradas por municipio y variable
             stations_data = await townstations_client.get_town_stations(
                 self.selected_municipi["codi"], self.variable_id
             )
+
+            town_stations_file = assets_dir / f"stations_{self.selected_municipi['codi']}.json"
+            async with aiofiles.open(town_stations_file, "w", encoding="utf-8") as file:
+                await file.write(json.dumps({"town_stations": stations_data}, ensure_ascii=False, indent=4))
+            _LOGGER.info("Lista de estaciones del municipio guardadas en %s", town_stations_file)
+
         except Exception as ex:
             _LOGGER.error("Error al obtener las estaciones: %s", ex)
             errors["base"] = "stations_fetch_failed"

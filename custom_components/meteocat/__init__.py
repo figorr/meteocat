@@ -204,8 +204,10 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
     # Archivos comunes
     common_files = [
+        assets_folder / "towns.json",
         assets_folder / "symbols.json",
         assets_folder / "variables.json",
+        assets_folder / "stations.json",
         files_folder / "alerts.json",
         files_folder / "quotes.json",
     ]
@@ -220,6 +222,7 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
         specific_files.append(files_folder / f"station_{station_id.lower()}_data.json")
     if town_id:
         specific_files.extend([
+            assets_folder / f"stations_{town_id.lower()}.json",
             files_folder / f"uvi_{town_id.lower()}_data.json",
             files_folder / f"forecast_{town_id.lower()}_hourly_data.json",
             files_folder / f"forecast_{town_id.lower()}_daily_data.json",
