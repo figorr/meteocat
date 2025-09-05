@@ -3,6 +3,9 @@ from __future__ import annotations
 import logging
 import voluptuous as vol
 from pathlib import Path
+import aiofiles
+import json
+
 from homeassistant import core
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -29,6 +32,10 @@ from .coordinator import (
     MeteocatLightningFileCoordinator,
 )
 
+from meteocatpy.town import MeteocatTown
+from meteocatpy.symbols import MeteocatSymbols
+from meteocatpy.variables import MeteocatVariables
+from meteocatpy.townstations import MeteocatTownStations
 from .const import DOMAIN, PLATFORMS
 
 _LOGGER = logging.getLogger(__name__)
@@ -72,6 +79,42 @@ def safe_remove(path: Path, is_folder: bool = False) -> None:
     except Exception as e:
         _LOGGER.error("Error eliminando %s: %s", path, e)
 
+async def ensure_assets_exist(hass, api_key, town_id=None, variable_id=None):
+    """Comprueba y crea los assets básicos si faltan."""
+    assets_dir = get_storage_dir(hass, "assets")
+    assets_dir.mkdir(parents=True, exist_ok=True)
+
+    # Lista de assets: (nombre_archivo, fetch_func, clave_json, args)
+    assets = [
+        ("towns.json", MeteocatTown(api_key).get_municipis, "towns", []),
+        ("stations.json", MeteocatTownStations(api_key).stations_service.get_stations, "stations", []),
+        ("variables.json", MeteocatVariables(api_key).get_variables, "variables", []),
+        ("symbols.json", MeteocatSymbols(api_key).fetch_symbols, "symbols", []),
+    ]
+
+    # Si tenemos town_id y variable_id, agregamos stations_<town_id>.json
+    if town_id and variable_id:
+        assets.append(
+            (f"stations_{town_id}.json", MeteocatTownStations(api_key).get_town_stations, "town_stations", [town_id, variable_id])
+        )
+
+    for filename, fetch_func, key, args in assets:
+        file_path = assets_dir / filename
+        if not file_path.exists():
+            _LOGGER.debug("Intentando descargar datos para %s desde la API con args: %s", key, args)
+            try:
+                data = await fetch_func(*args)
+            except Exception as ex:
+                _LOGGER.warning(
+                    "No se pudieron obtener los datos para %s. Intenta regenerarlo más adelante desde las opciones de la integración. Detalle: %s",
+                    key,
+                    ex,
+                )
+                data = []
+            async with aiofiles.open(file_path, "w", encoding="utf-8") as file:
+                await file.write(json.dumps({key: data}, ensure_ascii=False, indent=4))
+            _LOGGER.info("Archivo creado: %s", file_path)
+
 async def async_setup(hass: core.HomeAssistant, config: dict) -> bool:
     """Configuración inicial del componente Meteocat."""
     return True
@@ -93,6 +136,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if missing_fields:
         _LOGGER.error(f"Faltan los siguientes campos en la configuración: {missing_fields}")
         return False
+    
+    # Crear los assets básicos si faltan
+    await ensure_assets_exist(
+        hass,
+        api_key=entry_data["api_key"],
+        town_id=entry_data.get("town_id"),
+        variable_id=entry_data.get("variable_id"),
+    )
 
     _LOGGER.debug(
         f"Datos de configuración: Municipio '{entry_data['town_name']}' (ID: {entry_data['town_id']}), "
@@ -103,79 +154,39 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
 
     # Inicializar coordinadores
+    coordinators = [
+        ("sensor_coordinator", MeteocatSensorCoordinator),
+        ("static_sensor_coordinator", MeteocatStaticSensorCoordinator),
+        ("entity_coordinator", MeteocatEntityCoordinator),
+        ("uvi_coordinator", MeteocatUviCoordinator),
+        ("uvi_file_coordinator", MeteocatUviFileCoordinator),
+        ("hourly_forecast_coordinator", HourlyForecastCoordinator),
+        ("daily_forecast_coordinator", DailyForecastCoordinator),
+        ("condition_coordinator", MeteocatConditionCoordinator),
+        ("temp_forecast_coordinator", MeteocatTempForecastCoordinator),
+        ("alerts_coordinator", MeteocatAlertsCoordinator),
+        ("alerts_region_coordinator", MeteocatAlertsRegionCoordinator),
+        ("quotes_coordinator", MeteocatQuotesCoordinator),
+        ("quotes_file_coordinator", MeteocatQuotesFileCoordinator),
+        ("lightning_coordinator", MeteocatLightningCoordinator),
+        ("lightning_file_coordinator", MeteocatLightningFileCoordinator),
+    ]
+
+    hass.data.setdefault(DOMAIN, {})
+    hass.data[DOMAIN][entry.entry_id] = {}
+
     try:
-        sensor_coordinator = MeteocatSensorCoordinator(hass=hass, entry_data=entry_data)
-        await sensor_coordinator.async_config_entry_first_refresh()
-        
-        static_sensor_coordinator = MeteocatStaticSensorCoordinator(hass=hass, entry_data=entry_data)
-        # Corregido: refrescar el coordinador estático (antes se refrescaba el de sensor otra vez)
-        await static_sensor_coordinator.async_config_entry_first_refresh()
+        for key, cls in coordinators:
+            coordinator = cls(hass=hass, entry_data=entry_data)
+            await coordinator.async_config_entry_first_refresh()
+            hass.data[DOMAIN][entry.entry_id][key] = coordinator
 
-        entity_coordinator = MeteocatEntityCoordinator(hass=hass, entry_data=entry_data)
-        await entity_coordinator.async_config_entry_first_refresh()
-
-        uvi_coordinator = MeteocatUviCoordinator(hass=hass, entry_data=entry_data)
-        await uvi_coordinator.async_config_entry_first_refresh()
-
-        uvi_file_coordinator = MeteocatUviFileCoordinator(hass=hass, entry_data=entry_data)
-        await uvi_file_coordinator.async_config_entry_first_refresh()
-
-        hourly_forecast_coordinator = HourlyForecastCoordinator(hass=hass, entry_data=entry_data)
-        await hourly_forecast_coordinator.async_config_entry_first_refresh()
-        
-        daily_forecast_coordinator = DailyForecastCoordinator(hass=hass, entry_data=entry_data)
-        await daily_forecast_coordinator.async_config_entry_first_refresh()
-
-        condition_coordinator = MeteocatConditionCoordinator(hass=hass, entry_data=entry_data)
-        await condition_coordinator.async_config_entry_first_refresh()
-
-        temp_forecast_coordinator = MeteocatTempForecastCoordinator(hass=hass, entry_data=entry_data)
-        await temp_forecast_coordinator.async_config_entry_first_refresh()
-
-        alerts_coordinator = MeteocatAlertsCoordinator(hass=hass, entry_data=entry_data)
-        await alerts_coordinator.async_config_entry_first_refresh()
-
-        alerts_region_coordinator = MeteocatAlertsRegionCoordinator(hass=hass, entry_data=entry_data)
-        await alerts_region_coordinator.async_config_entry_first_refresh()
-
-        quotes_coordinator = MeteocatQuotesCoordinator(hass=hass, entry_data=entry_data)
-        await quotes_coordinator.async_config_entry_first_refresh()
-
-        quotes_file_coordinator = MeteocatQuotesFileCoordinator(hass=hass, entry_data=entry_data)
-        await quotes_file_coordinator.async_config_entry_first_refresh()
-
-        lightning_coordinator = MeteocatLightningCoordinator(hass=hass, entry_data=entry_data)
-        await lightning_coordinator.async_config_entry_first_refresh()
-
-        lightning_file_coordinator = MeteocatLightningFileCoordinator(hass=hass, entry_data=entry_data)
-        await lightning_file_coordinator.async_config_entry_first_refresh()
-
-    except Exception as err:  # Capturar todos los errores
-        _LOGGER.exception(f"Error al inicializar los coordinadores: {err}")
+    except Exception as err:
+        _LOGGER.exception("Error al inicializar los coordinadores: %s", err)
         return False
 
-    # Guardar coordinadores y datos en hass.data
-    hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN][entry.entry_id] = {
-        "sensor_coordinator": sensor_coordinator,
-        "static_sensor_coordinator": static_sensor_coordinator,
-        "entity_coordinator": entity_coordinator,
-        "uvi_coordinator":  uvi_coordinator,
-        "uvi_file_coordinator": uvi_file_coordinator,
-        "hourly_forecast_coordinator": hourly_forecast_coordinator,
-        "daily_forecast_coordinator": daily_forecast_coordinator,
-        "condition_coordinator": condition_coordinator,
-        "temp_forecast_coordinator": temp_forecast_coordinator,
-        "alerts_coordinator": alerts_coordinator,
-        "alerts_region_coordinator": alerts_region_coordinator,
-        "quotes_coordinator": quotes_coordinator,
-        "quotes_file_coordinator": quotes_file_coordinator,
-        "lightning_coordinator": lightning_coordinator,
-        "lightning_file_coordinator": lightning_file_coordinator,
-        **entry_data,
-    }
+    hass.data[DOMAIN][entry.entry_id].update(entry_data)
 
-    # Configurar plataformas
     _LOGGER.debug(f"Cargando plataformas: {PLATFORMS}")
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
