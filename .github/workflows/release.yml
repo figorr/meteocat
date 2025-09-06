@@ -11,19 +11,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Paso 1: Configurar el repositorio
+      # Paso 1: Checkout completo (necesario para semantic-release y tags)
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # Necesario para semantic-release
+          fetch-depth: 0
 
-      # Paso 2: Configurar Node.js (requerido para semantic-release)
+      # Paso 2: Configurar Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 20.8.1 # Versión compatible con semantic-release
+          node-version: 20.8.1
 
-      # Paso 3: Instalar dependencias necesarias
+      # Paso 3: Instalar dependencias
       - name: Install dependencies
         run: npm ci
 
@@ -33,7 +33,7 @@ jobs:
           git config user.name "semantic-release-bot"
           git config user.email "jdcuartero@yahoo.es"
 
-      # Paso 5: Calcular próxima versión
+      # Paso 5: Obtener próxima versión (dry-run)
       - name: Get next version
         id: nextver
         run: |
@@ -41,7 +41,7 @@ jobs:
           echo "next_version=$version" >> $GITHUB_OUTPUT
           echo "Next version: $version"
 
-      # Paso 6: Actualizar archivos con la nueva versión
+      # Paso 6: Actualizar archivos de versión antes del release
       - name: Update version in files
         run: |
           version=${{ steps.nextver.outputs.next_version }}
@@ -58,11 +58,12 @@ jobs:
           # __init__.py
           sed -i "s/^__version__ = \".*\"/__version__ = \"$version\"/" custom_components/meteocat/__init__.py
 
+          # Commit con [skip ci] para no reiniciar workflow
           git add pyproject.toml custom_components/meteocat/manifest.json custom_components/meteocat/version.py custom_components/meteocat/__init__.py
           git commit -m "chore: bump version to $version [skip ci]" || echo "No changes to commit"
           git push origin master
 
-      # Paso 7: Ejecutar semantic-release
+      # Paso 7: Ejecutar semantic-release (generación de release, changelog, assets)
       - name: Run semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_TOKEN }}
