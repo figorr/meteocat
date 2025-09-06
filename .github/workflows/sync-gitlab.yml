@@ -7,6 +7,7 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
+
     steps:
       # Paso 1: Checkout completo
       - name: Checkout repository
@@ -51,7 +52,7 @@ jobs:
         run: |
           PROJECT_PATH=$(echo $GL_REMOTE_URL | sed -E 's#https://[^/]+/(.*)\.git#\1#')
           PROJECT_PATH_ENCODED=$(python3 -c "import urllib.parse; print(urllib.parse.quote('''$PROJECT_PATH''', safe=''))")
-          
+
           EXISTING=$(curl -s --header "PRIVATE-TOKEN: $GL_TOKEN" "https://gitlab.com/api/v4/projects/$PROJECT_PATH_ENCODED/releases/$RELEASE_TAG")
 
           if echo "$EXISTING" | grep -q 'tag_name'; then
@@ -74,23 +75,20 @@ jobs:
           GL_REMOTE_URL: ${{ secrets.GL_REMOTE_URL }}
           GL_TOKEN: ${{ secrets.GL_TOKEN }}
           RELEASE_TAG: ${{ github.ref_name }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           PROJECT_PATH=$(echo $GL_REMOTE_URL | sed -E 's#https://[^/]+/(.*)\.git#\1#')
           PROJECT_PATH_ENCODED=$(python3 -c "import urllib.parse; print(urllib.parse.quote('''$PROJECT_PATH''', safe=''))")
 
-          # Subir el zip directamente desde el repo
           ASSET_NAME="meteocat.zip"
-          ASSET_PATH="custom_components/meteocat/meteocat.zip"
+          ZIP_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/$RELEASE_TAG/meteocat.zip"
 
-          if [ -f "$ASSET_PATH" ]; then
-            curl --request POST "https://gitlab.com/api/v4/projects/$PROJECT_PATH_ENCODED/releases/$RELEASE_TAG/assets/links" \
-              --header "PRIVATE-TOKEN: $GL_TOKEN" \
-              --header "Content-Type: application/json" \
-              --data "{
-                \"name\": \"$ASSET_NAME\",
-                \"url\": \"$(pwd)/$ASSET_PATH\"
-              }"
-          else
-            echo "❌ meteocat.zip no encontrado en $ASSET_PATH. Asegúrate de generar el zip en publish-zip.yml"
-            exit 1
-          fi
+          echo "Subiendo $ASSET_NAME al release de GitLab desde $ZIP_URL"
+          curl --request POST "https://gitlab.com/api/v4/projects/$PROJECT_PATH_ENCODED/releases/$RELEASE_TAG/assets/links" \
+            --header "PRIVATE-TOKEN: $GL_TOKEN" \
+            --header "Content-Type: application/json" \
+            --data "{
+              \"name\": \"$ASSET_NAME\",
+              \"url\": \"$ZIP_URL\"
+            }"
+
