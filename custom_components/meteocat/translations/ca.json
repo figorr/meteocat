@@ -36,7 +36,7 @@
   "options": {
     "step":{
       "init": {
-        "description": "Configura l'API Key i els límits de l'API.",
+        "description": "Configura l'API Key, els límits de l'API i regenera els arxius a 'assets'.",
         "title": "Opcions de configuració",
         "data": {
           "option": "Opcions"
@@ -49,6 +49,13 @@
       "update_limits_only": {
         "description": "Configura els límits de l'API.",
         "title": "Límits de l'API"
+      },
+      "confirm_regenerate_assets": {
+        "description": "Regenera els arxius a 'assets'.",
+        "title": "Regenera 'assets'",
+        "data": {
+          "confirm": "Confirmar"
+        }
       }
     },
     "error": {
@@ -61,7 +68,8 @@
     "option": {
       "options": {
         "update_api_and_limits": "Actualitzar API Key i limits.",
-        "update_limits_only": "Actualitzar API limits."
+        "update_limits_only": "Actualitzar API limits.",
+        "regenerate_assets": "Regenera arxius a 'assets'."
       }
     }
   },

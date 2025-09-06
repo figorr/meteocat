@@ -36,7 +36,7 @@
   "options": {
     "step":{
       "init": {
-        "description": "Setup the API Key and the API limits.",
+        "description": "Setup the API Key, the API limits and regenerate 'assets' files.",
         "title": "Setup options",
         "data": {
           "option": "Options"
@@ -49,6 +49,13 @@
       "update_limits_only": {
         "description": "Setup the API limits.",
         "title": "API limits"
+      },
+      "confirm_regenerate_assets": {
+        "description": "Regenerate missing assets files.",
+        "title": "Regenerate assets",
+        "data": {
+          "confirm": "Confirm"
+        }
       }
     },
     "error": {
@@ -61,7 +68,8 @@
     "option": {
       "options": {
         "update_api_and_limits": "Update API Key and limits.",
-        "update_limits_only": "Update API limits."
+        "update_limits_only": "Update API limits.",
+        "regenerate_assets": "Regenerate 'assets' files."
       }
     }
   },

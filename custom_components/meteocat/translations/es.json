@@ -36,7 +36,7 @@
   "options": {
     "step":{
       "init": {
-        "description": "Configura el API Key y los límites de la API.",
+        "description": "Configura el API Key, los límites de la API y regenera los archivos en 'assets'.",
         "title": "Opciones de configuración",
         "data": {
           "option": "Opciones"
@@ -49,6 +49,13 @@
       "update_limits_only": {
         "description": "Configura los límites de la API.",
         "title": "Límites de la API"
+      },
+      "confirm_regenerate_assets": {
+        "description": "Regenera los archivos de 'assets'.",
+        "title": "Regenera 'assets'",
+        "data": {
+          "confirm": "Confirmar"
+        }
       }
     },
     "error": {
@@ -61,7 +68,8 @@
     "option": {
       "options": {
         "update_api_and_limits": "Actualizar API Key y límites.",
-        "update_limits_only": "Actualizar API límites."
+        "update_limits_only": "Actualizar API límites.",
+        "regenerate_assets": "Regenerar archivos de 'assets'."
       }
     }
   },
