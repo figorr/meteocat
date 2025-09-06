@@ -84,6 +84,27 @@ To change units select one of the entities and open the more info dialog and cli
 
 ![Entity more info settings dialog](images/change_units.png)
 
+## Options
+
+Once the integration is installed, you can reconfigure some parameters without having to remove and reinstall Meteocat.
+
+Go to:
+`Settings > Devices & Services > Meteocat > Configure`
+
+You will see three available options:
+
+- **Update API Key and limits**  
+  Allows you to change the API Key and update all API plan limits at the same time.
+
+- **Update limits only**  
+  Allows you to adjust only the API plan limits, keeping the same API Key.
+
+- **Regenerate assets**  
+  If for any reason some files in the `assets` folder (`towns.json`, `stations.json`, `variables.json`, `symbols.json`, or `stations_<town_id>.json`) are missing or outdated, you can regenerate them directly from the options menu.  
+  > ℹ️ If the Meteocat API is not available at that moment, the integration will still start, and you can retry regeneration later.
+
+![Options](images/options.png)
+
 # Contributing
 
 1.  [Check for open features/bugs](https://github.com/figorr/meteocat/issues)
