@@ -1,7 +1,15 @@
 └── .github/
+    └── ISSUE_TEMPLATE/
+        ├── bug_report.md
+        ├── config.yml
     └── workflows/
+        ├── autocloser.yaml
+        ├── close-duplicates.yml
         ├── hassfest.yaml
+        ├── publish-zip.yml
         ├── release.yml
+        ├── stale.yml
+        ├── sync-gitlab.yml
         ├── validate.yaml
 ├── .gitignore
 ├── .gitlab-ci.yml
@@ -42,6 +50,7 @@
     ├── diagnostic_sensors.png
     ├── dynamic_sensors.png
     ├── login.png
+    ├── options.png
     ├── pick_area.png
     ├── pick_station.png
     ├── pick_town.png
