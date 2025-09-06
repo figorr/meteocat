@@ -43,6 +43,8 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
                 return await self.async_step_update_api_and_limits()
             elif user_input["option"] == "update_limits_only":
                 return await self.async_step_update_limits_only()
+            elif user_input["option"] == "regenerate_assets":
+                return await self.async_step_confirm_regenerate_assets()
         
         return self.async_show_form(
             step_id="init",
@@ -51,7 +53,8 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
                     SelectSelectorConfig(
                         options=[
                             "update_api_and_limits",
-                            "update_limits_only"
+                            "update_limits_only",
+                            "regenerate_assets"
                         ],
                         translation_key="option"
                     )
@@ -174,3 +177,44 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
         return self.async_show_form(
             step_id="update_limits_only", data_schema=schema, errors=errors
         )
+    
+    async def async_step_confirm_regenerate_assets(self, user_input: dict | None = None):
+        """Confirma si el usuario realmente quiere regenerar los assets."""
+        if user_input is not None:
+            if user_input.get("confirm") is True:
+                return await self.async_step_regenerate_assets()
+            else:
+                # Volver al menú inicial si el usuario cancela
+                return await self.async_step_init()
+
+        schema = vol.Schema({
+            vol.Required("confirm", default=False): bool
+        })
+        return self.async_show_form(
+            step_id="confirm_regenerate_assets",
+            data_schema=schema,
+            description_placeholders={
+                "warning": "Esto regenerará los archivos faltantes de towns.json, stations.json, variables.json, symbols.json y stations_<town_id>.json. ¿Desea continuar?"
+            }
+        )
+
+    async def async_step_regenerate_assets(self, user_input: dict | None = None):
+        """Regenera los archivos de assets."""
+        from . import ensure_assets_exist  # importamos la función desde __init__.py
+
+        errors = {}
+        try:
+            # Llamar a la función que garantiza que los assets existan
+            await ensure_assets_exist(self.hass, self._config_entry.data)
+
+            _LOGGER.info("Archivos de assets regenerados correctamente.")
+            # Forzar recarga de la integración
+            await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+
+            return self.async_create_entry(title="", data={})
+
+        except Exception as ex:
+            _LOGGER.error("Error al regenerar assets: %s", ex)
+            errors["base"] = "regenerate_failed"
+
+        return self.async_show_form(step_id="regenerate_assets", errors=errors)
