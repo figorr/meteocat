@@ -5,14 +5,13 @@ on:
     branches:
       - master
   create:
-    tags:
-      - 'v*'
+    ref_type: tag  # Solo dispara workflow al crear tags
 
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      # Checkout completo para evitar problemas de shallow update
+      # Checkout completo
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
@@ -45,6 +44,7 @@ jobs:
       - name: Push commits to GitLab
         run: git push gitlab master
 
-      # Push de tags nuevos a GitLab
+      # Push de tags nuevos a GitLab, solo si es un tag que empieza con "v"
       - name: Push new tags to GitLab
+        if: startsWith(github.ref, 'refs/tags/v')
         run: git push gitlab --tags
