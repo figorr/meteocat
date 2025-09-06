@@ -11,7 +11,7 @@ jobs:
       contents: write
 
     steps:
-      # Paso 1: Checkout del repositorio
+      # Paso 1: Checkout del repositorio completo
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -19,7 +19,7 @@ jobs:
           ref: master
           fetch-depth: 0
 
-      # Paso 2: Obtener la versión del release recién publicado (para info/log)
+      # Paso 2: Obtener la versión del release recién publicado
       - name: Get release version
         id: release-version
         run: |
@@ -55,10 +55,10 @@ jobs:
       - name: Zip integration
         run: |
           cd custom_components/meteocat
-          zip -r meteocat.zip ./
-          mv meteocat.zip $GITHUB_WORKSPACE/
+          zip -r "$GITHUB_WORKSPACE/meteocat.zip" ./
+          echo "Zip created at $GITHUB_WORKSPACE/meteocat.zip"
 
-      # Paso 5: Subir meteocat.zip al release
+      # Paso 5: Subir meteocat.zip al release de GitHub
       - name: Upload meteocat.zip to release
         uses: softprops/action-gh-release@v2.2.1
         with:
