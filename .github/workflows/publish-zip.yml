@@ -9,32 +9,37 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+
     steps:
+      # Paso 1: Checkout del repositorio
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: master
+          fetch-depth: 0
 
-      # Paso 1: Obtener última versión de Home Assistant
+      # Paso 2: Obtener la versión del release recién publicado (para info/log)
+      - name: Get release version
+        id: release-version
+        run: |
+          version="${GITHUB_REF#refs/tags/v}"
+          echo "Release version: $version"
+          echo "version=$version" >> $GITHUB_OUTPUT
+
+      # Paso 3: Actualizar hacs.json con la última versión de Home Assistant
       - name: Get latest Home Assistant version
         id: ha-version
         run: |
           latest=$(curl -s https://api.github.com/repos/home-assistant/core/releases/latest | jq -r .tag_name)
-          # quitamos prefijo "v" si existe
           latest_clean=${latest#v}
-          echo "Latest HA version: $latest_clean"
-          echo "version=$latest_clean" >> $GITHUB_OUTPUT
+          echo "ha_version=$latest_clean" >> $GITHUB_OUTPUT
 
-      # Paso 2: Actualizar hacs.json (solo Home Assistant, ya no versionado del release)
       - name: Update hacs.json
         run: |
-          ha_version="${{ steps.ha-version.outputs.version }}"
-          echo "Updating hacs.json with HA version: $ha_version"
+          ha_version="${{ steps.ha-version.outputs.ha_version }}"
           jq --arg ver "$ha_version" '.homeassistant = $ver' hacs.json > tmp.json && mv tmp.json hacs.json
-          cat hacs.json
 
-      # Paso 3: Commit y push de hacs.json (con skip ci para no relanzar release.yml)
       - name: Commit updated hacs.json
         run: |
           git config user.name "github-actions[bot]"
@@ -46,7 +51,7 @@ jobs:
             echo "No changes to commit"
           fi
 
-      # Paso 4: Crear zip de la integración
+      # Paso 4: Crear zip de la integración con nombre fijo meteocat.zip
       - name: Zip integration
         run: |
           cd custom_components/meteocat
