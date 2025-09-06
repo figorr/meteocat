@@ -16,6 +16,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: master
 
+      # Paso 1: Obtener última versión de Home Assistant
       - name: Get latest Home Assistant version
         id: ha-version
         run: |
@@ -25,6 +26,7 @@ jobs:
           echo "Latest HA version: $latest_clean"
           echo "version=$latest_clean" >> $GITHUB_OUTPUT
 
+      # Paso 2: Actualizar hacs.json (solo Home Assistant, ya no versionado del release)
       - name: Update hacs.json
         run: |
           ha_version="${{ steps.ha-version.outputs.version }}"
@@ -32,23 +34,26 @@ jobs:
           jq --arg ver "$ha_version" '.homeassistant = $ver' hacs.json > tmp.json && mv tmp.json hacs.json
           cat hacs.json
 
+      # Paso 3: Commit y push de hacs.json (con skip ci para no relanzar release.yml)
       - name: Commit updated hacs.json
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add hacs.json
-          if git commit -m "chore: update hacs.json with latest Home Assistant version"; then
+          if git commit -m "chore: update hacs.json with latest Home Assistant version [skip ci]"; then
             git push origin master
           else
             echo "No changes to commit"
           fi
 
+      # Paso 4: Crear zip de la integración
       - name: Zip integration
         run: |
           cd custom_components/meteocat
           zip -r meteocat.zip ./
           mv meteocat.zip $GITHUB_WORKSPACE/
 
+      # Paso 5: Subir meteocat.zip al release
       - name: Upload meteocat.zip to release
         uses: softprops/action-gh-release@v2.2.1
         with:
