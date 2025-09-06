@@ -2,16 +2,14 @@ name: Sync to GitLab
 
 on:
   push:
-    branches:
-      - master
-  create:
-    ref_type: tag  # Solo dispara workflow al crear tags
+    tags:
+      - 'v*'   # Solo dispara workflow al hacer push de tags que empiecen por "v"
 
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      # Checkout completo
+      # Checkout completo para evitar problemas de shallow update
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
@@ -38,13 +36,11 @@ jobs:
           if ! git merge-base --is-ancestor gitlab/master master; then
             echo "❌ GitLab master tiene commits que GitHub no tiene. Revisar antes de sincronizar."
             exit 1
-          fi
 
       # Push de commits nuevos a GitLab (solo si no hay divergencias)
       - name: Push commits to GitLab
         run: git push gitlab master
 
-      # Push de tags nuevos a GitLab, solo si es un tag que empieza con "v"
+      # Push de tags nuevos a GitLab
       - name: Push new tags to GitLab
-        if: startsWith(github.ref, 'refs/tags/v')
         run: git push gitlab --tags
