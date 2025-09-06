@@ -14,6 +14,8 @@ jobs:
       # Paso 1: Configurar el repositorio
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Necesario para semantic-release
 
       # Paso 2: Configurar Node.js (requerido para semantic-release)
       - name: Set up Node.js
@@ -24,14 +26,43 @@ jobs:
       # Paso 3: Instalar dependencias necesarias
       - name: Install dependencies
         run: npm ci
-      
+
       # Paso 4: Configurar el autor de Git
       - name: Configure Git author
         run: |
           git config user.name "semantic-release-bot"
           git config user.email "jdcuartero@yahoo.es"
 
-      # Paso 5: Ejecutar semantic-release
+      # Paso 5: Calcular próxima versión
+      - name: Get next version
+        id: nextver
+        run: |
+          version=$(npx semantic-release --dry-run | grep "The next release version is" | awk '{print $NF}')
+          echo "next_version=$version" >> $GITHUB_OUTPUT
+          echo "Next version: $version"
+
+      # Paso 6: Actualizar archivos con la nueva versión
+      - name: Update version in files
+        run: |
+          version=${{ steps.nextver.outputs.next_version }}
+
+          # pyproject.toml
+          sed -i "s/^version = \".*\"/version = \"$version\"/" pyproject.toml
+
+          # manifest.json
+          jq --arg ver "$version" '.version = $ver' custom_components/meteocat/manifest.json > tmp.json && mv tmp.json custom_components/meteocat/manifest.json
+
+          # version.py
+          echo "__version__ = \"$version\"" > custom_components/meteocat/version.py
+
+          # __init__.py
+          sed -i "s/^__version__ = \".*\"/__version__ = \"$version\"/" custom_components/meteocat/__init__.py
+
+          git add pyproject.toml custom_components/meteocat/manifest.json custom_components/meteocat/version.py custom_components/meteocat/__init__.py
+          git commit -m "chore: bump version to $version [skip ci]" || echo "No changes to commit"
+          git push origin master
+
+      # Paso 7: Ejecutar semantic-release
       - name: Run semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_TOKEN }}
