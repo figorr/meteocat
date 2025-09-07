@@ -213,7 +213,7 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     assets_folder = get_storage_dir(hass, "assets")
     files_folder = get_storage_dir(hass, "files")
 
-    # Archivos comunes
+    # Archivos comunes (solo se eliminan si no queda ninguna entrada)
     common_files = [
         assets_folder / "towns.json",
         assets_folder / "symbols.json",
@@ -223,32 +223,53 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
         files_folder / "quotes.json",
     ]
 
-    # Archivos específicos de la entrada
+    # Identificadores de la entrada eliminada
     station_id = entry.data.get("station_id")
     town_id = entry.data.get("town_id")
     region_id = entry.data.get("region_id")
 
     specific_files = []
-    if station_id:
-        specific_files.append(files_folder / f"station_{station_id.lower()}_data.json")
-    if town_id:
-        specific_files.extend([
-            assets_folder / f"stations_{town_id.lower()}.json",
-            files_folder / f"uvi_{town_id.lower()}_data.json",
-            files_folder / f"forecast_{town_id.lower()}_hourly_data.json",
-            files_folder / f"forecast_{town_id.lower()}_daily_data.json",
-        ])
-    if region_id:
-        specific_files.extend([
-            files_folder / f"alerts_{region_id}.json",
-            files_folder / f"lightning_{region_id}.json",
-        ])
 
-    # Eliminar archivos específicos
+    # 1. Archivos de estación
+    if station_id:
+        other_entries_with_station = [
+            e for e in hass.config_entries.async_entries(DOMAIN)
+            if e.entry_id != entry.entry_id and e.data.get("station_id") == station_id
+        ]
+        if not other_entries_with_station:
+            specific_files.append(files_folder / f"station_{station_id.lower()}_data.json")
+
+    # 2. Archivos de municipio
+    if town_id:
+        other_entries_with_town = [
+            e for e in hass.config_entries.async_entries(DOMAIN)
+            if e.entry_id != entry.entry_id and e.data.get("town_id") == town_id
+        ]
+        if not other_entries_with_town:
+            specific_files.extend([
+                assets_folder / f"stations_{town_id.lower()}.json",
+                files_folder / f"uvi_{town_id.lower()}_data.json",
+                files_folder / f"forecast_{town_id.lower()}_hourly_data.json",
+                files_folder / f"forecast_{town_id.lower()}_daily_data.json",
+            ])
+
+    # 3. Archivos de comarca (region_id)
+    if region_id:
+        other_entries_with_region = [
+            e for e in hass.config_entries.async_entries(DOMAIN)
+            if e.entry_id != entry.entry_id and e.data.get("region_id") == region_id
+        ]
+        if not other_entries_with_region:
+            specific_files.extend([
+                files_folder / f"alerts_{region_id}.json",
+                files_folder / f"lightning_{region_id}.json",
+            ])
+
+    # Eliminar archivos específicos (solo si ya no los necesita nadie más)
     for f in specific_files:
         safe_remove(f)
 
-    # Verificar si quedan otras entradas antes de eliminar archivos comunes
+    # Comprobar si quedan entradas activas de la integración
     remaining_entries = [
         e for e in hass.config_entries.async_entries(DOMAIN)
         if e.entry_id != entry.entry_id
