@@ -44,6 +44,7 @@ publish_version.py
 final_release.py
 delete_releases.py
 delete_tags.py
+test_hacs.py
 
 # TEST VARIABLES .ENV
 test_dotenv.py
