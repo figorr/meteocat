@@ -1,3 +1,21 @@
+## [2.3.0](https://github.com/figorr/meteocat/compare/v2.2.7...v2.3.0) (2025-09-10)
+
+
+### Features
+
+* download and save town and station json files during setup ([7b98c22](https://github.com/figorr/meteocat/commit/7b98c22d5ca43d4cbf80895e11c02594208f7470))
+* include options documentation ([a85ef74](https://github.com/figorr/meteocat/commit/a85ef7492eb8ed4af99b8d0f50b8e77ff7f7976a))
+* include options image ([dbb047a](https://github.com/figorr/meteocat/commit/dbb047a6bdf32af03fec8351c9a608593b369e3b))
+* include regenerate assets files option ([f2ce357](https://github.com/figorr/meteocat/commit/f2ce357c8ce6371d97523870f4bf6a9cba6a151c))
+* recover assets files ([f493b33](https://github.com/figorr/meteocat/commit/f493b33e54e10994b6b08232f37dd5bb35f4a9b7))
+* regenerate assets option translation ([317ce9f](https://github.com/figorr/meteocat/commit/317ce9fecc03f88b8b8072b41b357846fb075dcc))
+* safe remove keeping common entry files ([6cefe04](https://github.com/figorr/meteocat/commit/6cefe04289b1b74fe30d615e7056bd643d845b89))
+* **storage:** moving the API downloaded files to the new folder meteocat_files ([06c68e3](https://github.com/figorr/meteocat/commit/06c68e36b5669efc8fe3174a71e41624e9728b07))
+* update .gitignore ([fac7772](https://github.com/figorr/meteocat/commit/fac7772a1093f2165e1b33098631096138617a6d))
+* update README ([9855939](https://github.com/figorr/meteocat/commit/98559398e6bae30e8e9c9ff2b2fe27409a3930bd))
+* update repo files structure ([0778679](https://github.com/figorr/meteocat/commit/0778679d218a89e89bb18791f1245c5c9f7b188f))
+
+
 ## [2.2.7](https://github.com/figorr/meteocat/compare/v2.2.6...v2.2.7) (2025-08-29)
 
 
