@@ -33,37 +33,7 @@ jobs:
           git config user.name "semantic-release-bot"
           git config user.email "jdcuartero@yahoo.es"
 
-      # Paso 5: Obtener próxima versión (dry-run)
-      - name: Get next version
-        id: nextver
-        run: |
-          version=$(npx semantic-release --dry-run | grep "The next release version is" | awk '{print $NF}')
-          echo "next_version=$version" >> $GITHUB_OUTPUT
-          echo "Next version: $version"
-
-      # Paso 6: Actualizar archivos de versión antes del release
-      - name: Update version in files
-        run: |
-          version=${{ steps.nextver.outputs.next_version }}
-
-          # pyproject.toml
-          sed -i "s/^version = \".*\"/version = \"$version\"/" pyproject.toml
-
-          # manifest.json
-          jq --arg ver "$version" '.version = $ver' custom_components/meteocat/manifest.json > tmp.json && mv tmp.json custom_components/meteocat/manifest.json
-
-          # version.py
-          echo "__version__ = \"$version\"" > custom_components/meteocat/version.py
-
-          # __init__.py
-          sed -i "s/^__version__ = \".*\"/__version__ = \"$version\"/" custom_components/meteocat/__init__.py
-
-          # Commit con [skip ci] para no reiniciar workflow
-          git add pyproject.toml custom_components/meteocat/manifest.json custom_components/meteocat/version.py custom_components/meteocat/__init__.py
-          git commit -m "chore: bump version to $version [skip ci]" || echo "No changes to commit"
-          git push origin master
-
-      # Paso 7: Ejecutar semantic-release (generación de release, changelog, assets)
+      # Paso 5: Ejecutar semantic-release (se encargará de actualizar versiones, changelog, y release)
       - name: Run semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_TOKEN }}
