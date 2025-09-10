@@ -36,6 +36,7 @@ jobs:
           if ! git merge-base --is-ancestor gitlab/master master; then
             echo "❌ GitLab master tiene commits que GitHub no tiene. Revisar antes de sincronizar."
             exit 1
+          fi
 
       # Paso 5: Push de commits y tags a GitLab
       - name: Push commits and tags to GitLab
