@@ -3,6 +3,7 @@ name: Sync to GitLab
 on:
   release:
     types: [published]  # Se dispara al publicarse un release en GitHub
+  workflow_dispatch:    # Permite ejecución manual desde la interfaz
 
 jobs:
   sync:
