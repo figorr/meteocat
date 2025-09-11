@@ -608,7 +608,7 @@ class MeteocatStaticSensor(CoordinatorEntity[MeteocatStaticSensorCoordinator], S
         self._region_id = entry_data["region_id"]
 
         # Unique ID for the entity
-        self._attr_unique_id = f"sensor.{DOMAIN}_{self._station_id}_{self.entity_description.key}"
+        self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_{self.entity_description.key}"
 
         # Assign entity_category if defined in the description
         self._attr_entity_category = getattr(description, "entity_category", None)
@@ -785,7 +785,7 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
         self._station_id = entry_data["station_id"]
 
         # Unique ID for the entity
-        self._attr_unique_id = f"sensor.{DOMAIN}_{self._station_id}_{self.entity_description.key}"
+        self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_{self.entity_description.key}"
 
         # Asigna entity_category desde description (si está definido)
         self._attr_entity_category = getattr(description, "entity_category", None)
@@ -1075,7 +1075,7 @@ class MeteocatHourlyForecastStatusSensor(CoordinatorEntity[MeteocatEntityCoordin
         self._station_id = entry_data["station_id"]
 
         # Unique ID for the entity
-        self._attr_unique_id = f"sensor.{DOMAIN}_{self._station_id}_hourly_status"
+        self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_hourly_status"
 
         # Assign entity_category if defined in the description
         self._attr_entity_category = getattr(description, "entity_category", None)
@@ -1138,7 +1138,7 @@ class MeteocatDailyForecastStatusSensor(CoordinatorEntity[MeteocatEntityCoordina
         self._station_id = entry_data["station_id"]
 
         # Unique ID for the entity
-        self._attr_unique_id = f"sensor.{DOMAIN}_{self._station_id}_daily_status"
+        self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_daily_status"
 
         # Assign entity_category if defined in the description
         self._attr_entity_category = getattr(description, "entity_category", None)
@@ -1201,7 +1201,7 @@ class MeteocatUviStatusSensor(CoordinatorEntity[MeteocatUviCoordinator], SensorE
         self._station_id = entry_data["station_id"]
 
         # Unique ID for the entity
-        self._attr_unique_id = f"sensor.{DOMAIN}_{self._station_id}_uvi_status"
+        self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_uvi_status"
 
         # Assign entity_category if defined in the description
         self._attr_entity_category = getattr(description, "entity_category", None)
@@ -1264,7 +1264,7 @@ class MeteocatAlertStatusSensor(CoordinatorEntity[MeteocatAlertsCoordinator], Se
         self._limit_prediccio = entry_data["limit_prediccio"]
 
         # Unique ID for the entity
-        self._attr_unique_id = f"sensor.{DOMAIN}_{self._region_id}_alert_status"
+        self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_alert_status"
 
         # Assign entity_category if defined in the description
         self._attr_entity_category = getattr(description, "entity_category", None)
@@ -1352,7 +1352,7 @@ class MeteocatAlertRegionSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
         self._region_id = entry_data["region_id"]
 
         # Unique ID for the entity
-        self._attr_unique_id = f"sensor.{DOMAIN}_{self._region_id}_alerts"
+        self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_alerts"
 
         # Assign entity_category if defined in the description
         self._attr_entity_category = getattr(description, "entity_category", None)
@@ -1459,7 +1459,7 @@ class MeteocatAlertMeteorSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
         self._region_id = entry_data["region_id"]
 
         # Unique ID for the entity
-        self._attr_unique_id = f"sensor.{DOMAIN}_{self._region_id}_{self.entity_description.key}"
+        self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_{self.entity_description.key}"
 
         # Assign entity_category if defined in the description
         self._attr_entity_category = getattr(description, "entity_category", None)

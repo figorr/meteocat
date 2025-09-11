@@ -107,7 +107,7 @@ class MeteocatWeatherEntity(CoordinatorEntity, WeatherEntity):
     @property
     def unique_id(self) -> str:
         """Return the unique ID of the entity."""
-        return f"weather.{DOMAIN}_{self._station_id}"
+        return f"weather.{DOMAIN}_{self._town_id}"
 
     @property
     def condition(self) -> Optional[str]:
