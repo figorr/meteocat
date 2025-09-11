@@ -89,3 +89,6 @@ custom_components/meteocat/assets/
 # FILES
 meteocat/files/
 custom_components/meteocat/files/
+
+# BADGES
+badges/
