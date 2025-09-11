@@ -105,6 +105,16 @@ You will see three available options:
 
 ![Options](images/options.png)
 
+# Documentation
+
+For more detailed information about:
+- Installation and configuration  
+- Usage examples  
+- Extra attributes in sensors  
+- Known issues and troubleshooting  
+
+please visit the [📖 Meteocat Wiki](https://github.com/figorr/meteocat/wiki).
+
 # Contributing
 
 1.  [Check for open features/bugs](https://github.com/figorr/meteocat/issues)
