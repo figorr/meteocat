@@ -7,7 +7,7 @@
 [![Release](https://github.com/figorr/meteocat/actions/workflows/release.yml/badge.svg)](https://github.com/figorr/meteocat/actions/workflows/release.yml)
 ![GitHub all releases](https://img.shields.io/github/downloads/figorr/meteocat/total)
 ![GitHub release (latest by SemVer)](https://img.shields.io/github/downloads/figorr/meteocat/latest/total)
-
+[![Breaking Changes](https://img.shields.io/badge/Breaking%20Changes-critical?logo=data:image/svg+xml;base64,PHN2ZyBpZD0iTGF5ZXJfMSIgZGF0YS1uYW1lPSJMYXllciAxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjIuODggMTExLjU0Ij48ZGVmcz48c3R5bGU+LmNscy0xe2ZpbGw6IzFhMWExYTt9LmNscy0ye2ZpbGw6I2ZmZWYxMTtmaWxsLXJ1bGU6ZXZlbm9kZDt9PC9zdHlsZT48L2RlZnM+PHRpdGxlPmNhdXRpb248L3RpdGxlPjxwYXRoIGNsYXNzPSJjbHMtMSIgZD0iTTIuMzUsODQuNDIsNDUuMjgsMTAuMmwuMTctLjI3aDBBMjMsMjMsMCwwLDEsNTIuNSwyLjY5LDE3LDE3LDAsMCwxLDYxLjU3LDBhMTYuNywxNi43LDAsMCwxLDkuMTEsMi42OSwyMi43OSwyMi43OSwwLDAsMSw3LDcuMjZxLjE5LjMyLjM2LjYzbDQyLjIzLDczLjM0LjI0LjQ0aDBhMjIuNDgsMjIuNDgsMCwwLDEsMi4zNywxMC4xOSwxNy42MywxNy42MywwLDAsMS0yLjE3LDguMzUsMTUuOTQsMTUuOTQsMCwwLDEtNi45Myw2LjZjLS4xOS4xLS4zOS4xOC0uNTguMjZhMjEuMTksMjEuMTksMCwwLDEtOS4xMSwxLjc1djBIMTcuNjFjLS4yMiwwLS40NCwwLS42NSwwYTE4LjA3LDE4LjA3LDAsMCwxLTYuMi0xLjE1QTE2LjQyLDE2LjQyLDAsMCwxLDMsMTA0LjI0YTE3LjUzLDE3LjUzLDAsMCwxLTMtOS41NywyMywyMywwLDAsMSwxLjU3LTguNzQsNy42Niw3LjY2LDAsMCwxLC43Ny0xLjUxWiIvPjxwYXRoIGNsYXNzPSJjbHMtMiIgZD0iTTksODguNzUsNTIuMTIsMTQuMTZjNS4yNC04LjI1LDEzLjU0LTguNDYsMTguODcsMGw0Mi40Myw3My42OWMzLjM5LDYuODEsMS43MSwxNi05LjMzLDE1Ljc3SDE3LjYxQzEwLjM1LDEwMy44LDUuNjcsOTcuNDMsOSw4OC43NVoiLz48cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Ik01Ny41Nyw4Mi42OUE1LjQ4LDUuNDgsMCwwLDEsNjEsODEuMTFhNS42Niw1LjY2LDAsMCwxLDQuNDIsMS42Niw1LjUzLDUuNTMsMCwwLDEsMS42MiwzLjU0QTUuNiw1LjYsMCwwLDEsNjcsODcuNzJhNiw2LDAsMCwxLS40MiwxLjM0LDUuNTMsNS41MywwLDAsMS0yLjkyLDIuODQsNS43OSw1Ljc5LDAsMCwxLTQuNTctLjEsNS41MSw1LjUxLDAsMCwxLTIuODEtMi45NCw1LjMxLDUuMzEsMCwwLDEtLjM2LTEuMjcsNS45LDUuOSwwLDAsMS0uMDYtMS4zMmgwYTYuNDUsNi40NSwwLDAsMSwuNTctMiw0LjYsNC42LDAsMCwxLDEuMTQtMS41NlptOC4xNS0xMC4yNGMtLjE5LDQuNzktOC4zMSw0LjgtOC40OSwwLS44Mi04LjIxLTIuOTItMjcuNy0yLjg2LTM1LjQyLjA3LTIuMzgsMi0zLjc4LDQuNTYtNC4zMmExMS4xOSwxMS4xOSwwLDAsMSwyLjQ5LS4yNCwxMS43NywxMS43NywwLDAsMSwyLjUuMjVjMi42MS41NSw0LjY1LDIsNC42NSw0LjQ0di4yNEw2NS43Miw3Mi40NVoiLz48L3N2Zz4=&logoColor=white)](#-breaking-changes---upgrade-to-3x)
 
 This is a project to obtain meteorological data from the Meteocat API inside the Home Assistant environment.
 
@@ -23,6 +23,27 @@ This is a personal project.
 
 Authors:
 - Figorr
+
+## ⚠️ Breaking changes - Upgrade to 3.x
+
+Version **3.0.0** introduces a **breaking change** in how entities are identified.
+
+- Entities now use **`town_id`** instead of `region_id` in their `unique_id`.  
+- This change allows multiple integration entries that share the same `region_id` but different towns.  
+
+### Recommended upgrade procedure
+To avoid issues with duplicated or unavailable entities:
+
+1. **Uninstall** the existing integration (v2.x).  
+2. **Restart** Home Assistant.  
+3. **Install v3.0.0** and configure the integration again.  
+
+### If you update directly
+If you update without uninstalling first:
+
+- Old entities will remain as **Unavailable**.  
+- New entities will be created (sometimes with a suffix like `2`).  
+- You may need to manually **remove old entities** and update your automations, dashboards, or scripts to point to the new entities.
 
 ## Installation
 
