@@ -126,6 +126,16 @@ You will see three available options:
 
 ![Options](images/options.png)
 
+## Uninstallation
+
+To correctly uninstall the integration:
+
+- If you are upgrading due to **breaking changes**, remove all configured entries from  
+  **Settings > Devices & Services > Integrations**, restart Home Assistant, and reinstall the new version.  
+- If you want to **completely remove Meteocat**, after removing the entries and restarting, also uninstall the integration from **HACS > Integrations**.
+
+👉 For detailed steps with screenshots, check the [Uninstallation Guide](https://github.com/figorr/meteocat/wiki/Uninstallation).
+
 # Documentation
 
 For more detailed information about:
