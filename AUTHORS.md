@@ -10,4 +10,4 @@
 
 ## Contributors
 
-- mcasellas [GitLab](https://gitlab.com/mcasellas) [GitHub](https://github.com/mcasellas)
+- mcasellas [GitHub](https://github.com/mcasellas)
