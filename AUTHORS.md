@@ -10,3 +10,4 @@
 
 ## Contributors
 
+- mcasellas [GitHub](https://github.com/mcasellas)
