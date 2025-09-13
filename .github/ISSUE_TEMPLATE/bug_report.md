@@ -6,7 +6,7 @@ labels: bug
 assignees: ""
 ---
 
-**IMPORTANT: Please search the issues, including closed issues before opening a new issue.  
+**IMPORTANT: Please search the issues (including closed ones) *and* check the [Wiki - Troubleshooting](https://github.com/figorr/meteocat/wiki/Troubleshooting) page before opening a new issue. 
 The template is mandatory; failure to use it will result in issue closure.**
 
 ---
