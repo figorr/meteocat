@@ -2,7 +2,7 @@
   "config": {
     "step": {
       "user": {
-        "description": "Introduïu la API Key subministrada per Meteocat per poder iniciar el procés de validació.",
+        "description": "Introduïu l'API Key subministrada per Meteocat per poder iniciar el procés de validació.",
         "title": "API Key"
       },
       "select_municipi": {
@@ -21,11 +21,11 @@
       },
       "set_api_limits": {
         "description": "Defineix els límits del pla de l'API.",
-        "title": "API límits"
+        "title": "Límits de l'API"
       }
     },
     "error": {
-      "bad_request": "Petició no vàlida. Reviseu la vostra API Key.",
+      "bad_request": "Petició invàlida. Reviseu la vostra API Key.",
       "forbidden": "Accés denegat. Reviseu els permisos de la vostra API Key.",
       "rate_limit_exceeded": "Excés del límit de peticions. Si us plau, torneu-ho a provar més tard.",
       "server_error": "Error del servidor. Torneu-ho a provar més tard.",
@@ -67,8 +67,8 @@
   "selector": {
     "option": {
       "options": {
-        "update_api_and_limits": "Actualitzar API Key i limits.",
-        "update_limits_only": "Actualitzar API limits.",
+        "update_api_and_limits": "Actualitzar API Key i límits.",
+        "update_limits_only": "Actualitzar API límits.",
         "regenerate_assets": "Regenera arxius a 'assets'."
       }
     }
@@ -169,15 +169,15 @@
         "name": "Estat del Cel",
         "state": {
           "sunny": "Assolellat",
-          "clear-night": "Nit Clara",
+          "clear-night": "Nit serena",
           "partlycloudy": "Parcialment ennuvolat",
           "cloudy": "Ennuvolat",
           "rainy": "Plovent",
-          "pouring": "Tormenta",
-          "lightning-rainy": "Tormenta amb Llamps",
+          "pouring": "Tempesta",
+          "lightning-rainy": "Tempesta amb llamps",
           "hail": "Calamarsa",
           "snowy": "Nevant",
-          "snow-rainy": "Neu amb Pluja"
+          "snow-rainy": "Aiguaneu"
         },
         "state_attributes": {
           "hour": {
