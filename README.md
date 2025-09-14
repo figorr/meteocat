@@ -32,6 +32,7 @@ This is a personal project.
 
 Version **3.0.0** introduces a **breaking change** in how entities are identified.
 
+- This affects any update **from a version prior to 3.0.0** to **any version 3.x or later**. 
 - Entities now use **`town_id`** instead of `region_id` in their `unique_id`.  
 - This change allows multiple integration entries that share the same `region_id` but different towns.  
 
@@ -59,7 +60,6 @@ If you update without uninstalling first:
 1. Go to `Settings > Devices & Services`
 1. Click `+ Add Integration`
 1. Search for `Meteocat` and follow the configuration instructions
-
 
 #### HACS - Install from the store
 1. Go to `HACS`
