@@ -22,8 +22,11 @@ Commercial use of this project or the data obtained from the API is not allowed 
 
 This is a personal project.
 
-Authors:
-- Figorr
+**Authors:**  
+- [Figorr](https://github.com/figorr)
+
+**Contributors:**  
+- [mcasellas](https://github.com/mcasellas) – contributed [c505f27](https://github.com/figorr/meteocat/commit/c505f27)
 
 ## ⚠️ Breaking changes - Upgrade to 3.x
 
