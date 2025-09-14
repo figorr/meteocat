@@ -26,7 +26,7 @@ This is a personal project.
 - [Figorr](https://github.com/figorr)
 
 **Contributors:**  
-- [mcasellas](https://github.com/mcasellas) – contributed [c505f27](https://github.com/figorr/meteocat/commit/c505f27)
+- [mcasellas](https://github.com/mcasellas) – contributed [c505f27](https://github.com/figorr/meteocat/commit/c505f27) - Improve Catalan translations
 
 ## ⚠️ Breaking changes - Upgrade to 3.0.0 or later coming from prior versions
 
@@ -40,7 +40,8 @@ Version **3.0.0 and later** introduces a **breaking change** in how entities are
 ### ✅ Recommended upgrade procedure
 To avoid issues with duplicated or unavailable entities:
 
-1. **Uninstall** the existing integration (v2.x).  
+1. **Uninstall** the existing integration (v2.x).<br>
+  🔗 See [Uninstallation Guide](https://github.com/figorr/meteocat/wiki/Uninstallation) for the proper way of removing prior versions.  
 2. **Restart** Home Assistant.  
 3. **Install v3.0.0 or later** and configure the integration again.  
 
