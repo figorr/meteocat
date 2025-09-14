@@ -1,3 +1,24 @@
+# [3.0.0](https://github.com/figorr/meteocat/compare/v2.3.0...v3.0.0) (2025-09-14)
+
+
+### Features
+
+* change unique_id to use town_id ([3a048ce](https://github.com/figorr/meteocat/commit/3a048ce48a0e1f3ee7642c28bbe7ac6e6e3fc298))
+
+
+### BREAKING CHANGES
+
+* Entities now use town_id instead of region_id in their unique_id.
+This change enables multiple integration entries that share the same region_id but different towns.
+
+Recommended upgrade path:
+1. Uninstall the existing integration (v2.x).
+2. Restart Home Assistant.
+3. Install v3.0.0 and reconfigure the integration.
+
+If you update directly without uninstalling first, old entities will remain as 'unavailable' and new entities will be created (possibly with a suffix like '2').
+In that case, you may need to manually remove the old entities and update your automations or dashboards.
+
 ## [2.3.0](https://github.com/figorr/meteocat/compare/v2.2.7...v2.3.0) (2025-09-10)
 
 
