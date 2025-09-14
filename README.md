@@ -28,22 +28,23 @@ This is a personal project.
 **Contributors:**  
 - [mcasellas](https://github.com/mcasellas) – contributed [c505f27](https://github.com/figorr/meteocat/commit/c505f27)
 
-## ⚠️ Breaking changes - Upgrade to 3.x
+## ⚠️ Breaking changes - Upgrade to 3.x or later coming from prior versions
 
-Version **3.0.0** introduces a **breaking change** in how entities are identified.
+Version **3.0.0 and later** introduces a **breaking change** in how entities are identified.
 
+### ⚠️ What this affects
 - This affects any update **from a version prior to 3.0.0** to **any version 3.x or later**. 
 - Entities now use **`town_id`** instead of `region_id` in their `unique_id`.  
 - This change allows multiple integration entries that share the same `region_id` but different towns.  
 
-### Recommended upgrade procedure
+### ✅ Recommended upgrade procedure
 To avoid issues with duplicated or unavailable entities:
 
 1. **Uninstall** the existing integration (v2.x).  
 2. **Restart** Home Assistant.  
-3. **Install v3.0.0** and configure the integration again.  
+3. **Install v3.0.0 or later** and configure the integration again.  
 
-### If you update directly
+### 🚨 If you update directly
 If you update without uninstalling first:
 
 - Old entities will remain as **Unavailable**.  
