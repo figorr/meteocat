@@ -33,10 +33,21 @@ jobs:
       # Paso 4: Comprobar divergencias en master
       - name: Check for diverging commits
         run: |
-          git fetch gitlab master
-          if ! git merge-base --is-ancestor gitlab/master master; then
-            echo "❌ GitLab master tiene commits que GitHub no tiene. Revisar antes de sincronizar."
-            exit 1
+          # Trae todas las ramas del remoto GitLab y crea referencias locales
+          git fetch gitlab +refs/heads/*:refs/remotes/gitlab/*
+      
+          # Comprueba que la rama gitlab/master exista
+          if git show-ref --verify --quiet refs/remotes/gitlab/master; then
+              # Comprueba si GitLab master tiene commits que GitHub no tiene
+              if ! git merge-base --is-ancestor gitlab/master master; then
+                  echo "❌ GitLab master tiene commits que GitHub no tiene. Revisar antes de sincronizar."
+                  exit 1
+              else
+                  echo "GitLab master está alineado con GitHub master ✅"
+              fi
+          else
+              echo "❌ La rama gitlab/master no se pudo encontrar localmente. Abortando."
+              exit 1
           fi
 
       # Paso 5: Push de commits y tags a GitLab
