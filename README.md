@@ -51,6 +51,11 @@ If you update without uninstalling first:
 - New entities will be created (sometimes with a suffix like `2`).  
 - You may need to manually **remove old entities** and update your automations, dashboards, or scripts to point to the new entities.
 
+### 📑 Additional notes
+
+- This change affects all entity types, including **sensors, diagnostic sensors, and alerts**.  
+- Always backup your **Home Assistant configuration** before performing major upgrades.
+
 ## Installation
 
 #### HACS - Install using the custom repository method.
