@@ -28,7 +28,7 @@ This is a personal project.
 **Contributors:**  
 - [mcasellas](https://github.com/mcasellas) – contributed [c505f27](https://github.com/figorr/meteocat/commit/c505f27)
 
-## ⚠️ Breaking changes - Upgrade to 3.x or later coming from prior versions
+## ⚠️ Breaking changes - Upgrade to 3.0.0 or later coming from prior versions
 
 Version **3.0.0 and later** introduces a **breaking change** in how entities are identified.
 
