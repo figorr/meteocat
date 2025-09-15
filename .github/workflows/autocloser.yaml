@@ -19,7 +19,7 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           issue-close-message: >
             👋 @${{ github.event.issue.user.login }} this issue was automatically closed because it did not follow the 
-            [Bug report template](https://github.com/figorr/meteocat/issues/new/choose).  
+            [🐞 Bug report template](https://github.com/figorr/meteocat/issues/new?template=bug_report.md).  
 
             ⚠️ Reminder:  
             **IMPORTANT: Please search the issues, including closed issues before opening a new issue.  
@@ -34,7 +34,8 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           issue-close-message: >
-            👋 @${{ github.event.issue.user.login }} this issue was automatically closed because it did not follow the Improvement template.  
+            👋 @${{ github.event.issue.user.login }} this issue was automatically closed because it did not follow the Improvement template.
+            [♻️ Improvement template](https://github.com/figorr/meteocat/issues/new?template=improvement.md).  
 
             ⚠️ Reminder:  
             You must confirm that this is not a bug or malfunction by checking the appropriate box in the template.
@@ -49,7 +50,8 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           issue-close-message: >
-            👋 @${{ github.event.issue.user.login }} this issue was automatically closed because it did not follow the New Function template.  
+            👋 @${{ github.event.issue.user.login }} this issue was automatically closed because it did not follow the New Function template.
+            [🆕 New Function template](https://github.com/figorr/meteocat/issues/new?template=new_function.md).  
 
             ⚠️ Reminder:  
             You must verify that the requested data is available in the [Meteocat API Reference](https://apidocs.meteocat.gencat.cat/documentacio/) by checking the corresponding box in the template.
