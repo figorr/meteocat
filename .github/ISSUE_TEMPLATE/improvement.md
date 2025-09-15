@@ -8,8 +8,8 @@ assignees: ""
 
 ⚠️ **NOTE:** This template is for improvements or changes to the **current behavior of the integration**.  
 
-- It is **not** for bugs, errors, or malfunctions → use the 🐞 Bug report template instead.  
-- It is **not** for requesting new features or new API data → use the 🆕 New function template instead.  
+- It is **not** for bugs, errors, or malfunctions → use the 🐞 Bug report template.  
+- It is **not** for requesting new features or new API data → use the 🆕 New function template.  
 
 ❌ Any request that does not follow these rules (e.g. bug reports or feature requests submitted here) will be **closed without assistance**.
 
