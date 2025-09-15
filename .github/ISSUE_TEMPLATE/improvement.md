@@ -6,7 +6,7 @@ labels: enhancement
 assignees: ""
 ---
 
-⚠️ **Note:** This is **not** for bugs, errors, or malfunctions.  
+⚠️ **NOTE:** This is **not** for bugs, errors, or malfunctions.  
 If what you are reporting is a problem or malfunction, please use the **🐞 Bug report** template instead.  
 Use this template **only** for improvements to existing functionality.
 
