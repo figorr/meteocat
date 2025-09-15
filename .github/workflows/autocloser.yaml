@@ -10,16 +10,48 @@ jobs:
   autoclose:
     runs-on: ubuntu-latest
     steps:
-      - name: Autoclose issues that did not follow issue template
+      # -----------------------------
+      # 1️⃣ Bug report
+      # -----------------------------
+      - name: Autoclose issues that did not follow Bug report template
         uses: roots/issue-closer@v1.1
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           issue-close-message: >
             👋 @${{ github.event.issue.user.login }} this issue was automatically closed because it did not follow the 
-            [issue template](https://github.com/figorr/meteocat/issues/new/choose).  
+            [Bug report template](https://github.com/figorr/meteocat/issues/new/choose).  
 
             ⚠️ Reminder:  
             **IMPORTANT: Please search the issues, including closed issues before opening a new issue.  
             The template is mandatory; failure to use it will result in issue closure.**
           issue-pattern: >
             (Describe the bug|To Reproduce|Expected behavior|System details|Debug Logs)
+      # -----------------------------
+      # 2️⃣ Improvement template
+      # -----------------------------
+      - name: Autoclose issues that did not follow Improvement template
+        uses: roots/issue-closer@v1.1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          issue-close-message: >
+            👋 @${{ github.event.issue.user.login }} this issue was automatically closed because it did not follow the Improvement template.  
+
+            ⚠️ Reminder:  
+            You must confirm that this is not a bug or malfunction by checking the appropriate box in the template.
+          issue-pattern: >
+            (I confirm this is not a bug or malfunction, but a request for improvement)
+
+      # -----------------------------
+      # 3️⃣ New Function template
+      # -----------------------------
+      - name: Autoclose issues that did not follow New Function template
+        uses: roots/issue-closer@v1.1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          issue-close-message: >
+            👋 @${{ github.event.issue.user.login }} this issue was automatically closed because it did not follow the New Function template.  
+
+            ⚠️ Reminder:  
+            You must verify that the requested data is available in the [Meteocat API Reference](https://apidocs.meteocat.gencat.cat/documentacio/) by checking the corresponding box in the template.
+          issue-pattern: >
+            (I have verified that the requested data is available in the \[Meteocat API Reference\]\(https://apidocs\.meteocat\.gencat\.cat/documentacio/\))
