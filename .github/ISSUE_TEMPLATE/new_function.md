@@ -10,10 +10,10 @@ assignees: ""
 
 ⚠️ **NOTE:** This template is for new functions or new API data for the **integration**.  
 
-- It is **not** for bugs, errors, or malfunctions → use the 🐞 Bug report template instead.  
-- It is **not** for requesting improvements or changes to the current behavior of the integration → use the ♻️ Improvement request template instead.  
+- It is **not** for bugs, errors, or malfunctions → use the 🐞 Bug report template.  
+- It is **not** for requesting improvements or changes to the current behavior of the integration → use the ♻️ Improvement request template.  
 
-Any request that does not follow these rules (e.g. bug reports or improvements requests submitted here) will be **closed without assistance**.
+❌ Any request that does not follow these rules (e.g. bug reports or improvements requests submitted here) will be **closed without assistance**.
 
 ⚠️ **Note on API limits:** Each additional call to retrieve new or extra resources may cause the monthly API quota to be exhausted earlier than expected.  
 Keep in mind that the available limits are relatively low, especially with the basic plan.

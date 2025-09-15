@@ -6,8 +6,14 @@ labels: bug
 assignees: ""
 ---
 
-**IMPORTANT: Please search the issues (including closed ones) *and* check the [Wiki - Troubleshooting](https://github.com/figorr/meteocat/wiki/Troubleshooting) page before opening a new issue. 
-The template is mandatory; failure to use it will result in issue closure.**
+⚠️ **IMPORTANT:**  
+- This template is **only** for reporting bugs, errors, or malfunctions.  
+- Do **not** use it for improvements → use the ♻️ Improvement request template.  
+- Do **not** use it for new features or new API data → use the 🆕 New function template.  
+
+❌ The template is mandatory; failure to follow it will result in the issue being **closed without assistance**.
+
+Before opening a bug report, please search existing issues (including closed ones) and check the [Wiki - Troubleshooting](https://github.com/figorr/meteocat/wiki/Troubleshooting) page.
 
 ---
 
