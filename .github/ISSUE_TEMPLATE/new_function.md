@@ -6,7 +6,10 @@ labels: enhancement
 assignees: ""
 ---
 
-**IMPORTANT: Please check that the data you are requesting is available in the [Meteocat API Reference](https://apidocs.meteocat.gencat.cat/documentacio/).**
+**IMPORTANT: Please check that the data you are requesting is available in the [Meteocat API Reference](https://apidocs.meteocat.gencat.cat/documentacio/).** 
+
+⚠️ **Note on API limits:** Each additional call to retrieve new or extra resources may cause the monthly API quota to be exhausted earlier than expected.  
+Keep in mind that the available limits are relatively low, especially with the basic plan.
 
 ---
 
