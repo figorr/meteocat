@@ -1,0 +1,18 @@
+name: Force sync labels
+
+on:
+  workflow_dispatch:   # solo se ejecuta manualmente
+
+jobs:
+  labels:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Force sync GitHub labels
+        uses: crazy-max/ghaction-github-labeler@v5
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          yaml-file: .github/labels.yml
+          skip-delete: false  # elimina labels que no estén en el YAML
+          dry-run: false      # aplica cambios realmente

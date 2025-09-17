@@ -1,0 +1,63 @@
+- name: breaking-change
+  color: d73a4a
+  description: Indicates a breaking change affecting upgrade or usage.
+
+- name: bug
+  color: d73a4a
+  description: Something isn't working.
+
+- name: documentation
+  color: 0075ca
+  description: Improvements or additions to documentation.
+
+- name: duplicate
+  color: cfd3d7
+  description: This issue or pull request already exists.
+
+- name: enhancement
+  color: a2eeef
+  description: New feature or request.
+
+- name: first read
+  color: 0052cc
+  description: Mandatory reading before opening issues.
+
+- name: good first issue
+  color: 7057ff
+  description: Good for newcomers.
+
+- name: help wanted
+  color: 008672
+  description: Extra attention is needed.
+
+- name: invalid
+  color: e4e669
+  description: This doesn't seem right.
+
+- name: logs required
+  color: b60205
+  description: Logs are required.
+
+- name: merged
+  color: b337b8
+  description: Solution merged.
+
+- name: question
+  color: d876e3
+  description: Further information is requested.
+
+- name: solved
+  color: 0e8a16
+  description: Solved issue.
+
+- name: stale
+  color: ededed
+  description: Marked as stale due to inactivity.
+
+- name: wiki
+  color: fbca04
+  description: Documented at Wiki.
+
+- name: wontfix
+  color: ffffff
+  description: This will not be worked on.
