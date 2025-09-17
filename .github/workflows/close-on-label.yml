@@ -1,4 +1,4 @@
-name: Close issues and comment on specific labels
+name: Close on labels
 
 on:
   issues:
