@@ -47,6 +47,7 @@ delete_tags.py
 test_hacs.py
 sync_gitlab.py
 update_version_test.py
+sync_labels.py
 
 # TEST VARIABLES .ENV
 test_dotenv.py
