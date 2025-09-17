@@ -1,0 +1,48 @@
+name: Close issues and comment on specific labels
+
+on:
+  issues:
+    types:
+      - labeled
+
+jobs:
+  close-and-comment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Filter relevant labels
+        if: ${{ contains('wiki,solved,merged,duplicate', github.event.label.name) }}
+        id: check
+        run: echo "label=${{ github.event.label.name }}" >> $GITHUB_OUTPUT
+
+      - name: Determine message based on label
+        if: ${{ steps.check.outputs.label }}
+        id: message
+        run: |
+          case "${{ github.event.label.name }}" in
+            wiki)
+              echo "message=👋 This issue is covered in the [Meteocat Wiki](https://github.com/figorr/meteocat/wiki). Please check the documentation there for guidance." >> $GITHUB_OUTPUT
+              ;;
+            solved)
+              echo "message=✅ This issue has been solved. Closing now." >> $GITHUB_OUTPUT
+              ;;
+            merged)
+              echo "message=🔀 This issue has been merged manually. 'Merged manually in master [commit_hash]'." >> $GITHUB_OUTPUT
+              ;;
+            duplicate)
+            echo "message=📄 This issue is marked as a duplicate. 'Closed as duplicate of #<issue_number>'." >> $GITHUB_OUTPUT
+            ;;
+          esac
+
+      - name: Add comment
+        if: ${{ steps.check.outputs.label }}
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.issue.number }}
+          body: ${{ steps.message.outputs.message }}
+
+      - name: Close issue if open
+        if: ${{ github.event.issue.state == 'open' && steps.check.outputs.label }}
+        uses: peter-evans/close-issue@v2
+        with:
+          issue-number: ${{ github.event.issue.number }}
