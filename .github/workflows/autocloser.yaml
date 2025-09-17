@@ -3,57 +3,25 @@ name: Autocloser
 on:
   issues:
     types: [opened, edited, reopened]
-  issue_comment:
-    types: [created]
 
 jobs:
   autoclose:
     runs-on: ubuntu-latest
     steps:
-      # -----------------------------
-      # 1️⃣ Bug report
-      # -----------------------------
-      - name: Autoclose issues that did not follow Bug report template
+      - name: Autoclose issues that did not follow any template
         uses: roots/issue-closer@v1.1
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           issue-close-message: >
-            👋 @${{ github.event.issue.user.login }} this issue was automatically closed because it did not follow the 
-            [🐞 Bug report template](https://github.com/figorr/meteocat/issues/new?template=bug_report.md).  
+            👋 @${{ github.event.issue.user.login }} this issue was automatically closed because it did not follow any of the required templates.
 
-            ⚠️ Reminder:  
-            **IMPORTANT: Please search the issues, including closed issues before opening a new issue.  
-            The template is mandatory; failure to use it will result in issue closure.**
+            ⚠️ Reminder:
+            - Use the [🐞 Bug report template](https://github.com/figorr/meteocat/issues/new?template=bug_report.md) for errors or malfunctions.  
+            - Use the [♻️ Improvement request template](https://github.com/figorr/meteocat/issues/new?template=improvement.md) for changes to current behavior.  
+            - Use the [🆕 New function template](https://github.com/figorr/meteocat/issues/new?template=new_function.md) for API-based new features.  
+
+            The template is mandatory; failure to use it will result in issue closure.
           issue-pattern: >
-            (Describe the bug|To Reproduce|Expected behavior|System details|Debug Logs)
-      # -----------------------------
-      # 2️⃣ Improvement template
-      # -----------------------------
-      - name: Autoclose issues that did not follow Improvement template
-        uses: roots/issue-closer@v1.1
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          issue-close-message: >
-            👋 @${{ github.event.issue.user.login }} this issue was automatically closed because it did not follow the Improvement template.
-            [♻️ Improvement template](https://github.com/figorr/meteocat/issues/new?template=improvement.md).  
-
-            ⚠️ Reminder:  
-            You must confirm that this is not a bug or malfunction by checking the appropriate box in the template.
-          issue-pattern: >
-            (I confirm this is not a bug or malfunction, but a request for improvement)
-
-      # -----------------------------
-      # 3️⃣ New Function template
-      # -----------------------------
-      - name: Autoclose issues that did not follow New Function template
-        uses: roots/issue-closer@v1.1
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          issue-close-message: >
-            👋 @${{ github.event.issue.user.login }} this issue was automatically closed because it did not follow the New Function template.
-            [🆕 New Function template](https://github.com/figorr/meteocat/issues/new?template=new_function.md).  
-
-            ⚠️ Reminder:  
-            You must verify that the requested data is available in the [Meteocat API Reference](https://apidocs.meteocat.gencat.cat/documentacio/) by checking the corresponding box in the template.
-          issue-pattern: >
-            (I have verified that the requested data is available in the \[Meteocat API Reference\]\(https://apidocs\.meteocat\.gencat\.cat/documentacio/\))
+            (### Describe the bug|### To Reproduce|### Expected behavior|### System details|### Debug Logs|
+            I confirm this is not a bug or malfunction, but a request for improvement|
+            I have verified that the requested data is available)
