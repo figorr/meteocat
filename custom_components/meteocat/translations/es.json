@@ -533,7 +533,8 @@
               "wind_35": "Racha máxima > 35 m/s",
               "wind_30": "Racha máxima > 30 m/s",
               "wind_25": "Racha máxima > 25 m/s",
-              "wind_20": "Racha máxima > 20 m/s"
+              "wind_20": "Racha máxima > 20 m/s",
+              "unknown": "Desconocido"
             }
           },
           "peligro": {
@@ -572,7 +573,8 @@
               "hail_2_cm": "Granizo de diámetro > 2 cm",
               "microburst": "Reventón",
               "intensity_40_30": "Intensidad > 40 mm / 30 minutos",
-              "intensity_20_30": "Intensidad > 20 mm / 30 minutos"
+              "intensity_20_30": "Intensidad > 20 mm / 30 minutos",
+              "unknown": "Desconocido"
             }
           },
           "peligro": {
@@ -610,7 +612,8 @@
             "state": {
               "microburst": "Reventón",
               "rain_200_24": "Acumulada > 200 mm /24 horas",
-              "rain_100_24": "Acumulada > 100 mm /24 horas"
+              "rain_100_24": "Acumulada > 100 mm /24 horas",
+              "unknown": "Desconocido"
             }
           },
           "peligro": {
@@ -649,7 +652,8 @@
               "microburst": "Reventón",
               "tornadoes": "Tornados o mangas marinas",
               "waves_4": "Olas > 4.00 metros (mar brava)",
-              "waves_2_50": "Olas > 2.50 metros (mar temporal)"
+              "waves_2_50": "Olas > 2.50 metros (mar temporal)",
+              "unknown": "Desconocido"
             }
           },
           "peligro": {
@@ -686,7 +690,8 @@
             "name": "Umbral",
             "state": {
               "cold_very_intense": "Frío muy intenso",
-              "cold_intense": "Frío intenso"
+              "cold_intense": "Frío intenso",
+              "unknown": "Desconocido"
             }
           },
           "peligro": {
@@ -723,7 +728,8 @@
             "name": "Umbral",
             "state": {
               "heat_very_intense": "Calor muy intenso",
-              "heat_intense": "Calor intenso"
+              "heat_intense": "Calor intenso",
+              "unknown": "Desconocido"
             }
           },
           "peligro": {
@@ -760,7 +766,8 @@
             "name": "Umbral",
             "state": {
               "heat_night_very_intense": "Calor nocturno muy intenso",
-              "heat_night_intense": "Calor nocturno intenso"
+              "heat_night_intense": "Calor nocturno intenso",
+              "unknown": "Desconocido"
             }
           },
           "peligro": {
@@ -806,7 +813,8 @@
               "thickness_5_at_300": "grosor > 5 cm en cotas inferiores a 300 metros",
               "thickness_5_at_600": "grosor > 5 cm en cotas superiores a 600 metros hasta 800 metros",
               "thickness_2_at_300": "grosor > 2 cm en cotas superiores a 300 metros hasta 600 metros",
-              "thickness_0_at_300": "grosor ≥ 0 cm en cotas inferiores a 300 metros"
+              "thickness_0_at_300": "grosor ≥ 0 cm en cotas inferiores a 300 metros",
+              "unknown": "Desconocido"
             }
           },
           "peligro": {

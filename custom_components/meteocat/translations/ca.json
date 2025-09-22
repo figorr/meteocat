@@ -533,7 +533,8 @@
               "wind_35": "Ratxa màxima > 35 m/s",
               "wind_30": "Ratxa màxima > 30 m/s",
               "wind_25": "Ratxa màxima > 25 m/s",
-              "wind_20": "Ratxa màxima > 20 m/s"
+              "wind_20": "Ratxa màxima > 20 m/s",
+              "unknown": "Desconegut"
             }
           },
           "peligro": {
@@ -572,7 +573,8 @@
               "hail_2_cm": "Pedra de diàmetre > 2 cm",
               "microburst": "Esclafits",
               "intensity_40_30": "Intensitat > 40 mm / 30 minuts",
-              "intensity_20_30": "Intensitat > 20 mm / 30 minuts"
+              "intensity_20_30": "Intensitat > 20 mm / 30 minuts",
+              "unknown": "Desconegut"
             }
           },
           "peligro": {
@@ -610,7 +612,8 @@
             "state": {
               "microburst": "Esclafits",
               "rain_200_24": "Acumulada > 200 mm /24 hores",
-              "rain_100_24": "Acumulada > 100 mm /24 hores"
+              "rain_100_24": "Acumulada > 100 mm /24 hores",
+              "unknown": "Desconegut"
             }
           },
           "peligro": {
@@ -649,7 +652,8 @@
               "microburst": "Esclafits",
               "tornadoes": "Tornados o mànegues",
               "waves_4": "Onades > 4.00 metres (mar brava)",
-              "waves_2_50": "Onades > 2.50 metres (maregassa)"
+              "waves_2_50": "Onades > 2.50 metres (maregassa)",
+              "unknown": "Desconegut"
             }
           },
           "peligro": {
@@ -686,7 +690,8 @@
             "name": "Llindar",
             "state": {
               "cold_very_intense": "Fred molt intens",
-              "cold_intense": "Fred intens"
+              "cold_intense": "Fred intens",
+              "unknown": "Desconegut"
             }
           },
           "peligro": {
@@ -723,7 +728,8 @@
             "name": "Llindar",
             "state": {
               "heat_very_intense": "Calor molt intensa",
-              "heat_intense": "Calor intensa"
+              "heat_intense": "Calor intensa",
+              "unknown": "Desconegut"
             }
           },
           "peligro": {
@@ -760,7 +766,8 @@
             "name": "Llindar",
             "state": {
               "heat_night_very_intense": "Calor nocturna molt intensa",
-              "heat_night_intense": "Calor nocturna intensa"
+              "heat_night_intense": "Calor nocturna intensa",
+              "unknown": "Desconegut"
             }
           },
           "peligro": {
@@ -806,7 +813,8 @@
               "thickness_5_at_300": "gruix > 5 cm a cotes inferiors a 300 metres",
               "thickness_5_at_600": "gruix > 5 cm a cotes superiors a 600 metres fins a 800 metres",
               "thickness_2_at_300": "gruix > 2 cm a cotes superiors a 300 metres fins a 600 metres",
-              "thickness_0_at_300": "gruix ≥ 0 cm a cotes inferiors a 300 metres"
+              "thickness_0_at_300": "gruix ≥ 0 cm a cotes inferiors a 300 metres",
+              "unknown": "Desconegut"
             }
           },
           "peligro": {

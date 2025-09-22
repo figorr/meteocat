@@ -533,7 +533,8 @@
               "wind_35": "Max. wind speed > 35 m/s",
               "wind_30": "Max. wind speed > 30 m/s",
               "wind_25": "Max. wind speed > 25 m/s",
-              "wind_20": "Max. wind speed > 20 m/s"
+              "wind_20": "Max. wind speed > 20 m/s",
+              "unknown": "Unknown"
             }
           },
           "peligro": {
@@ -572,7 +573,8 @@
               "hail_2_cm": "Hail with diameter > 2 cm",
               "microburst": "Microburst",
               "intensity_40_30": "Intensity > 40 mm / 30 minutes",
-              "intensity_20_30": "Intensity > 20 mm / 30 minutes"
+              "intensity_20_30": "Intensity > 20 mm / 30 minutes",
+              "unknown": "Unknown"
             }
           },
           "peligro": {
@@ -610,7 +612,8 @@
             "state": {
               "microburst": "Microburst",
               "rain_200_24": "Amount > 200 mm /24 hours",
-              "rain_100_24": "Amount > 100 mm /24 hours"
+              "rain_100_24": "Amount > 100 mm /24 hours",
+              "unknown": "Unknown"
             }
           },
           "peligro": {
@@ -649,7 +652,8 @@
               "microburst": "Microburst",
               "tornadoes": "Tornadoes or waterspouts",
               "waves_4": "Waves > 4.00 meters (rough sea)",
-              "waves_2_50": "Waves > 2.50 meters (tidal)"
+              "waves_2_50": "Waves > 2.50 meters (tidal)",
+              "unknown": "Unknown"
             }
           },
           "peligro": {
@@ -686,7 +690,8 @@
             "name": "Threshold",
             "state": {
               "cold_very_intense": "Very intense cold",
-              "cold_intense": "Intense cold"
+              "cold_intense": "Intense cold",
+              "unknown": "Unknown"
             }
           },
           "peligro": {
@@ -723,7 +728,8 @@
             "name": "Threshold",
             "state": {
               "heat_very_intense": "Very intense hot",
-              "heat_intense": "Intense heat"
+              "heat_intense": "Intense heat",
+              "unknown": "Unknown"
             }
           },
           "peligro": {
@@ -760,7 +766,8 @@
             "name": "Threshold",
             "state": {
               "heat_night_very_intense": "Very intense night heat",
-              "heat_night_intense": "Intense night heat"
+              "heat_night_intense": "Intense night heat",
+              "unknown": "Unknown"
             }
           },
           "peligro": {
@@ -806,7 +813,8 @@
               "thickness_5_at_300": "thickness > 5 cm at altitudes below 300 meters",
               "thickness_5_at_600": "thickness > 5 cm at altitudes above 600 meters up to 800 meters",
               "thickness_2_at_300": "thickness > 2 cm at altitudes above 300 meters up to 600 meters",
-              "thickness_0_at_300": "thickness ≥ 0 cm at altitudes below 300 meters"
+              "thickness_0_at_300": "thickness ≥ 0 cm at altitudes below 300 meters",
+              "unknown": "Unknown"
             }
           },
           "peligro": {
