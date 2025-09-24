@@ -147,9 +147,9 @@ You can access the Options Menu in two ways, both inside the integration:
 
   ![System Options menu](images/system_options.png)
 
-Once inside, you will see the following options:  
+  Once you are inside, you will see the following options:  
 
-![Available Options](images/options.png)
+  ![Available Options](images/options.png)
 
 
 ## Uninstallation
@@ -161,6 +161,14 @@ To correctly uninstall the integration:
 - If you want to **completely remove Meteocat**, after removing the entries and restarting, also uninstall the integration from **HACS > Integrations**.
 
 👉 For detailed steps with screenshots, check the [Uninstallation Guide](https://github.com/figorr/meteocat/wiki/Uninstallation).
+
+## Custom Meteocat Card available
+
+Meteocat integration has its own weather card.
+
+To install the card, please follow the instructions from its own repository, [🎫 Meteocat Card](https://github.com/figorr/meteocat-card).
+
+![Meteocat Card](images/daily_forecast_2_alerts.png)
 
 # Documentation
 
