@@ -1,3 +1,16 @@
+# [3.1.0](https://github.com/figorr/meteocat/compare/v3.0.0...v3.1.0) (2025-09-27)
+
+
+### Bug Fixes
+
+* fix unknown threshold translation ([6fa7964](https://github.com/figorr/meteocat/commit/6fa79644e3ebbdf9a44826f6071af6009cd2d02d))
+* include Meteocat Card ([513d9ed](https://github.com/figorr/meteocat/commit/513d9ed50fcd9127ac64f0388ed1017db938f378))
+
+
+### Features
+
+* ✨ Add native sunrise and sunset sensors to Meteocat integration ([7bb70c6](https://github.com/figorr/meteocat/commit/7bb70c681c90773275e496f938f455c3688fb4c0))
+
 ## [3.0.0](https://github.com/figorr/meteocat/compare/v2.3.0...v3.0.0) (2025-09-14)
 
 
