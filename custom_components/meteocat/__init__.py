@@ -5,6 +5,7 @@ import voluptuous as vol
 from pathlib import Path
 import aiofiles
 import json
+import importlib  # Para importaciones lazy
 
 from homeassistant import core
 from homeassistant.config_entries import ConfigEntry
@@ -14,24 +15,6 @@ from homeassistant.helpers.entity_platform import async_get_platforms
 from homeassistant.helpers import config_validation as cv
 
 from .helpers import get_storage_dir
-from .coordinator import (
-    MeteocatSensorCoordinator,
-    MeteocatStaticSensorCoordinator,
-    MeteocatEntityCoordinator,
-    MeteocatUviCoordinator,
-    MeteocatUviFileCoordinator,
-    HourlyForecastCoordinator,
-    DailyForecastCoordinator,
-    MeteocatConditionCoordinator,
-    MeteocatTempForecastCoordinator,
-    MeteocatAlertsCoordinator,
-    MeteocatAlertsRegionCoordinator,
-    MeteocatQuotesCoordinator,
-    MeteocatQuotesFileCoordinator,
-    MeteocatLightningCoordinator,
-    MeteocatLightningFileCoordinator,
-)
-
 from meteocatpy.town import MeteocatTown
 from meteocatpy.symbols import MeteocatSymbols
 from meteocatpy.variables import MeteocatVariables
@@ -59,6 +42,8 @@ CONFIG_SCHEMA = vol.Schema(
                 vol.Optional("province_id"): cv.string,
                 vol.Optional("region_name"): cv.string,
                 vol.Optional("region_id"): cv.string,
+                vol.Required("latitude"): cv.latitude,
+                vol.Required("longitude"): cv.longitude,
             }
         )
     },
@@ -119,6 +104,11 @@ async def async_setup(hass: core.HomeAssistant, config: dict) -> bool:
     """Configuración inicial del componente Meteocat."""
     return True
 
+def _get_coordinator_module(cls_name: str):
+    """Importa dinámicamente un coordinador para evitar blocking imports."""
+    module = importlib.import_module(".coordinator", "custom_components.meteocat")
+    return getattr(module, cls_name)
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Configura una entrada de configuración para Meteocat."""
     _LOGGER.info("Configurando la integración de Meteocat...")
@@ -129,14 +119,28 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Validar campos requeridos
     required_fields = [
         "api_key", "town_name", "town_id", "variable_name",
-        "variable_id", "station_name", "station_id", "province_name", 
-        "province_id", "region_name", "region_id"
+        "variable_id", "station_name", "station_id", "province_name",
+        "province_id", "region_name", "region_id", "latitude", "longitude"
     ]
     missing_fields = [field for field in required_fields if field not in entry_data]
     if missing_fields:
         _LOGGER.error(f"Faltan los siguientes campos en la configuración: {missing_fields}")
         return False
-    
+
+    # Validar coordenadas válidas para Cataluña
+    latitude = entry_data.get("latitude")
+    longitude = entry_data.get("longitude")
+    if not (40.5 <= latitude <= 42.5 and 0.1 <= longitude <= 3.3):  # Rango aproximado para Cataluña
+        _LOGGER.warning(
+            "Coordenadas inválidas (latitude: %s, longitude: %s). Usando coordenadas de Barcelona por defecto para MeteocatSunCoordinator.",
+            latitude, longitude
+        )
+        entry_data = {
+            **entry_data,
+            "latitude": 41.38879,
+            "longitude": 2.15899
+        }
+
     # Crear los assets básicos si faltan
     await ensure_assets_exist(
         hass,
@@ -150,33 +154,38 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         f"Variable '{entry_data['variable_name']}' (ID: {entry_data['variable_id']}), "
         f"Estación '{entry_data['station_name']}' (ID: {entry_data['station_id']}), "
         f"Provincia '{entry_data['province_name']}' (ID: {entry_data['province_id']}), "
-        f"Comarca '{entry_data['region_name']}' (ID: {entry_data['region_id']})."
+        f"Comarca '{entry_data['region_name']}' (ID: {entry_data['region_id']}), "
+        f"Coordenadas: ({entry_data['latitude']}, {entry_data['longitude']})."
     )
 
-    # Inicializar coordinadores
-    coordinators = [
-        ("sensor_coordinator", MeteocatSensorCoordinator),
-        ("static_sensor_coordinator", MeteocatStaticSensorCoordinator),
-        ("entity_coordinator", MeteocatEntityCoordinator),
-        ("uvi_coordinator", MeteocatUviCoordinator),
-        ("uvi_file_coordinator", MeteocatUviFileCoordinator),
-        ("hourly_forecast_coordinator", HourlyForecastCoordinator),
-        ("daily_forecast_coordinator", DailyForecastCoordinator),
-        ("condition_coordinator", MeteocatConditionCoordinator),
-        ("temp_forecast_coordinator", MeteocatTempForecastCoordinator),
-        ("alerts_coordinator", MeteocatAlertsCoordinator),
-        ("alerts_region_coordinator", MeteocatAlertsRegionCoordinator),
-        ("quotes_coordinator", MeteocatQuotesCoordinator),
-        ("quotes_file_coordinator", MeteocatQuotesFileCoordinator),
-        ("lightning_coordinator", MeteocatLightningCoordinator),
-        ("lightning_file_coordinator", MeteocatLightningFileCoordinator),
+    # Lista de coordinadores con sus clases
+    coordinator_configs = [
+        ("sensor_coordinator", "MeteocatSensorCoordinator"),
+        ("static_sensor_coordinator", "MeteocatStaticSensorCoordinator"),
+        ("entity_coordinator", "MeteocatEntityCoordinator"),
+        ("uvi_coordinator", "MeteocatUviCoordinator"),
+        ("uvi_file_coordinator", "MeteocatUviFileCoordinator"),
+        ("hourly_forecast_coordinator", "HourlyForecastCoordinator"),
+        ("daily_forecast_coordinator", "DailyForecastCoordinator"),
+        ("condition_coordinator", "MeteocatConditionCoordinator"),
+        ("temp_forecast_coordinator", "MeteocatTempForecastCoordinator"),
+        ("alerts_coordinator", "MeteocatAlertsCoordinator"),
+        ("alerts_region_coordinator", "MeteocatAlertsRegionCoordinator"),
+        ("quotes_coordinator", "MeteocatQuotesCoordinator"),
+        ("quotes_file_coordinator", "MeteocatQuotesFileCoordinator"),
+        ("lightning_coordinator", "MeteocatLightningCoordinator"),
+        ("lightning_file_coordinator", "MeteocatLightningFileCoordinator"),
+        ("sun_coordinator", "MeteocatSunCoordinator"),
+        ("sun_file_coordinator", "MeteocatSunFileCoordinator"),
     ]
 
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = {}
 
     try:
-        for key, cls in coordinators:
+        for key, cls_name in coordinator_configs:
+            # Importación lazy: importa la clase solo cuando sea necesario
+            cls = await hass.async_add_executor_job(_get_coordinator_module, cls_name)
             coordinator = cls(hass=hass, entry_data=entry_data)
             await coordinator.async_config_entry_first_refresh()
             hass.data[DOMAIN][entry.entry_id][key] = coordinator
@@ -251,6 +260,7 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
                 files_folder / f"uvi_{town_id.lower()}_data.json",
                 files_folder / f"forecast_{town_id.lower()}_hourly_data.json",
                 files_folder / f"forecast_{town_id.lower()}_daily_data.json",
+                files_folder / f"sun_{town_id.lower()}_data.json",
             ])
 
     # 3. Archivos de comarca (region_id)

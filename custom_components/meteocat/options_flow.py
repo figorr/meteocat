@@ -13,8 +13,11 @@ from .const import (
     LIMIT_PREDICCIO,
     LIMIT_XDDE,
     LIMIT_QUOTA,
-    LIMIT_BASIC
+    LIMIT_BASIC,
+    LATITUDE,
+    LONGITUDE,
 )
+
 from meteocatpy.town import MeteocatTown
 from meteocatpy.exceptions import (
     BadRequestError,
@@ -35,6 +38,11 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
         self.api_key: str | None = None
         self.limit_xema: int | None = None
         self.limit_prediccio: int | None = None
+        self.limit_xdde: int | None = None
+        self.limit_quota: int | None = None
+        self.limit_basic: int | None = None
+        self.latitude: float | None = None
+        self.longitude: float | None = None
 
     async def async_step_init(self, user_input: dict | None = None):
         """Paso inicial del flujo de opciones."""
@@ -45,6 +53,8 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
                 return await self.async_step_update_limits_only()
             elif user_input["option"] == "regenerate_assets":
                 return await self.async_step_confirm_regenerate_assets()
+            elif user_input["option"] == "update_coordinates":
+                return await self.async_step_update_coordinates()
         
         return self.async_show_form(
             step_id="init",
@@ -54,7 +64,8 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
                         options=[
                             "update_api_and_limits",
                             "update_limits_only",
-                            "regenerate_assets"
+                            "regenerate_assets",
+                            "update_coordinates"  # Nueva opción
                         ],
                         translation_key="option"
                     )
@@ -177,7 +188,54 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
         return self.async_show_form(
             step_id="update_limits_only", data_schema=schema, errors=errors
         )
-    
+
+    async def async_step_update_coordinates(self, user_input: dict | None = None):
+        """Permite al usuario actualizar las coordenadas (latitude, longitude)."""
+        errors = {}
+
+        if user_input is not None:
+            self.latitude = user_input.get(LATITUDE)
+            self.longitude = user_input.get(LONGITUDE)
+
+            # Validar que las coordenadas estén dentro del rango de Cataluña
+            if not (40.5 <= self.latitude <= 42.5 and 0.1 <= self.longitude <= 3.3):
+                _LOGGER.error(
+                    "Coordenadas fuera del rango de Cataluña (latitude: %s, longitude: %s).",
+                    self.latitude, self.longitude
+                )
+                errors["base"] = "invalid_coordinates"
+            else:
+                # Actualizar la configuración con las nuevas coordenadas
+                self.hass.config_entries.async_update_entry(
+                    self._config_entry,
+                    data={
+                        **self._config_entry.data,
+                        LATITUDE: self.latitude,
+                        LONGITUDE: self.longitude
+                    },
+                )
+                # Recargar la integración para aplicar los cambios
+                await self.hass.config_entries.async_reload(self._config_entry.entry_id)
+                _LOGGER.info(
+                    "Coordenadas actualizadas a latitude: %s, longitude: %s",
+                    self.latitude, self.longitude
+                )
+                return self.async_create_entry(title="", data={})
+
+        schema = vol.Schema({
+            vol.Required(LATITUDE, default=self._config_entry.data.get(LATITUDE)): cv.latitude,
+            vol.Required(LONGITUDE, default=self._config_entry.data.get(LONGITUDE)): cv.longitude,
+        })
+        return self.async_show_form(
+            step_id="update_coordinates",
+            data_schema=schema,
+            errors=errors,
+            description_placeholders={
+                "current_latitude": self._config_entry.data.get(LATITUDE),
+                "current_longitude": self._config_entry.data.get(LONGITUDE)
+            }
+        )
+
     async def async_step_confirm_regenerate_assets(self, user_input: dict | None = None):
         """Confirma si el usuario realmente quiere regenerar los assets."""
         if user_input is not None:

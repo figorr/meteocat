@@ -6,11 +6,13 @@ import logging
 import asyncio
 import unicodedata
 from pathlib import Path
-from datetime import datetime, timedelta, timezone, time
+from astral.sun import sun
+from astral import LocationInfo
+from datetime import date, datetime, timedelta, timezone, time
 from zoneinfo import ZoneInfo
 from typing import Dict, Any
 
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, EVENT_HOMEASSISTANT_START
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.components.weather import Forecast
@@ -67,6 +69,8 @@ DEFAULT_QUOTES_UPDATE_INTERVAL = timedelta(minutes=10)
 DEFAULT_QUOTES_FILE_UPDATE_INTERVAL = timedelta(minutes=5)
 DEFAULT_LIGHTNING_UPDATE_INTERVAL = timedelta(minutes=10)
 DEFAULT_LIGHTNING_FILE_UPDATE_INTERVAL = timedelta(minutes=5)
+DEFAULT_SUN_UPDATE_INTERVAL = timedelta(minutes=1)
+DEFAULT_SUN_FILE_UPDATE_INTERVAL = timedelta(seconds=30)
 
 # Definir la zona horaria local
 TIMEZONE = ZoneInfo("Europe/Madrid")
@@ -1923,4 +1927,186 @@ class MeteocatLightningFileCoordinator(DataUpdateCoordinator):
             "cg-": 0,
             "cg+": 0,
             "total": 0
+        }
+
+class MeteocatSunCoordinator(DataUpdateCoordinator):
+    """Coordinator para manejar la actualización de los datos de sol calculados con Astral."""
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        entry_data: dict,
+    ):
+        """
+        Inicializa el coordinador de sol de Meteocat.
+        
+        Args:
+            hass (HomeAssistant): Instancia de Home Assistant.
+            entry_data (dict): Datos de configuración obtenidos de core.config_entries.
+        """
+        self.latitude = entry_data.get("latitude")
+        self.longitude = entry_data.get("longitude")
+        self.timezone_str = hass.config.time_zone or "Europe/Madrid"
+        self.town_id = entry_data.get("town_id")
+        
+        self.location = LocationInfo(
+            name=entry_data.get("town_name", "Municipio"),
+            region="Spain",
+            timezone=self.timezone_str,
+            latitude=self.latitude,
+            longitude=self.longitude,
+        )
+
+        # Ruta persistente en /config/meteocat_files/files
+        files_folder = get_storage_dir(hass, "files")
+        self.sun_file = files_folder / f"sun_{self.town_id.lower()}_data.json"
+
+        super().__init__(
+            hass,
+            _LOGGER,
+            name=f"{DOMAIN} Sun Coordinator",
+            update_interval=DEFAULT_SUN_UPDATE_INTERVAL,  # Ej. timedelta(minutes=1)
+        )
+
+    async def _async_update_data(self) -> Dict:
+        """Actualiza los datos de sol calculados o usa datos en caché según si los eventos han pasado."""
+        existing_data = await load_json_from_file(self.sun_file) or {}
+
+        now = datetime.now(tz=ZoneInfo(self.timezone_str))
+
+        if not existing_data or "dades" not in existing_data or not existing_data["dades"]:
+            return await self._calculate_and_save_new_data()
+
+        last_update_str = existing_data.get('actualitzat', {}).get('dataUpdate')
+        if not last_update_str:
+            return await self._calculate_and_save_new_data()
+
+        last_update = datetime.fromisoformat(last_update_str)
+
+        dades = existing_data["dades"][0]
+        saved_sunrise = datetime.fromisoformat(dades["sunrise"])
+        saved_sunset = datetime.fromisoformat(dades["sunset"])
+
+        # Verificar si los datos necesitan actualización
+        if now > saved_sunrise or now > saved_sunset:
+            return await self._calculate_and_save_new_data()
+        else:
+            _LOGGER.debug("Usando datos existentes de sol: %s", existing_data)
+            return {"actualizado": existing_data['actualitzat']['dataUpdate']}
+
+    async def _calculate_and_save_new_data(self):
+        """Calcula nuevos datos de sol y los guarda en el archivo JSON."""
+        try:
+            now = datetime.now(tz=ZoneInfo(self.timezone_str))
+            today = now.date()
+            
+            sun_data_today = sun(self.location.observer, date=today, tzinfo=ZoneInfo(self.timezone_str))
+            sunrise = sun_data_today["sunrise"]
+            sunset = sun_data_today["sunset"]
+            
+            if now > sunset:
+                next_day = today + timedelta(days=1)
+                sun_data_next = sun(self.location.observer, date=next_day, tzinfo=ZoneInfo(self.timezone_str))
+                sunrise = sun_data_next["sunrise"]
+                sunset = sun_data_next["sunset"]
+            elif now > sunrise:
+                next_day = today + timedelta(days=1)
+                sun_data_next = sun(self.location.observer, date=next_day, tzinfo=ZoneInfo(self.timezone_str))
+                sunrise = sun_data_next["sunrise"]
+                # sunset permanece como el de hoy
+            
+            # Estructurar los datos en el formato correcto
+            current_time = now.isoformat()
+            data_with_timestamp = {
+                "actualitzat": {
+                    "dataUpdate": current_time
+                },
+                "dades": [
+                    {
+                        "sunrise": sunrise.isoformat(),
+                        "sunset": sunset.isoformat()
+                    }
+                ]
+            }
+
+            # Guardar los datos en un archivo JSON
+            await save_json_to_file(data_with_timestamp, self.sun_file)
+
+            _LOGGER.debug("Datos de sol actualizados exitosamente: %s", data_with_timestamp)
+
+            return {"actualizado": data_with_timestamp['actualitzat']['dataUpdate']}
+
+        except Exception as err:
+            _LOGGER.exception("Error inesperado al calcular los datos de sol: %s", err)
+
+        # Intentar cargar datos en caché si falla el cálculo (aunque es improbable)
+        cached_data = await load_json_from_file(self.sun_file)
+        if cached_data:
+            _LOGGER.warning("Usando datos en caché para los datos de sol.")
+            return {"actualizado": cached_data['actualitzat']['dataUpdate']}
+
+        _LOGGER.error("No se pudo calcular datos actualizados ni cargar datos en caché.")
+        return None
+
+class MeteocatSunFileCoordinator(DataUpdateCoordinator):
+    """Coordinator para manejar la actualización de los datos de sol desde sun_{town_id}.json."""
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        entry_data: dict,
+    ):
+        """
+        Inicializa el coordinador de sol desde archivo.
+
+        Args:
+            hass (HomeAssistant): Instancia de Home Assistant.
+            entry_data (dict): Datos de configuración de la entrada.
+        """
+        self.town_id = entry_data["town_id"]
+        self.timezone_str = hass.config.time_zone or "Europe/Madrid"
+
+        # Ruta persistente en /config/meteocat_files/files
+        files_folder = get_storage_dir(hass, "files")
+        self.sun_file = files_folder / f"sun_{self.town_id.lower()}_data.json"
+
+        super().__init__(
+            hass,
+            _LOGGER,
+            name="Meteocat Sun File Coordinator",
+            update_interval=DEFAULT_SUN_FILE_UPDATE_INTERVAL,  # Ej. timedelta(seconds=30)
+        )
+
+    async def _async_update_data(self) -> Dict[str, Any]:
+        """Carga los datos de sol desde el archivo JSON y procesa la información."""
+        existing_data = await load_json_from_file(self.sun_file)
+
+        if not existing_data or "dades" not in existing_data or not existing_data["dades"]:
+            _LOGGER.warning("No se encontraron datos en %s.", self.sun_file)
+            return self._reset_data()
+
+        update_date_str = existing_data.get("actualitzat", {}).get("dataUpdate", "")
+        update_date = datetime.fromisoformat(update_date_str) if update_date_str else None
+        now = datetime.now(ZoneInfo(self.timezone_str))
+
+        dades = existing_data["dades"][0]
+        saved_sunrise = datetime.fromisoformat(dades["sunrise"])
+        saved_sunset = datetime.fromisoformat(dades["sunset"])
+
+        if saved_sunrise < now and saved_sunset < now:
+            _LOGGER.info("Los datos de sol están caducados. Reiniciando valores.")
+            return self._reset_data()
+        else:
+            return {
+                "actualizado": update_date.isoformat() if update_date else now.isoformat(),
+                "sunrise": dades.get("sunrise"),
+                "sunset": dades.get("sunset")
+            }
+
+    def _reset_data(self):
+        """Resetea los datos a valores nulos."""
+        return {
+            "actualizado": datetime.now(ZoneInfo(self.timezone_str)).isoformat(),
+            "sunrise": None,
+            "sunset": None
         }

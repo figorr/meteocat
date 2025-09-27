@@ -42,6 +42,9 @@ QUOTA_BASIC = "quota_basic"
 QUOTA_XEMA = "quota_xema"
 QUOTA_QUERIES = "quota_queries"
 LIGHTNING_FILE_STATUS = "lightning_file_status"
+SUNRISE = "sunrise"
+SUNSET = "sunset"
+SUN_FILE_STATUS = "sun_file_status"
 
 from homeassistant.const import Platform
 

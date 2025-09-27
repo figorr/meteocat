@@ -12,6 +12,8 @@ import voluptuous as vol
 import aiofiles
 import unicodedata
 
+from astral import LocationInfo
+from astral.sun import sun
 from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResult
 from homeassistant.core import callback
 from homeassistant.exceptions import HomeAssistantError
@@ -39,8 +41,8 @@ from .const import (
     LIMIT_XEMA,
     LIMIT_PREDICCIO,
     LIMIT_XDDE,
-    LIMIT_BASIC,
     LIMIT_QUOTA,
+    LIMIT_BASIC,
 )
 
 from .options_flow import MeteocatOptionsFlowHandler
@@ -172,7 +174,7 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
                     "Archivo regional %s creado con plantilla inicial", alerts_region_file
                 )
 
-             # Archivo lightning regional
+            # Archivo lightning regional
             lightning_file = alerts_dir / f"lightning_{self.region_id}.json"
             if not lightning_file.exists():
                 async with aiofiles.open(lightning_file, "w", encoding="utf-8") as file:
@@ -182,6 +184,51 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
                 _LOGGER.info(
                     "Archivo lightning %s creado con plantilla inicial", lightning_file
                 )
+
+    async def create_sun_file(self):
+        """Crea el archivo sun_{town_id}_data.json con datos iniciales de sunrise y sunset."""
+        if not self.selected_municipi or not self.latitude or not self.longitude:
+            _LOGGER.warning("No se puede crear sun_{town_id}_data.json: faltan municipio o coordenadas")
+            return
+
+        town_id = self.selected_municipi["codi"]
+        files_dir = get_storage_dir(self.hass, "files")
+        sun_file = files_dir / f"sun_{town_id}_data.json"
+
+        if not sun_file.exists():
+            try:
+                # Crear objeto LocationInfo con las coordenadas y zona horaria
+                location = LocationInfo(
+                    name=self.selected_municipi["nom"],
+                    region="Catalonia",
+                    timezone="Europe/Madrid",
+                    latitude=self.latitude,
+                    longitude=self.longitude
+                )
+
+                # Calcular sunrise y sunset para el día actual
+                current_time = datetime.now(timezone.utc).astimezone(TIMEZONE)
+                sun_data = sun(location.observer, date=current_time.date(), tzinfo=TIMEZONE)
+
+                # Formatear los datos para el archivo
+                sun_data_formatted = {
+                    "actualitzat": {"dataUpdate": current_time.isoformat()},
+                    "dades": [
+                        {
+                            "sunrise": sun_data["sunrise"].isoformat(),
+                            "sunset": sun_data["sunset"].isoformat(),
+                            "date": current_time.date().isoformat()
+                        }
+                    ]
+                }
+
+                # Guardar el archivo
+                async with aiofiles.open(sun_file, "w", encoding="utf-8") as file:
+                    await file.write(json.dumps(sun_data_formatted, ensure_ascii=False, indent=4))
+                _LOGGER.info("Archivo sun_%s_data.json creado con datos iniciales", town_id)
+
+            except Exception as ex:
+                _LOGGER.error("Error al crear sun_%s_data.json: %s", town_id, ex)
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -319,7 +366,9 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
                     self.province_name = station_metadata.get("provincia", {}).get("nom", "")
                     self.station_status = station_metadata.get("estats", [{}])[0].get("codi", "")
 
+                    # Crear archivos de alertas y sun
                     await self.create_alerts_file()
+                    await self.create_sun_file()
                     return await self.async_step_set_api_limits()
                 except Exception as ex:
                     _LOGGER.error("Error al obtener los metadatos de la estación: %s", ex)

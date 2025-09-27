@@ -71,13 +71,13 @@ from .const import (
     ALERTS,
     ALERT_FILE_STATUS,
     ALERT_WIND,
-	ALERT_RAIN_INTENSITY,
-	ALERT_RAIN,
-	ALERT_SEA,
-	ALERT_COLD,
-	ALERT_WARM,
-	ALERT_WARM_NIGHT,
-	ALERT_SNOW,
+    ALERT_RAIN_INTENSITY,
+    ALERT_RAIN,
+    ALERT_SEA,
+    ALERT_COLD,
+    ALERT_WARM,
+    ALERT_WARM_NIGHT,
+    ALERT_SNOW,
     LIGHTNING_FILE_STATUS,
     LIGHTNING_REGION,
     LIGHTNING_TOWN,
@@ -105,6 +105,9 @@ from .const import (
     DEFAULT_LIGHTNING_VALIDITY_TIME,
     DEFAULT_LIGHTNING_VALIDITY_HOURS,
     DEFAULT_LIGHTNING_VALIDITY_MINUTES,
+    SUNRISE,
+    SUNSET,
+    SUN_FILE_STATUS,
 )
 
 from .coordinator import (
@@ -122,6 +125,8 @@ from .coordinator import (
     MeteocatQuotesFileCoordinator,
     MeteocatLightningCoordinator,
     MeteocatLightningFileCoordinator,
+    MeteocatSunCoordinator,
+    MeteocatSunFileCoordinator,
 )
 
 # Definir la zona horaria local
@@ -208,7 +213,7 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         icon="mdi:weather-sunny",
         device_class=SensorDeviceClass.IRRADIANCE,
         state_class=SensorStateClass.MEASUREMENT,
-        native_unit_of_measurement = UnitOfIrradiance.WATTS_PER_SQUARE_METER,
+        native_unit_of_measurement=UnitOfIrradiance.WATTS_PER_SQUARE_METER,
     ),
     MeteocatSensorEntityDescription(
         key=UV_INDEX,
@@ -305,7 +310,7 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         translation_key="condition",
         icon="mdi:weather-partly-cloudy",
     ),
-     MeteocatSensorEntityDescription(
+    MeteocatSensorEntityDescription(
         key=MAX_TEMPERATURE_FORECAST,
         translation_key="max_temperature_forecast",
         icon="mdi:thermometer-plus",
@@ -367,37 +372,37 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         translation_key="alert_wind",
         icon="mdi:alert-outline",
     ),
-	MeteocatSensorEntityDescription(
+    MeteocatSensorEntityDescription(
         key=ALERT_RAIN_INTENSITY,
         translation_key="alert_rain_intensity",
         icon="mdi:alert-outline",
     ),
-	MeteocatSensorEntityDescription(
+    MeteocatSensorEntityDescription(
         key=ALERT_RAIN,
         translation_key="alert_rain",
         icon="mdi:alert-outline",
     ),
-	MeteocatSensorEntityDescription(
+    MeteocatSensorEntityDescription(
         key=ALERT_SEA,
         translation_key="alert_sea",
         icon="mdi:alert-outline",
     ),
-	MeteocatSensorEntityDescription(
+    MeteocatSensorEntityDescription(
         key=ALERT_COLD,
         translation_key="alert_cold",
         icon="mdi:alert-outline",
     ),
-	MeteocatSensorEntityDescription(
+    MeteocatSensorEntityDescription(
         key=ALERT_WARM,
         translation_key="alert_warm",
         icon="mdi:alert-outline",
     ),
-	MeteocatSensorEntityDescription(
+    MeteocatSensorEntityDescription(
         key=ALERT_WARM_NIGHT,
         translation_key="alert_warm_night",
         icon="mdi:alert-outline",
     ),
-	MeteocatSensorEntityDescription(
+    MeteocatSensorEntityDescription(
         key=ALERT_SNOW,
         translation_key="alert_snow",
         icon="mdi:alert-outline",
@@ -431,7 +436,26 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         translation_key="quota_queries",
         icon="mdi:counter",
         entity_category=EntityCategory.DIAGNOSTIC,
-    )
+    ),
+    # Nuevos sensores de sol
+    MeteocatSensorEntityDescription(
+        key=SUNRISE,
+        translation_key="sunrise",
+        icon="mdi:weather-sunset-up",
+        device_class=SensorDeviceClass.TIMESTAMP,
+    ),
+    MeteocatSensorEntityDescription(
+        key=SUNSET,
+        translation_key="sunset",
+        icon="mdi:weather-sunset-down",
+        device_class=SensorDeviceClass.TIMESTAMP,
+    ),
+    MeteocatSensorEntityDescription(
+        key=SUN_FILE_STATUS,
+        translation_key="sun_file_status",
+        icon="mdi:update",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
 )
 
 @callback
@@ -454,12 +478,29 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
     quotes_file_coordinator = entry_data.get("quotes_file_coordinator")
     lightning_coordinator = entry_data.get("lightning_coordinator")
     lightning_file_coordinator = entry_data.get("lightning_file_coordinator")
+    sun_coordinator = entry_data.get("sun_coordinator")
+    sun_file_coordinator = entry_data.get("sun_file_coordinator")
 
     # Sensores generales
     async_add_entities(
         MeteocatSensor(sensor_coordinator, description, entry_data)
         for description in SENSOR_TYPES
-        if description.key in {WIND_SPEED, WIND_DIRECTION, WIND_DIRECTION_CARDINAL, TEMPERATURE, HUMIDITY, PRESSURE, PRECIPITATION, PRECIPITATION_ACCUMULATED, SOLAR_GLOBAL_IRRADIANCE, MAX_TEMPERATURE, MIN_TEMPERATURE, FEELS_LIKE, WIND_GUST, STATION_TIMESTAMP}  # Incluir sensores generales en el coordinador SENSOR COORDINATOR
+        if description.key in {
+            WIND_SPEED,
+            WIND_DIRECTION,
+            WIND_DIRECTION_CARDINAL,
+            TEMPERATURE,
+            HUMIDITY,
+            PRESSURE,
+            PRECIPITATION,
+            PRECIPITATION_ACCUMULATED,
+            SOLAR_GLOBAL_IRRADIANCE,
+            MAX_TEMPERATURE,
+            MIN_TEMPERATURE,
+            FEELS_LIKE,
+            WIND_GUST,
+            STATION_TIMESTAMP,
+        }
     )
 
     # Sensores estáticos
@@ -473,14 +514,14 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
     async_add_entities(
         MeteocatUviSensor(uvi_file_coordinator, description, entry_data)
         for description in SENSOR_TYPES
-        if description.key == UV_INDEX  # Incluir UVI en el coordinador UVI FILE COORDINATOR
+        if description.key == UV_INDEX
     )
 
     # Sensor CONDITION para estado del cielo
     async_add_entities(
         MeteocatConditionSensor(condition_coordinator, description, entry_data)
         for description in SENSOR_TYPES
-        if description.key == CONDITION  # Incluir CONDITION en el coordinador CONDITION COORDINATOR
+        if description.key == CONDITION
     )
 
     # Sensores temperatura previsión
@@ -536,7 +577,16 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
     async_add_entities(
         MeteocatAlertMeteorSensor(alerts_region_coordinator, description, entry_data)
         for description in SENSOR_TYPES
-        if description.key in {ALERT_WIND, ALERT_RAIN_INTENSITY, ALERT_RAIN, ALERT_SEA, ALERT_COLD, ALERT_WARM, ALERT_WARM_NIGHT, ALERT_SNOW}
+        if description.key in {
+            ALERT_WIND,
+            ALERT_RAIN_INTENSITY,
+            ALERT_RAIN,
+            ALERT_SEA,
+            ALERT_COLD,
+            ALERT_WARM,
+            ALERT_WARM_NIGHT,
+            ALERT_SNOW,
+        }
     )
 
     # Sensores de estado de cuotas
@@ -567,6 +617,21 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
         if description.key in {LIGHTNING_REGION, LIGHTNING_TOWN}
     )
 
+    # Sensor de estado de archivo de sol
+    async_add_entities(
+        MeteocatSunStatusSensor(sun_coordinator, description, entry_data)
+        for description in SENSOR_TYPES
+        if description.key == SUN_FILE_STATUS
+    )
+
+    # Sensores de sol
+    async_add_entities(
+        MeteocatSunSensor(sun_file_coordinator, description, entry_data)
+        for description in SENSOR_TYPES
+        if description.key in {SUNRISE, SUNSET}
+    )
+
+
 # Cambiar UTC a la zona horaria local
 def convert_to_local_time(utc_time: str, local_tz: str = "Europe/Madrid") -> datetime | None:
     """
@@ -594,7 +659,7 @@ class MeteocatStaticSensor(CoordinatorEntity[MeteocatStaticSensorCoordinator], S
     """Representation of a static Meteocat sensor."""
     STATIC_KEYS = {TOWN_NAME, TOWN_ID, STATION_NAME, STATION_ID, REGION_NAME, REGION_ID}
     
-    _attr_has_entity_name = True  # Activa el uso de nombres basados en el dispositivo
+    _attr_has_entity_name = True
 
     def __init__(self, static_sensor_coordinator, description, entry_data):
         """Initialize the static sensor."""
@@ -607,13 +672,9 @@ class MeteocatStaticSensor(CoordinatorEntity[MeteocatStaticSensorCoordinator], S
         self._region_name = entry_data["region_name"]
         self._region_id = entry_data["region_id"]
 
-        # Unique ID for the entity
         self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_{self.entity_description.key}"
-
-        # Assign entity_category if defined in the description
         self._attr_entity_category = getattr(description, "entity_category", None)
         
-        # Log para depuración
         _LOGGER.debug(
             "Inicializando sensor: %s, Unique ID: %s",
             self.entity_description.name,
@@ -623,9 +684,7 @@ class MeteocatStaticSensor(CoordinatorEntity[MeteocatStaticSensorCoordinator], S
     @property
     def native_value(self):
         """Return the state of the sensor."""
-        # Información estática
         if self.entity_description.key in self.STATIC_KEYS:
-            # Información estática del `entry_data`
             if self.entity_description.key == TOWN_NAME:
                 return self._town_name
             if self.entity_description.key == TOWN_ID:
@@ -644,15 +703,14 @@ class MeteocatStaticSensor(CoordinatorEntity[MeteocatStaticSensorCoordinator], S
         """Return the device info."""
         return DeviceInfo(
             identifiers={(DOMAIN, self._town_id)},
-            name="Meteocat " + self._station_id + " " + self._town_name,
+            name=f"Meteocat {self._station_id} {self._town_name}",
             manufacturer="Meteocat",
             model="Meteocat API",
         )
 
 class MeteocatUviSensor(CoordinatorEntity[MeteocatUviFileCoordinator], SensorEntity):
     """Representation of a Meteocat UV Index sensor."""
-
-    _attr_has_entity_name = True  # Activa el uso de nombres basados en el dispositivo
+    _attr_has_entity_name = True
 
     def __init__(self, uvi_file_coordinator, description, entry_data):
         """Initialize the UV Index sensor."""
@@ -661,14 +719,9 @@ class MeteocatUviSensor(CoordinatorEntity[MeteocatUviFileCoordinator], SensorEnt
         self._town_name = entry_data["town_name"]
         self._town_id = entry_data["town_id"]
         self._station_id = entry_data["station_id"]
-
-        # Unique ID for the entity
         self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_{self.entity_description.key}"
-
-        # Asigna entity_category desde description (si está definido)
         self._attr_entity_category = getattr(description, "entity_category", None)
         
-        # Log para depuración
         _LOGGER.debug(
             "Inicializando sensor: %s, Unique ID: %s",
             self.entity_description.name,
@@ -688,7 +741,6 @@ class MeteocatUviSensor(CoordinatorEntity[MeteocatUviFileCoordinator], SensorEnt
         attributes = super().extra_state_attributes or {}
         if self.entity_description.key == UV_INDEX:
             uvi_data = self.coordinator.data or {}
-            # Add the "hour" attribute if it exists
             attributes["hour"] = uvi_data.get("hour")
         return attributes
     
@@ -697,31 +749,25 @@ class MeteocatUviSensor(CoordinatorEntity[MeteocatUviFileCoordinator], SensorEnt
         """Return the device info."""
         return DeviceInfo(
             identifiers={(DOMAIN, self._town_id)},
-            name="Meteocat " + self._station_id + " " + self._town_name,
+            name=f"Meteocat {self._station_id} {self._town_name}",
             manufacturer="Meteocat",
             model="Meteocat API",
         )
 
 class MeteocatConditionSensor(CoordinatorEntity[MeteocatConditionCoordinator], SensorEntity):
-    """Representation of a Meteocat UV Index sensor."""
-
-    _attr_has_entity_name = True  # Activa el uso de nombres basados en el dispositivo
+    """Representation of a Meteocat Condition sensor."""
+    _attr_has_entity_name = True
 
     def __init__(self, condition_coordinator, description, entry_data):
-        """Initialize the UV Index sensor."""
+        """Initialize the Condition sensor."""
         super().__init__(condition_coordinator)
         self.entity_description = description
         self._town_name = entry_data["town_name"]
         self._town_id = entry_data["town_id"]
         self._station_id = entry_data["station_id"]
-
-        # Unique ID for the entity
         self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_{self.entity_description.key}"
-
-        # Asigna entity_category desde description (si está definido)
         self._attr_entity_category = getattr(description, "entity_category", None)
         
-        # Log para depuración
         _LOGGER.debug(
             "Inicializando sensor: %s, Unique ID: %s",
             self.entity_description.name,
@@ -730,7 +776,7 @@ class MeteocatConditionSensor(CoordinatorEntity[MeteocatConditionCoordinator], S
 
     @property
     def native_value(self):
-        """Return the current UV index value."""
+        """Return the current condition value."""
         if self.entity_description.key == CONDITION:
             condition_data = self.coordinator.data or {}
             return condition_data.get("condition", None)
@@ -741,7 +787,6 @@ class MeteocatConditionSensor(CoordinatorEntity[MeteocatConditionCoordinator], S
         attributes = super().extra_state_attributes or {}
         if self.entity_description.key == CONDITION:
             condition_data = self.coordinator.data or {}
-            # Add the "hour" attribute if it exists
             attributes["hour"] = condition_data.get("hour", None)
         return attributes
     
@@ -750,14 +795,59 @@ class MeteocatConditionSensor(CoordinatorEntity[MeteocatConditionCoordinator], S
         """Return the device info."""
         return DeviceInfo(
             identifiers={(DOMAIN, self._town_id)},
-            name="Meteocat " + self._station_id + " " + self._town_name,
+            name=f"Meteocat {self._station_id} {self._town_name}",
+            manufacturer="Meteocat",
+            model="Meteocat API",
+        )
+
+class MeteocatSunSensor(CoordinatorEntity[MeteocatSunCoordinator], SensorEntity):
+    """Representation of a Meteocat Sun sensor (sunrise/sunset)."""
+    _attr_has_entity_name = True
+
+    def __init__(self, sun_coordinator, description, entry_data):
+        """Initialize the Sun sensor."""
+        super().__init__(sun_coordinator)
+        self.entity_description = description
+        self._town_name = entry_data["town_name"]
+        self._town_id = entry_data["town_id"]
+        self._station_id = entry_data["station_id"]
+        self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_{self.entity_description.key}"
+        self._attr_entity_category = getattr(description, "entity_category", None)
+        
+        _LOGGER.debug(
+            "Inicializando sensor: %s, Unique ID: %s",
+            self.entity_description.name,
+            self._attr_unique_id,
+        )
+
+    @property
+    def native_value(self):
+        """Return the sunrise or sunset time as a datetime."""
+        if self.entity_description.key in {SUNRISE, SUNSET}:
+            return self.coordinator.data.get(self.entity_description.key)
+        return None
+
+    @property
+    def extra_state_attributes(self):
+        """Return additional attributes for the sensor."""
+        attributes = super().extra_state_attributes or {}
+        if self.entity_description.key in {SUNRISE, SUNSET}:
+            dt = self.coordinator.data.get(self.entity_description.key)
+            attributes["friendly_time"] = dt.strftime("%H:%M") if dt else None
+        return attributes
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return the device info."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._town_id)},
+            name=f"Meteocat {self._station_id} {self._town_name}",
             manufacturer="Meteocat",
             model="Meteocat API",
         )
 
 class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity):
     """Representation of a Meteocat sensor."""
-
     CODE_MAPPING = {
         WIND_SPEED: WIND_SPEED_CODE,
         WIND_DIRECTION: WIND_DIRECTION_CODE,
@@ -766,13 +856,11 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
         PRESSURE: PRESSURE_CODE,
         PRECIPITATION: PRECIPITATION_CODE,
         SOLAR_GLOBAL_IRRADIANCE: SOLAR_GLOBAL_IRRADIANCE_CODE,
-        # UV_INDEX: UV_INDEX_CODE,
         MAX_TEMPERATURE: MAX_TEMPERATURE_CODE,
         MIN_TEMPERATURE: MIN_TEMPERATURE_CODE,
         WIND_GUST: WIND_GUST_CODE,
     }
-
-    _attr_has_entity_name = True  # Activa el uso de nombres basados en el dispositivo
+    _attr_has_entity_name = True
 
     def __init__(self, sensor_coordinator, description, entry_data):
         """Initialize the sensor."""
@@ -783,14 +871,8 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
         self._town_id = entry_data["town_id"]
         self._station_name = entry_data["station_name"]
         self._station_id = entry_data["station_id"]
-
-        # Unique ID for the entity
         self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_{self.entity_description.key}"
-
-        # Asigna entity_category desde description (si está definido)
         self._attr_entity_category = getattr(description, "entity_category", None)
-
-        # Log para depuración
         _LOGGER.debug(
             "Inicializando sensor: %s, Unique ID: %s",
             self.entity_description.name,
@@ -800,16 +882,11 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
     @property
     def native_value(self):
         """Return the state of the sensor."""
-        # Información dinámica
         if self.entity_description.key == FEELS_LIKE:
             stations = self.coordinator.data or []
-
-            # Variables necesarias
             temperature = None
             humidity = None
             wind_speed = None
-
-            # Obtener valores de las variables
             for station in stations:
                 variables = station.get("variables", [])
                 for var in variables:
@@ -818,25 +895,19 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
                     if not lectures:
                         continue
                     latest_reading = lectures[-1].get("valor")
-                    
                     if code == TEMPERATURE_CODE:
                         temperature = float(latest_reading)
                     elif code == HUMIDITY_CODE:
                         humidity = float(latest_reading)
                     elif code == WIND_SPEED_CODE:
                         wind_speed = float(latest_reading)
-            
-            # Verificar que todas las variables necesarias están presentes
             if temperature is not None and humidity is not None and wind_speed is not None:
-                # Cálculo del windchill
                 windchill = (
                     13.1267 +
                     0.6215 * temperature -
                     11.37 * (wind_speed ** 0.16) +
                     0.3965 * temperature * (wind_speed ** 0.16)
                 )
-                
-                # Cálculo del heat_index
                 heat_index = (
                     -8.78469476 +
                     1.61139411 * temperature +
@@ -848,8 +919,6 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
                     0.00072546 * temperature * (humidity ** 2) -
                     0.000003582 * (temperature ** 2) * (humidity ** 2)
                 )
-                
-                # Lógica de selección
                 if -50 <= temperature <= 10 and wind_speed > 4.8:
                     _LOGGER.debug(f"Sensación térmica por frío, calculada según la fórmula de Wind Chill: {windchill} ºC")
                     return round(windchill, 1)
@@ -861,50 +930,36 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
                     return round(temperature, 1)
 
         sensor_code = self.CODE_MAPPING.get(self.entity_description.key)
-
         if sensor_code is not None:
-            # Accedemos a las estaciones en el JSON recibido
             stations = self.coordinator.data or []
             for station in stations:
                 variables = station.get("variables", [])
-
-                # Filtramos por código
                 variable_data = next(
                     (var for var in variables if var.get("codi") == sensor_code),
                     None,
                 )
-
                 if variable_data:
-                    # Obtenemos la última lectura
                     lectures = variable_data.get("lectures", [])
                     if lectures:
                         latest_reading = lectures[-1]
                         value = latest_reading.get("valor")
-
                         return value
-                    
-        # Para el sensor WIND_DIRECTION_CARDINAL, convertir grados a dirección cardinal
+
         if self.entity_description.key == WIND_DIRECTION_CARDINAL:
             stations = self.coordinator.data or []
             for station in stations:
                 variables = station.get("variables", [])
-
-                # Filtramos por código
                 variable_data = next(
                     (var for var in variables if var.get("codi") == WIND_DIRECTION_CODE),
                     None,
                 )
-
                 if variable_data:
-                    # Obtenemos la última lectura
                     lectures = variable_data.get("lectures", [])
                     if lectures:
                         latest_reading = lectures[-1]
                         value = latest_reading.get("valor")
-
                         return self._convert_degrees_to_cardinal(value)
-                    
-        # Lógica específica para el sensor de timestamp
+
         if self.entity_description.key == STATION_TIMESTAMP:
             stations = self.coordinator.data or []
             for station in stations:
@@ -912,42 +967,30 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
                 for variable in variables:
                     lectures = variable.get("lectures", [])
                     if lectures:
-                        # Obtenemos el campo `data` de la última lectura
                         latest_reading = lectures[-1]
                         raw_timestamp = latest_reading.get("data")
-
                         if raw_timestamp:
-                            # Convertir el timestamp a un objeto datetime
                             try:
-                                # Convertimos raw_timestamp a hora local
                                 local_time = convert_to_local_time(raw_timestamp)
                                 _LOGGER.debug("Hora UTC: %s convertida a hora local: %s", raw_timestamp, local_time)
                                 return local_time
                             except ValueError:
-                                # Manejo de errores si el formato no es válido
                                 _LOGGER.error(f"Error al convertir el timestamp '{raw_timestamp}' a hora local.")
                                 return None
 
-        # Nuevo sensor para la precipitación acumulada
         if self.entity_description.key == PRECIPITATION_ACCUMULATED:
             stations = self.coordinator.data or []
-            total_precipitation = 0.0  # Usa float para permitir acumulación de decimales
-
+            total_precipitation = 0.0
             for station in stations:
                 variables = station.get("variables", [])
-
-                # Filtramos por código de precipitación
                 variable_data = next(
                     (var for var in variables if var.get("codi") == PRECIPITATION_CODE),
                     None,
                 )
-
                 if variable_data:
-                    # Sumamos las lecturas de precipitación
                     lectures = variable_data.get("lectures", [])
                     for lecture in lectures:
-                        total_precipitation += float(lecture.get("valor", 0.0))  # Convertimos a float
-
+                        total_precipitation += float(lecture.get("valor", 0.0))
             _LOGGER.debug(f"Total precipitación acumulada: {total_precipitation} mm")
             return total_precipitation
         
@@ -957,11 +1000,10 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
     def _convert_degrees_to_cardinal(degree: float) -> str:
         """Convert degrees to cardinal direction."""
         if not isinstance(degree, (int, float)):
-            return "Unknown"  # Retorna "Unknown" si el valor no es un número válido
-
+            return "Unknown"
         directions = [
-        "north", "north_northeast", "northeast", "east_northeast", "east", "east_southeast", "southeast", "south_southeast",
-        "south", "south_southwest", "southwest", "west_southwest", "west", "west_northwest", "northwest", "north_northwest"
+            "north", "north_northeast", "northeast", "east_northeast", "east", "east_southeast", "southeast", "south_southeast",
+            "south", "south_southwest", "southwest", "west_southwest", "west", "west_northwest", "northwest", "north_northwest"
         ]
         index = round(degree / 22.5) % 16
         return directions[index]
@@ -971,31 +1013,24 @@ class MeteocatSensor(CoordinatorEntity[MeteocatSensorCoordinator], SensorEntity)
         """Return the device info."""
         return DeviceInfo(
             identifiers={(DOMAIN, self._town_id)},
-            name="Meteocat " + self._station_id + " " + self._town_name,
+            name=f"Meteocat {self._station_id} {self._town_name}",
             manufacturer="Meteocat",
             model="Meteocat API",
         )
 
 class MeteocatTempForecast(CoordinatorEntity[MeteocatTempForecastCoordinator], SensorEntity):
     """Representation of a Meteocat Min and Max Temperature sensors."""
-
-    _attr_has_entity_name = True  # Activa el uso de nombres basados en el dispositivo
+    _attr_has_entity_name = True
 
     def __init__(self, temp_forecast_coordinator, description, entry_data):
-        """Initialize the Mina and Max Temperature sensors."""
+        """Initialize the Min and Max Temperature sensors."""
         super().__init__(temp_forecast_coordinator)
         self.entity_description = description
         self._town_name = entry_data["town_name"]
         self._town_id = entry_data["town_id"]
         self._station_id = entry_data["station_id"]
-
-        # Unique ID for the entity
         self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_{self.entity_description.key}"
-
-        # Asigna entity_category desde description (si está definido)
         self._attr_entity_category = getattr(description, "entity_category", None)
-        
-        # Log para depuración
         _LOGGER.debug(
             "Inicializando sensor: %s, Unique ID: %s",
             self.entity_description.name,
@@ -1006,7 +1041,6 @@ class MeteocatTempForecast(CoordinatorEntity[MeteocatTempForecastCoordinator], S
     def native_value(self):
         """Return the Max and Min Temp Forecast value."""
         temp_forecast_data = self.coordinator.data or {}
-        
         if self.entity_description.key == MAX_TEMPERATURE_FORECAST:
             return temp_forecast_data.get("max_temp_forecast", None)
         if self.entity_description.key == MIN_TEMPERATURE_FORECAST:
@@ -1018,15 +1052,14 @@ class MeteocatTempForecast(CoordinatorEntity[MeteocatTempForecastCoordinator], S
         """Return the device info."""
         return DeviceInfo(
             identifiers={(DOMAIN, self._town_id)},
-            name="Meteocat " + self._station_id + " " + self._town_name,
+            name=f"Meteocat {self._station_id} {self._town_name}",
             manufacturer="Meteocat",
             model="Meteocat API",
         )
 
 class MeteocatPrecipitationProbabilitySensor(CoordinatorEntity[DailyForecastCoordinator], SensorEntity):
     """Representation of a Meteocat precipitation probability sensor."""
-
-    _attr_has_entity_name = True  # Enable device-based naming
+    _attr_has_entity_name = True
 
     def __init__(self, daily_forecast_coordinator, description, entry_data):
         super().__init__(daily_forecast_coordinator)
@@ -1034,10 +1067,8 @@ class MeteocatPrecipitationProbabilitySensor(CoordinatorEntity[DailyForecastCoor
         self._town_name = entry_data["town_name"]
         self._town_id = entry_data["town_id"]
         self._station_id = entry_data["station_id"]
-
         self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_{self.entity_description.key}"
         self._attr_entity_category = getattr(description, "entity_category", None)
-        
         _LOGGER.debug(
             "Initializing sensor: %s, Unique ID: %s",
             self.entity_description.name,
@@ -1058,14 +1089,13 @@ class MeteocatPrecipitationProbabilitySensor(CoordinatorEntity[DailyForecastCoor
     def device_info(self) -> DeviceInfo:
         return DeviceInfo(
             identifiers={(DOMAIN, self._town_id)},
-            name="Meteocat " + self._station_id + " " + self._town_name,
+            name=f"Meteocat {self._station_id} {self._town_name}",
             manufacturer="Meteocat",
             model="Meteocat API",
         )
 
 class MeteocatHourlyForecastStatusSensor(CoordinatorEntity[MeteocatEntityCoordinator], SensorEntity):
-
-    _attr_has_entity_name = True  # Activa el uso de nombres basados en el dispositivo
+    _attr_has_entity_name = True
 
     def __init__(self, entity_coordinator, description, entry_data):
         super().__init__(entity_coordinator)
@@ -1073,11 +1103,7 @@ class MeteocatHourlyForecastStatusSensor(CoordinatorEntity[MeteocatEntityCoordin
         self._town_name = entry_data["town_name"]
         self._town_id = entry_data["town_id"]
         self._station_id = entry_data["station_id"]
-
-        # Unique ID for the entity
         self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_hourly_status"
-
-        # Assign entity_category if defined in the description
         self._attr_entity_category = getattr(description, "entity_category", None)
 
     def _get_first_date(self):
@@ -1101,8 +1127,6 @@ class MeteocatHourlyForecastStatusSensor(CoordinatorEntity[MeteocatEntityCoordin
                 f"hora de contacto a la API >= {DEFAULT_VALIDITY_HOURS}, "
                 f"minutos de contacto a la API >= {DEFAULT_VALIDITY_MINUTES}."
             )
-            
-            # Validar fecha y hora según la lógica del coordinador
             if days_difference > DEFAULT_VALIDITY_DAYS and current_time >= time(DEFAULT_VALIDITY_HOURS, DEFAULT_VALIDITY_MINUTES):
                 return "obsolete"
             return "updated"
@@ -1121,14 +1145,13 @@ class MeteocatHourlyForecastStatusSensor(CoordinatorEntity[MeteocatEntityCoordin
         """Return the device info."""
         return DeviceInfo(
             identifiers={(DOMAIN, self._town_id)},
-            name="Meteocat " + self._station_id + " " + self._town_name,
+            name=f"Meteocat {self._station_id} {self._town_name}",
             manufacturer="Meteocat",
             model="Meteocat API",
         )
 
 class MeteocatDailyForecastStatusSensor(CoordinatorEntity[MeteocatEntityCoordinator], SensorEntity):
-
-    _attr_has_entity_name = True  # Activa el uso de nombres basados en el dispositivo
+    _attr_has_entity_name = True
 
     def __init__(self, entity_coordinator, description, entry_data):
         super().__init__(entity_coordinator)
@@ -1136,11 +1159,7 @@ class MeteocatDailyForecastStatusSensor(CoordinatorEntity[MeteocatEntityCoordina
         self._town_name = entry_data["town_name"]
         self._town_id = entry_data["town_id"]
         self._station_id = entry_data["station_id"]
-
-        # Unique ID for the entity
         self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_daily_status"
-
-        # Assign entity_category if defined in the description
         self._attr_entity_category = getattr(description, "entity_category", None)
 
     def _get_first_date(self):
@@ -1164,8 +1183,6 @@ class MeteocatDailyForecastStatusSensor(CoordinatorEntity[MeteocatEntityCoordina
                 f"hora de contacto a la API >= {DEFAULT_VALIDITY_HOURS}, "
                 f"minutos de contacto a la API >= {DEFAULT_VALIDITY_MINUTES}."
             )
-
-            # Validar fecha y hora según la lógica del coordinador
             if days_difference > DEFAULT_VALIDITY_DAYS and current_time >= time(DEFAULT_VALIDITY_HOURS, DEFAULT_VALIDITY_MINUTES):
                 return "obsolete"
             return "updated"
@@ -1184,14 +1201,13 @@ class MeteocatDailyForecastStatusSensor(CoordinatorEntity[MeteocatEntityCoordina
         """Return the device info."""
         return DeviceInfo(
             identifiers={(DOMAIN, self._town_id)},
-            name="Meteocat " + self._station_id + " " + self._town_name,
+            name=f"Meteocat {self._station_id} {self._town_name}",
             manufacturer="Meteocat",
             model="Meteocat API",
         )
 
 class MeteocatUviStatusSensor(CoordinatorEntity[MeteocatUviCoordinator], SensorEntity):
-
-    _attr_has_entity_name = True  # Activa el uso de nombres basados en el dispositivo
+    _attr_has_entity_name = True
 
     def __init__(self, uvi_coordinator, description, entry_data):
         super().__init__(uvi_coordinator)
@@ -1199,11 +1215,7 @@ class MeteocatUviStatusSensor(CoordinatorEntity[MeteocatUviCoordinator], SensorE
         self._town_name = entry_data["town_name"]
         self._town_id = entry_data["town_id"]
         self._station_id = entry_data["station_id"]
-
-        # Unique ID for the entity
         self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_uvi_status"
-
-        # Assign entity_category if defined in the description
         self._attr_entity_category = getattr(description, "entity_category", None)
 
     def _get_first_date(self):
@@ -1226,8 +1238,6 @@ class MeteocatUviStatusSensor(CoordinatorEntity[MeteocatUviCoordinator], SensorE
                 f"hora de contacto a la API >= {DEFAULT_VALIDITY_HOURS}, "
                 f"minutos de contacto a la API >= {DEFAULT_VALIDITY_MINUTES}."
             )
-
-            # Validar fecha y hora según la lógica del coordinador
             if days_difference > DEFAULT_VALIDITY_DAYS and current_time >= time(DEFAULT_VALIDITY_HOURS, DEFAULT_VALIDITY_MINUTES):
                 return "obsolete"
             return "updated"
@@ -1246,13 +1256,13 @@ class MeteocatUviStatusSensor(CoordinatorEntity[MeteocatUviCoordinator], SensorE
         """Return the device info."""
         return DeviceInfo(
             identifiers={(DOMAIN, self._town_id)},
-            name="Meteocat " + self._station_id + " " + self._town_name,
+            name=f"Meteocat {self._station_id} {self._town_name}",
             manufacturer="Meteocat",
             model="Meteocat API",
         )
 
 class MeteocatAlertStatusSensor(CoordinatorEntity[MeteocatAlertsCoordinator], SensorEntity):
-    _attr_has_entity_name = True  # Activa el uso de nombres basados en el dispositivo
+    _attr_has_entity_name = True
 
     def __init__(self, alerts_coordinator, description, entry_data):
         super().__init__(alerts_coordinator)
@@ -1262,11 +1272,7 @@ class MeteocatAlertStatusSensor(CoordinatorEntity[MeteocatAlertsCoordinator], Se
         self._station_id = entry_data["station_id"]
         self._region_id = entry_data["region_id"]
         self._limit_prediccio = entry_data["limit_prediccio"]
-
-        # Unique ID for the entity
         self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_alert_status"
-
-        # Assign entity_category if defined in the description
         self._attr_entity_category = getattr(description, "entity_category", None)
 
     def _get_data_update(self):
@@ -1289,7 +1295,6 @@ class MeteocatAlertStatusSensor(CoordinatorEntity[MeteocatAlertsCoordinator], Se
             multiplier = ALERT_VALIDITY_MULTIPLIER_500
         else:
             multiplier = ALERT_VALIDITY_MULTIPLIER_DEFAULT
-
         return timedelta(minutes=DEFAULT_ALERT_VALIDITY_TIME * multiplier)
 
     @property
@@ -1298,11 +1303,8 @@ class MeteocatAlertStatusSensor(CoordinatorEntity[MeteocatAlertsCoordinator], Se
         data_update = self._get_data_update()
         if not data_update:
             return "unknown"
-
         current_time = datetime.now(ZoneInfo("UTC"))
         validity_duration = self._get_validity_duration()
-
-        # Comprobar si el archivo de alertas está obsoleto
         if current_time - data_update >= validity_duration:
             return "obsolete"
         return "updated"
@@ -1328,7 +1330,6 @@ class MeteocatAlertStatusSensor(CoordinatorEntity[MeteocatAlertsCoordinator], Se
 
 class MeteocatAlertRegionSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinator], SensorEntity):
     """Sensor dinámico que muestra el estado de las alertas por región."""
-
     METEOR_MAPPING = {
         "Temps violent": "violent_weather",
         "Intensitat de pluja": "rain_intensity",
@@ -1340,8 +1341,7 @@ class MeteocatAlertRegionSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
         "Calor": "heat",
         "Calor nocturna": "night_heat",
     }
-
-    _attr_has_entity_name = True  # Activa el uso de nombres basados en el dispositivo
+    _attr_has_entity_name = True
 
     def __init__(self, alerts_region_coordinator, description, entry_data):
         super().__init__(alerts_region_coordinator)
@@ -1350,11 +1350,7 @@ class MeteocatAlertRegionSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
         self._town_id = entry_data["town_id"]
         self._station_id = entry_data["station_id"]
         self._region_id = entry_data["region_id"]
-
-        # Unique ID for the entity
         self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_alerts"
-
-        # Assign entity_category if defined in the description
         self._attr_entity_category = getattr(description, "entity_category", None)
 
     def _map_meteor_case_insensitive(self, meteor: str) -> str:
@@ -1373,8 +1369,6 @@ class MeteocatAlertRegionSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
     def extra_state_attributes(self):
         """Devuelve los atributos extra del sensor con los nombres traducidos."""
         meteor_details = self.coordinator.data.get("detalles", {}).get("meteor", {})
-        
-        # Convertimos las claves al formato deseado usando el mapping
         attributes = {}
         for i, meteor in enumerate(meteor_details.keys()):
             mapped_name = self._map_meteor_case_insensitive(meteor)
@@ -1382,7 +1376,6 @@ class MeteocatAlertRegionSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
                 _LOGGER.warning("Meteor desconocido sin mapeo: '%s'. Añadirlo a 'METEOR_MAPPING' del coordinador 'MeteocatAlertRegionSensor' si es necesario.", meteor)
                 mapped_name = "unknown"
             attributes[f"alert_{i+1}"] = mapped_name
-
         _LOGGER.info("Atributos traducidos del sensor: %s", attributes)
         return attributes
     
@@ -1391,7 +1384,7 @@ class MeteocatAlertRegionSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
         """Devuelve la información del dispositivo."""
         return DeviceInfo(
             identifiers={(DOMAIN, self._town_id)},
-            name="Meteocat " + self._station_id + " " + self._town_name,
+            name=f"Meteocat {self._station_id} {self._town_name}",
             manufacturer="Meteocat",
             model="Meteocat API",
         )
@@ -1408,12 +1401,10 @@ class MeteocatAlertMeteorSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
         ALERT_WARM_NIGHT: "Calor nocturna",
         ALERT_SNOW: "Neu acumulada en 24 hores",
     }
-
     STATE_MAPPING = {
         "Obert": "opened",
         "Tancat": "closed",
     }
-
     UMBRAL_MAPPING = {
         "Ratxes de vent > 25 m/s": "wind_gusts_25",
         "Esclafits": "microburst",
@@ -1447,8 +1438,7 @@ class MeteocatAlertMeteorSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
         "gruix > 2 cm a cotes superiors a 300 metres fins a 600 metres": "thickness_2_at_300",
         "gruix ≥ 0 cm a cotes inferiors a 300 metres": "thickness_0_at_300",
     }
-    
-    _attr_has_entity_name = True  # Activa el uso de nombres basados en el dispositivo
+    _attr_has_entity_name = True
 
     def __init__(self, alerts_region_coordinator, description, entry_data):
         super().__init__(alerts_region_coordinator)
@@ -1457,14 +1447,8 @@ class MeteocatAlertMeteorSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
         self._town_id = entry_data["town_id"]
         self._station_id = entry_data["station_id"]
         self._region_id = entry_data["region_id"]
-
-        # Unique ID for the entity
         self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_{self.entity_description.key}"
-
-        # Assign entity_category if defined in the description
         self._attr_entity_category = getattr(description, "entity_category", None)
-        
-        # Log para depuración
         _LOGGER.debug(
             "Inicializando sensor: %s, Unique ID: %s",
             self.entity_description.name,
@@ -1494,10 +1478,7 @@ class MeteocatAlertMeteorSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
         meteor_type = self.METEOR_MAPPING.get(self.entity_description.key)
         if not meteor_type:
             return "Desconocido"
-
         meteor_data = self._get_meteor_data_case_insensitive(meteor_type)
-
-        # Convertir estado para translation_key
         estado_original = meteor_data.get("estado", "Tancat")
         return self.STATE_MAPPING.get(estado_original, "unknown")
 
@@ -1512,22 +1493,17 @@ class MeteocatAlertMeteorSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
                 self.coordinator.data.get("detalles", {}).get("meteor", {}).keys(),
             )
             return "unknown"
-
         meteor_data = self._get_meteor_data_case_insensitive(meteor_type)
         if not meteor_data:
             return {}
-        
-        # Convertir umbral para translation_key
         umbral_original = meteor_data.get("umbral")
         umbral_convertido = self._get_umbral_case_insensitive(umbral_original)
-
         if umbral_convertido == "unknown" and umbral_original is not None:
             _LOGGER.warning(
                 "Umbral desconocido para sensor %s: '%s'. Añadirlo a 'UMBRAL_MAPPING' del coordinador 'MeteocatAlertMeteorSensor' si es necesario.", 
                 self.entity_description.key, 
                 umbral_original
             )
-
         return {
             "inicio": meteor_data.get("inicio"),
             "fin": meteor_data.get("fin"),
@@ -1544,13 +1520,13 @@ class MeteocatAlertMeteorSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
         """Devuelve la información del dispositivo."""
         return DeviceInfo(
             identifiers={(DOMAIN, self._town_id)},
-            name="Meteocat " + self._station_id + " " + self._town_name,
+            name=f"Meteocat {self._station_id} {self._town_name}",
             manufacturer="Meteocat",
             model="Meteocat API",
         )
 
 class MeteocatQuotaStatusSensor(CoordinatorEntity[MeteocatQuotesCoordinator], SensorEntity):
-    _attr_has_entity_name = True  # Activa el uso de nombres basados en el dispositivo
+    _attr_has_entity_name = True
 
     def __init__(self, quotes_coordinator, description, entry_data):
         super().__init__(quotes_coordinator)
@@ -1558,11 +1534,7 @@ class MeteocatQuotaStatusSensor(CoordinatorEntity[MeteocatQuotesCoordinator], Se
         self._town_name = entry_data["town_name"]
         self._town_id = entry_data["town_id"]
         self._station_id = entry_data["station_id"]
-
-        # Unique ID for the entity
         self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_quota_status"
-
-        # Assign entity_category if defined in the description
         self._attr_entity_category = getattr(description, "entity_category", None)
 
     def _get_data_update(self):
@@ -1581,13 +1553,9 @@ class MeteocatQuotaStatusSensor(CoordinatorEntity[MeteocatQuotesCoordinator], Se
         data_update = self._get_data_update()
         if not data_update:
             return "unknown"
-
         current_time = datetime.now(ZoneInfo("UTC"))
-
-        # Comprobar si el archivo de alertas está obsoleto
         if current_time - data_update >= timedelta(minutes=DEFAULT_QUOTES_VALIDITY_TIME):
             return "obsolete"
-
         return "updated"
 
     @property
@@ -1611,8 +1579,6 @@ class MeteocatQuotaStatusSensor(CoordinatorEntity[MeteocatQuotesCoordinator], Se
 
 class MeteocatQuotaSensor(CoordinatorEntity[MeteocatQuotesFileCoordinator], SensorEntity):
     """Representation of Meteocat Quota sensors."""
-
-    # Mapeo de claves en sensor.py a nombres en quotes.json
     QUOTA_MAPPING = {
         "quota_xdde": "XDDE",
         "quota_prediccio": "Prediccio",
@@ -1620,15 +1586,12 @@ class MeteocatQuotaSensor(CoordinatorEntity[MeteocatQuotesFileCoordinator], Sens
         "quota_xema": "XEMA",
         "quota_queries": "Quota",
     }
-
-    # Mapeo de periodos para facilitar la traducción del estado
     PERIOD_STATE_MAPPING = {
         "Setmanal": "weekly",
         "Mensual": "monthly",
         "Anual": "annual",
     }
-
-    _attr_has_entity_name = True  # Activa el uso de nombres basados en el dispositivo
+    _attr_has_entity_name = True
 
     def __init__(self, quotes_file_coordinator, description, entry_data):
         super().__init__(quotes_file_coordinator)
@@ -1636,28 +1599,20 @@ class MeteocatQuotaSensor(CoordinatorEntity[MeteocatQuotesFileCoordinator], Sens
         self._town_name = entry_data["town_name"]
         self._town_id = entry_data["town_id"]
         self._station_id = entry_data["station_id"]
-
-        # Unique ID for the entity
         self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_{self.entity_description.key}"
-
-        # Assign entity_category if defined in the description
         self._attr_entity_category = getattr(description, "entity_category", None)
     
     def _get_plan_data(self):
         """Encuentra los datos del plan correspondiente al sensor actual."""
         if not self.coordinator.data:
             return None
-
         plan_name = self.QUOTA_MAPPING.get(self.entity_description.key)
-
         if not plan_name:
             _LOGGER.error(f"No se encontró un mapeo para la clave: {self.entity_description.key}")
             return None
-
         for plan in self.coordinator.data.get("plans", []):
             if plan.get("nom") == plan_name:
-                return plan  # Retorna el plan encontrado
-
+                return plan
         _LOGGER.warning(f"No se encontró el plan '{plan_name}' en los datos del coordinador.")
         return None
 
@@ -1665,18 +1620,14 @@ class MeteocatQuotaSensor(CoordinatorEntity[MeteocatQuotesFileCoordinator], Sens
     def native_value(self):
         """Devuelve el estado de la cuota: 'ok' si no se ha excedido, 'exceeded' si se ha superado."""
         plan = self._get_plan_data()
-
         if not plan:
             return None
-
         max_consultes = plan.get("maxConsultes")
         consultes_realitzades = plan.get("consultesRealitzades")
-
         if max_consultes is None or consultes_realitzades is None or \
             not isinstance(max_consultes, (int, float)) or not isinstance(consultes_realitzades, (int, float)):
                 _LOGGER.warning(f"Datos inválidos para el plan '{plan.get('nom', 'unknown')}': {plan}")
                 return None
-
         return "ok" if consultes_realitzades <= max_consultes else "exceeded"
 
     @property
@@ -1684,21 +1635,16 @@ class MeteocatQuotaSensor(CoordinatorEntity[MeteocatQuotesFileCoordinator], Sens
         """Devuelve atributos adicionales del estado del sensor."""
         attributes = super().extra_state_attributes or {}
         plan = self._get_plan_data()
-
         if not plan:
             return {}
-        
-        # Aplicar el mapeo de periodos
         period = plan.get("periode", "desconocido")
-        translated_period = self.PERIOD_STATE_MAPPING.get(period, period)  # Si no está en el mapping, dejar el original
-
+        translated_period = self.PERIOD_STATE_MAPPING.get(period, period)
         attributes.update({
             "period": translated_period,
             "max_queries": plan.get("maxConsultes"),
             "made_queries": plan.get("consultesRealitzades"),
             "remain_queries": plan.get("consultesRestants"),
         })
-
         return attributes
 
     @property
@@ -1712,7 +1658,7 @@ class MeteocatQuotaSensor(CoordinatorEntity[MeteocatQuotesFileCoordinator], Sens
         )
 
 class MeteocatLightningStatusSensor(CoordinatorEntity[MeteocatLightningCoordinator], SensorEntity):
-    _attr_has_entity_name = True  # Activa el uso de nombres basados en el dispositivo
+    _attr_has_entity_name = True
 
     def __init__(self, lightning_coordinator, description, entry_data):
         super().__init__(lightning_coordinator)
@@ -1720,11 +1666,7 @@ class MeteocatLightningStatusSensor(CoordinatorEntity[MeteocatLightningCoordinat
         self._town_name = entry_data["town_name"]
         self._town_id = entry_data["town_id"]
         self._station_id = entry_data["station_id"]
-
-        # Unique ID for the entity
         self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_lightning_status"
-
-        # Assign entity_category if defined in the description
         self._attr_entity_category = getattr(description, "entity_category", None)
 
     def _get_data_update(self):
@@ -1732,8 +1674,8 @@ class MeteocatLightningStatusSensor(CoordinatorEntity[MeteocatLightningCoordinat
         data_update = self.coordinator.data.get("actualizado")
         if data_update:
             try:
-                local_time = datetime.fromisoformat(data_update)  # Ya tiene offset (+01:00 o +02:00)
-                return local_time.astimezone(ZoneInfo("UTC"))  # Convertir a UTC
+                local_time = datetime.fromisoformat(data_update)
+                return local_time.astimezone(ZoneInfo("UTC"))
             except ValueError:
                 _LOGGER.error("Formato de fecha de actualización inválido: %s", data_update)
         return None
@@ -1752,15 +1694,11 @@ class MeteocatLightningStatusSensor(CoordinatorEntity[MeteocatLightningCoordinat
         data_update = self._get_data_update()
         if not data_update:
             return "unknown"
-
         now = datetime.now(timezone.utc).astimezone(TIMEZONE)
-        current_time = now.time()  # Extraer solo la parte de la hora
-        offset = now.utcoffset().total_seconds() / 3600  # Obtener el offset en horas
-
-        # Determinar la hora de validez considerando el offset horario, el horario de verano (+02:00) o invierno (+01:00)
+        current_time = now.time()
+        offset = now.utcoffset().total_seconds() / 3600
         validity_start_time = time(int(DEFAULT_LIGHTNING_VALIDITY_HOURS + offset), DEFAULT_LIGHTNING_VALIDITY_MINUTES)
         validity_duration = timedelta(minutes=DEFAULT_LIGHTNING_VALIDITY_TIME)
-
         return self._determine_status(now, data_update, current_time, validity_start_time, validity_duration)
 
     @property
@@ -1784,8 +1722,7 @@ class MeteocatLightningStatusSensor(CoordinatorEntity[MeteocatLightningCoordinat
 
 class MeteocatLightningSensor(CoordinatorEntity[MeteocatLightningFileCoordinator], SensorEntity):
     """Representation of Meteocat Lightning sensors."""
-
-    _attr_has_entity_name = True  # Activa el uso de nombres basados en el dispositivo
+    _attr_has_entity_name = True
 
     def __init__(self, lightning_file_coordinator, description, entry_data):
         super().__init__(lightning_file_coordinator)
@@ -1794,11 +1731,7 @@ class MeteocatLightningSensor(CoordinatorEntity[MeteocatLightningFileCoordinator
         self._town_id = entry_data["town_id"]
         self._station_id = entry_data["station_id"]
         self._region_id = entry_data["region_id"]
-
-        # Unique ID for the entity
         self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_{self.entity_description.key}"
-
-        # Assign entity_category if defined in the description
         self._attr_entity_category = getattr(description, "entity_category", None)
 
     @property
@@ -1820,13 +1753,131 @@ class MeteocatLightningSensor(CoordinatorEntity[MeteocatLightningFileCoordinator
             data = self.coordinator.data.get("town", {})
         else:
             return attributes
-
-        # Agregar atributos específicos
         attributes.update({
             "cloud_cloud": data.get("cc", 0),
             "cloud_ground_neg": data.get("cg-", 0),
             "cloud_ground_pos": data.get("cg+", 0),
         })
+        return attributes
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return the device info."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._town_id)},
+            name=f"Meteocat {self._station_id} {self._town_name}",
+            manufacturer="Meteocat",
+            model="Meteocat API",
+        )
+
+class MeteocatSunSensor(CoordinatorEntity[MeteocatSunFileCoordinator], SensorEntity):
+    """Representation of Meteocat Sun sensors (sunrise/sunset)."""
+    _attr_has_entity_name = True
+
+    def __init__(self, sun_file_coordinator, description, entry_data):
+        """Initialize the Sun sensor."""
+        super().__init__(sun_file_coordinator)
+        self.entity_description = description
+        self._town_name = entry_data["town_name"]
+        self._town_id = entry_data["town_id"]
+        self._station_id = entry_data["station_id"]
+        self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_{self.entity_description.key}"
+        self._attr_entity_category = getattr(description, "entity_category", None)
+        
+        _LOGGER.debug(
+            "Inicializando sensor: %s, Unique ID: %s",
+            self.entity_description.name,
+            self._attr_unique_id,
+        )
+
+    @property
+    def native_value(self):
+        """Return the sunrise or sunset time as a datetime."""
+        if self.entity_description.key in {SUNRISE, SUNSET}:
+            time_str = self.coordinator.data.get(self.entity_description.key)
+            if time_str:
+                try:
+                    return datetime.fromisoformat(time_str)
+                except ValueError:
+                    _LOGGER.error("Formato de fecha inválido para %s: %s", self.entity_description.key, time_str)
+                    return None
+        return None
+
+    @property
+    def extra_state_attributes(self):
+        """Return additional attributes for the sensor."""
+        attributes = super().extra_state_attributes or {}
+        if self.entity_description.key in {SUNRISE, SUNSET}:
+            time_str = self.coordinator.data.get(self.entity_description.key)
+            if time_str:
+                try:
+                    dt = datetime.fromisoformat(time_str)
+                    attributes["friendly_time"] = dt.strftime("%H:%M")
+                except ValueError:
+                    attributes["friendly_time"] = None
+            else:
+                attributes["friendly_time"] = None
+        return attributes
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return the device info."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._town_id)},
+            name=f"Meteocat {self._station_id} {self._town_name}",
+            manufacturer="Meteocat",
+            model="Meteocat API",
+        )
+
+class MeteocatSunStatusSensor(CoordinatorEntity[MeteocatSunCoordinator], SensorEntity):
+    """Representation of Meteocat Sun file status sensor."""
+    _attr_has_entity_name = True
+
+    def __init__(self, sun_coordinator, description, entry_data):
+        """Initialize the Sun status sensor."""
+        super().__init__(sun_coordinator)
+        self.entity_description = description
+        self._town_name = entry_data["town_name"]
+        self._town_id = entry_data["town_id"]
+        self._station_id = entry_data["station_id"]
+        self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_sun_status"
+        self._attr_entity_category = getattr(description, "entity_category", None)
+        
+        _LOGGER.debug(
+            "Inicializando sensor: %s, Unique ID: %s",
+            self.entity_description.name,
+            self._attr_unique_id,
+        )
+
+    def _get_data_update(self):
+        """Obtain the update date from the coordinator and convert to UTC."""
+        data_update = self.coordinator.data.get("actualizado")
+        if data_update:
+            try:
+                local_time = datetime.fromisoformat(data_update)
+                return local_time.astimezone(ZoneInfo("UTC"))
+            except ValueError:
+                _LOGGER.error("Formato de fecha de actualización inválido: %s", data_update)
+        return None
+
+    @property
+    def native_value(self):
+        """Return the status of the sun file based on the update date."""
+        data_update = self._get_data_update()
+        if not data_update:
+            return "unknown"
+        now = datetime.now(timezone.utc).astimezone(TIMEZONE)
+        if (now - data_update) > timedelta(days=1):
+            return "obsolete"
+        return "updated"
+
+    @property
+    def extra_state_attributes(self):
+        """Return additional attributes for the sensor."""
+        attributes = super().extra_state_attributes or {}
+        data_update = self._get_data_update()
+        if data_update:
+            attributes["update_date"] = data_update.isoformat()
         return attributes
 
     @property

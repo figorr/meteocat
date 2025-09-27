@@ -34,9 +34,9 @@
     }
   },
   "options": {
-    "step":{
+    "step": {
       "init": {
-        "description": "Setup the API Key, the API limits and regenerate 'assets' files.",
+        "description": "Setup the API Key, the API limits, regenerate 'assets' files, or update coordinates.",
         "title": "Setup options",
         "data": {
           "option": "Options"
@@ -50,6 +50,14 @@
         "description": "Setup the API limits.",
         "title": "API limits"
       },
+      "update_coordinates": {
+        "description": "Enter new coordinates. Current coordinates: latitude {current_latitude}, longitude {current_longitude}.",
+        "title": "Update Coordinates",
+        "data": {
+          "latitude": "Latitude",
+          "longitude": "Longitude"
+        }
+      },
       "confirm_regenerate_assets": {
         "description": "Regenerate missing assets files.",
         "title": "Regenerate assets",
@@ -61,7 +69,8 @@
     "error": {
       "cannot_connect": "Cannot connect. Error when checking the new API Key.",
       "unknown": "Unknown error when checking the new API Key.",
-      "invalid_limit": "Invalid limit. The limit must be a positive number."
+      "invalid_limit": "Invalid limit. The limit must be a positive number.",
+      "invalid_coordinates": "Coordinates must be within Catalonia's range (latitude: 40.5 to 42.5, longitude: 0.1 to 3.3)."
     }
   },
   "selector": {
@@ -69,7 +78,8 @@
       "options": {
         "update_api_and_limits": "Update API Key and limits.",
         "update_limits_only": "Update API limits.",
-        "regenerate_assets": "Regenerate 'assets' files."
+        "regenerate_assets": "Regenerate 'assets' files.",
+        "update_coordinates": "Update coordinates (latitude and longitude)."
       }
     }
   },
@@ -269,7 +279,7 @@
           "cloud_cloud": {
             "name": "Cloud-Cloud"
           },
-          "cloud_ground_neg":{
+          "cloud_ground_neg": {
             "name": "Cloud-Ground Negative"
           },
           "cloud_ground_pos": {
@@ -283,7 +293,7 @@
           "cloud_cloud": {
             "name": "Cloud-Cloud"
           },
-          "cloud_ground_neg":{
+          "cloud_ground_neg": {
             "name": "Cloud-Ground Negative"
           },
           "cloud_ground_pos": {
@@ -822,6 +832,34 @@
           },
           "nivel": {
             "name": "Level"
+          }
+        }
+      },
+      "sunrise": {
+        "name": "Sunrise",
+        "state_attributes": {
+          "friendly_time": {
+            "name": "Time"
+          }
+        }
+      },
+      "sunset": {
+        "name": "Sunset",
+        "state_attributes": {
+          "friendly_time": {
+            "name": "Time"
+          }
+        }
+      },
+      "sun_file_status": {
+        "name": "Sun File",
+        "state": {
+          "updated": "Updated",
+          "obsolete": "Obsolete"      
+        },
+        "state_attributes": {
+          "update_date": {
+            "name": "Date"
           }
         }
       }

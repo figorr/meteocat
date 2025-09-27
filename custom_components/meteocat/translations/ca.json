@@ -36,7 +36,7 @@
   "options": {
     "step":{
       "init": {
-        "description": "Configura l'API Key, els límits de l'API i regenera els arxius a 'assets'.",
+        "description": "Configureu la clau API, els límits de l'API, regenereu els fitxers d'assets o actualitzeu les coordenades.",
         "title": "Opcions de configuració",
         "data": {
           "option": "Opcions"
@@ -50,6 +50,14 @@
         "description": "Configura els límits de l'API.",
         "title": "Límits de l'API"
       },
+      "update_coordinates": {
+        "description": "Introduïu noves coordenades. Coordenades actuals: latitud {current_latitude}, longitud {current_longitude}.",
+        "title": "Actualitzar coordenades",
+        "data": {
+          "latitude": "Latitud",
+          "longitude": "Longitud"
+        }
+      },
       "confirm_regenerate_assets": {
         "description": "Regenera els arxius a 'assets'.",
         "title": "Regenera 'assets'",
@@ -61,7 +69,8 @@
     "error": {
       "cannot_connect": "Error de conexió. Error al comprovar la nova API Key.",
       "unknown": "Error desconegut al comprovar la nova API Key.",
-      "invalid_limit": "Límit no vàlid. El límit ha de ser un nombre positiu."
+      "invalid_limit": "Límit no vàlid. El límit ha de ser un nombre positiu.",
+      "invalid_coordinates": "Les coordenades han d'estar dins del rang de Catalunya (latitud: 40.5 a 42.5, longitud: 0.1 a 3.3)."
     }
   },
   "selector": {
@@ -69,7 +78,8 @@
       "options": {
         "update_api_and_limits": "Actualitzar API Key i límits.",
         "update_limits_only": "Actualitzar API límits.",
-        "regenerate_assets": "Regenera arxius a 'assets'."
+        "regenerate_assets": "Regenera arxius a 'assets'.",
+        "update_coordinates": "Actualitzar coordenades (latitud i longitud)."
       }
     }
   },
@@ -824,8 +834,35 @@
             "name": "Nivell"
           }
         }
+      },
+      "sunrise": {
+        "name": "Sortida del sol",
+        "state_attributes": {
+          "friendly_time": {
+            "name": "Hora"
+          }
+        }
+      },
+      "sunset": {
+        "name": "Posta de sol",
+        "state_attributes": {
+          "friendly_time": {
+            "name": "Hora"
+          }
+        }
+      },
+      "sun_file_status": {
+        "name": "Arxiu Sol",
+        "state": {
+          "updated": "Actualitzat",
+          "obsolete": "Obsolet"      
+        },
+        "state_attributes": {
+          "update_date": {
+            "name": "Data"
+          }
+        }
       }
     }
   }
 }
- 
