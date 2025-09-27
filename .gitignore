@@ -94,3 +94,6 @@ custom_components/meteocat/files/
 
 # BADGES
 badges/
+
+# TEMPORAL COMMIT MESSAGES
+commit-msg.txt
