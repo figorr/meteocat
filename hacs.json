@@ -1,6 +1,6 @@
 {
   "name": "Meteocat",
-  "homeassistant": "2025.9.3",
+  "homeassistant": "2025.9.4",
   "hide_default_branch": true,
   "render_readme": true,
   "zip_release": true,
