@@ -1949,6 +1949,11 @@ class MeteocatSunCoordinator(DataUpdateCoordinator):
         self.timezone_str = hass.config.time_zone or "Europe/Madrid"
         self.town_id = entry_data.get("town_id")
         
+        # Creamos un LocationInfo "custom" con los datos de configuración.
+        # Nota: No dependemos de la base de datos interna de Astral (ni de lookup),
+        # por lo que el town_name puede ser cualquier cadena descriptiva.
+        # Esta es precisamente la opción recomendada por la documentación de Astral
+        # cuando la localización no está en su base de datos.
         self.location = LocationInfo(
             name=entry_data.get("town_name", "Municipio"),
             region="Spain",
