@@ -2159,38 +2159,64 @@ class MeteocatMoonCoordinator(DataUpdateCoordinator):
         return "unknown"
 
     async def _async_update_data(self) -> Dict:
-        """Actualiza los datos de la fase lunar."""
+        """Actualiza los datos de la fase lunar según validez de moonrise/moonset."""
         existing_data = await load_json_from_file(self.moon_file) or {}
-
         now = datetime.now(tz=ZoneInfo(self.timezone_str))
 
-        last_update_str = existing_data.get("actualitzat", {}).get("dataUpdate")
-        if not existing_data or not last_update_str:
+        # Si no hay datos guardados → calcular directamente
+        if not existing_data or "dades" not in existing_data or not existing_data["dades"]:
             return await self._calculate_and_save_new_data()
 
-        last_update = datetime.fromisoformat(last_update_str)
-        if last_update.date() < now.date():
-            return await self._calculate_and_save_new_data()
-        else:
-            _LOGGER.debug("Usando datos existentes de la luna: %s", existing_data)
-            return {"actualizado": existing_data['actualitzat']['dataUpdate']}
+        dades = existing_data["dades"][0]
+        moonrise_str = dades.get("moonrise")
+        moonset_str = dades.get("moonset")
 
-    async def _calculate_and_save_new_data(self):
-        """Calcula nuevos datos de la fase lunar y los guarda en el archivo JSON."""
+        moonrise = datetime.fromisoformat(moonrise_str) if moonrise_str else None
+        moonset = datetime.fromisoformat(moonset_str) if moonset_str else None
+
+        # Si ya pasó el moonrise de hoy → recalcular todo (fase incluida)
+        if moonrise and now > moonrise:
+            return await self._calculate_and_save_new_data(force_next_day=True)
+
+        # Si ya pasó el moonset de hoy → recalcular solo el moonset
+        if moonset and now > moonset:
+            return await self._calculate_and_save_new_data(update_only="moonset")
+
+        # En cualquier otro caso seguimos con los datos existentes
+        _LOGGER.debug("Usando datos existentes de la luna: %s", existing_data)
+        return {"actualizado": existing_data['actualitzat']['dataUpdate']}
+
+    async def _calculate_and_save_new_data(self, force_next_day: bool = False, update_only: str = None):
+        """Calcula y guarda nuevos datos de la luna (moonrise, moonset, fase)."""
         try:
             now = datetime.now(tz=ZoneInfo(self.timezone_str))
             today = now.date()
+            target_date = today
 
-            # Fase lunar y eventos
-            moon_phase_value = moon_phase(today)
+            if force_next_day:
+                target_date = today + timedelta(days=1)
+
+            # Calcular fase lunar
+            moon_phase_value = moon_phase(target_date)
             moon_phase_name = self._get_moon_phase_name(moon_phase_value)
-            moonrise, moonset = moon_rise_set(self.latitude, self.longitude, today)
 
-            # Convertir eventos a hora local
+            # Calcular eventos
+            moonrise, moonset = moon_rise_set(self.latitude, self.longitude, target_date)
             if moonrise:
                 moonrise = moonrise.astimezone(ZoneInfo(self.timezone_str))
             if moonset:
                 moonset = moonset.astimezone(ZoneInfo(self.timezone_str))
+
+            # Cargar datos existentes si solo queremos actualizar moonset
+            if update_only == "moonset":
+                existing_data = await load_json_from_file(self.moon_file) or {}
+                if existing_data and "dades" in existing_data and existing_data["dades"]:
+                    dades = existing_data["dades"][0]
+                    moonrise_str = dades.get("moonrise")
+                    moon_phase_value = dades.get("moon_phase")
+                    moon_phase_name = dades.get("moon_phase_name")
+                    moonrise = datetime.fromisoformat(moonrise_str) if moonrise_str else moonrise
+                # aquí sí sustituimos solo moonset
 
             # Normalizar a ISO string
             moonrise_str = moonrise.isoformat() if moonrise else None
@@ -2209,8 +2235,8 @@ class MeteocatMoonCoordinator(DataUpdateCoordinator):
             }
 
             await save_json_to_file(data_with_timestamp, self.moon_file)
-
             _LOGGER.debug("Datos de la luna actualizados: %s", data_with_timestamp)
+
             return {"actualizado": data_with_timestamp['actualitzat']['dataUpdate']}
 
         except Exception as err:
