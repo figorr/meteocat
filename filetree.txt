@@ -2,20 +2,24 @@
     └── ISSUE_TEMPLATE/
         ├── bug_report.md
         ├── config.yml
+        ├── improvement.md
+        ├── new_function.md
+    ├── labels.yml
     └── workflows/
         ├── autocloser.yaml
-        ├── close-duplicates.yml
+        ├── close-on-label.yml
+        ├── force-sync-labels.yml
         ├── hassfest.yaml
         ├── publish-zip.yml
         ├── release.yml
         ├── stale.yml
         ├── sync-gitlab.yml
+        ├── sync-labels.yml
         ├── validate.yaml
 ├── .gitignore
 ├── .gitlab-ci.yml
 ├── .pre-commit-config.yaml
 ├── .releaserc
-├── .releaserc.toml
 ├── AUTHORS.md
 ├── CHANGELOG.md
 ├── LICENSE
@@ -30,6 +34,7 @@
         ├── coordinator.py
         ├── helpers.py
         ├── manifest.json
+        ├── moon.py
         ├── options_flow.py
         ├── sensor.py
         ├── strings.json
@@ -46,6 +51,7 @@
     ├── api_limits.png
     ├── banner.png
     ├── change_units.png
+    ├── daily_forecast_2_alerts.png
     ├── devices.png
     ├── diagnostic_sensors.png
     ├── dynamic_sensors.png
@@ -54,13 +60,17 @@
     ├── pick_area.png
     ├── pick_station.png
     ├── pick_town.png
+    ├── regenerate_assets.png
+    ├── setup_options.png
+    ├── system_options.png
 ├── info.md
 ├── package-lock.json
 ├── package.json
 ├── poetry.lock
 ├── pyproject.toml
-├── releaserc.json
 ├── requirements.test.txt
+└── scripts/
+    ├── update_version.sh
 ├── setup.cfg
 ├── setup.py
 └── tests/
