@@ -72,8 +72,8 @@ DEFAULT_LIGHTNING_UPDATE_INTERVAL = timedelta(minutes=10)
 DEFAULT_LIGHTNING_FILE_UPDATE_INTERVAL = timedelta(minutes=5)
 DEFAULT_SUN_UPDATE_INTERVAL = timedelta(minutes=1)
 DEFAULT_SUN_FILE_UPDATE_INTERVAL = timedelta(seconds=30)
-DEFAULT_MOON_UPDATE_INTERVAL = timedelta(hours=12)
-DEFAULT_MOON_FILE_UPDATE_INTERVAL = timedelta(minutes=5)
+DEFAULT_MOON_UPDATE_INTERVAL = timedelta(minutes=1)
+DEFAULT_MOON_FILE_UPDATE_INTERVAL = timedelta(seconds=30)
 
 # Definir la zona horaria local
 TIMEZONE = ZoneInfo("Europe/Madrid")
