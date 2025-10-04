@@ -897,7 +897,7 @@
         "name": "Lluna sortida",
         "state_attributes": {
           "friendly_time": {
-            "name": "Time"
+            "name": "Hora"
           }
         }
       },
@@ -905,7 +905,7 @@
         "name": "Lluna posta",
         "state_attributes": {
           "friendly_time": {
-            "name": "Time"
+            "name": "Hora"
           }
         }
       }
