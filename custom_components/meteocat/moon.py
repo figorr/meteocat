@@ -189,8 +189,8 @@ def _periodic_terms(D, M, Mp, F, T):
 
     return sigma_l, sigma_r, sigma_b
 
-def _calculate_position_and_alt(t: datetime, lat_r: float, lon: float) -> tuple[float, float, float]:
-    """Calcula ra, dec, alt, h0 para un tiempo dado t."""
+def _calculate_position_and_alt(t: datetime, lat_r: float, lon: float) -> tuple[float, float]:
+    """Calcula alt, h0 para un tiempo dado t (ra no usado)."""
     jd = _julian_day(t)
     T = (jd - 2451545.0) / 36525.0
 
@@ -214,7 +214,7 @@ def _calculate_position_and_alt(t: datetime, lat_r: float, lon: float) -> tuple[
     R = 385000.529 + sigma_r
 
     # Paralaje
-    par = math.asin(6378.14 / R)  # Radio Tierra ~6378.14 km
+    par = math.asin(6378.14 / R)
 
     # Obliquidad de la eclíptica
     eps = math.radians(23.439281 - 0.0000004 * T)
@@ -231,10 +231,10 @@ def _calculate_position_and_alt(t: datetime, lat_r: float, lon: float) -> tuple[
     ra = math.atan2(math.sin(lambda_r) * math.cos(eps) - math.tan(beta_r) * math.sin(eps), math.cos(lambda_r))
     dec = math.asin(math.sin(beta_r) * math.cos(eps) + math.cos(beta_r) * math.sin(eps) * math.sin(lambda_r))
 
-    # Umbral h0 (radianes)
+    # Umbral h0 (radianes) - CORREGIDO: par - sd - ref (positivo pequeño)
     sd = 0.2725076 * par  # Semidiámetro
     ref = math.radians(0.5667)  # Refracción media
-    h0 = -(par + sd + ref)
+    h0 = par - sd - ref
 
     # GMST y HA
     gmst = (280.46061837 + 360.98564736629 * (jd - 2451545.0) + 0.000387933 * T**2 - T**3 / 38710000.0) % 360.0
@@ -246,7 +246,7 @@ def _calculate_position_and_alt(t: datetime, lat_r: float, lon: float) -> tuple[
     # Altitud
     alt = math.asin(math.sin(lat_r) * math.sin(dec) + math.cos(lat_r) * math.cos(dec) * math.cos(ha))
 
-    return alt, h0, ra  # ra no usado en alt, pero por si
+    return alt, h0
 
 def moon_rise_set(lat: float, lon: float, date_utc: date) -> Tuple[Optional[datetime], Optional[datetime]]:
     """
@@ -267,8 +267,11 @@ def moon_rise_set(lat: float, lon: float, date_utc: date) -> Tuple[Optional[date
     for i in range(int(24 / step_grueso) + 1):
         hour = i * step_grueso
         t = dt + timedelta(hours=hour)
-        alt, h0, _ = _calculate_position_and_alt(t, lat_r, lon)
+        alt, h0 = _calculate_position_and_alt(t, lat_r, lon)
         if prev_alt is not None:
+            den = alt - prev_alt
+            if abs(den) < 1e-12:
+                continue  # Evita división por cero en detección grueso
             if prev_alt < h0 and alt >= h0:
                 intervalos_rise.append((prev_t, t, prev_alt, alt))
             elif prev_alt >= h0 and alt < h0:
@@ -276,12 +279,15 @@ def moon_rise_set(lat: float, lon: float, date_utc: date) -> Tuple[Optional[date
         prev_t = t
         prev_alt = alt
 
-    # Función de refinamiento con bisección
-    def refine_event(start_t: datetime, end_t: datetime, start_alt: float, end_alt: float, h0: float, is_rise: bool) -> datetime:
+    # Función de refinamiento con bisección y guards
+    def refine_event(start_t: datetime, end_t: datetime, start_alt: float, end_alt: float, is_rise: bool) -> datetime:
         for _ in range(10):  # Iteraciones para ~1 seg precisión
             mid_t = start_t + (end_t - start_t) / 2
-            mid_alt, _, _ = _calculate_position_and_alt(mid_t, lat_r, lon)
-            if (is_rise and mid_alt < h0) or (not is_rise and mid_alt >= h0):
+            mid_alt, mid_h0 = _calculate_position_and_alt(mid_t, lat_r, lon)
+            den = mid_alt - start_alt if is_rise else mid_alt - end_alt  # Aproximado para check
+            if abs(den) < 1e-12:
+                return mid_t  # Caso plano, toma medio
+            if (is_rise and mid_alt < mid_h0) or (not is_rise and mid_alt >= mid_h0):
                 start_t, start_alt = mid_t, mid_alt
             else:
                 end_t, end_alt = mid_t, mid_alt
@@ -290,10 +296,10 @@ def moon_rise_set(lat: float, lon: float, date_utc: date) -> Tuple[Optional[date
     # Refina el primero detectado (típicamente uno por evento por día)
     if intervalos_rise and rise is None:
         start_t, end_t, start_alt, end_alt = intervalos_rise[0]
-        rise = refine_event(start_t, end_t, start_alt, end_alt, h0, True)
+        rise = refine_event(start_t, end_t, start_alt, end_alt, True)
     if intervalos_set and set_ is None:
         start_t, end_t, start_alt, end_alt = intervalos_set[0]
-        set_ = refine_event(start_t, end_t, start_alt, end_alt, h0, False)
+        set_ = refine_event(start_t, end_t, start_alt, end_alt, False)
 
-    # Si no se encontraron intervalos, permanecen None
+    # Break implícito no necesario aquí, ya que el loop grueso es corto
     return rise, set_
