@@ -61,6 +61,7 @@ tests/uvi_file_test.py
 tests/files/station_D3_data.json
 tests/files/station_D3_data_mapped.json
 tests/test_weather_entity.py
+tests/moon_test.py
 custom_components/meteocat/test_cache.py
 custom_components/meteocat/read_cache.py
 custom_components/meteocat/read_cache_all.py
