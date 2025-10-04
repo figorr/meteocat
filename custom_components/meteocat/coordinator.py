@@ -2268,29 +2268,45 @@ class MeteocatMoonFileCoordinator(DataUpdateCoordinator):
         )
 
     async def _async_update_data(self) -> Dict[str, Any]:
-        """Carga los datos de la luna desde el archivo JSON y procesa la información."""
+        """Carga los datos de la luna desde el archivo JSON y verifica si siguen siendo válidos."""
         existing_data = await load_json_from_file(self.moon_file)
 
         if not existing_data or "dades" not in existing_data or not existing_data["dades"]:
             _LOGGER.warning("No se encontraron datos en %s.", self.moon_file)
             return self._reset_data()
 
+        dades = existing_data["dades"][0]
+        moonrise_str = dades.get("moonrise")
+        moonset_str = dades.get("moonset")
         update_date_str = existing_data.get("actualitzat", {}).get("dataUpdate", "")
-        update_date = datetime.fromisoformat(update_date_str) if update_date_str else None
-        now = datetime.now(ZoneInfo(self.timezone_str))
 
-        if update_date and update_date.date() < now.date():
-            _LOGGER.info("Los datos de la luna están caducados. Reiniciando valores.")
-            return self._reset_data()
+        now = datetime.now(ZoneInfo(self.timezone_str))
+        update_date = datetime.fromisoformat(update_date_str) if update_date_str else now
+
+        # Convertir a datetime (si existen)
+        moonrise = datetime.fromisoformat(moonrise_str) if moonrise_str else None
+        moonset = datetime.fromisoformat(moonset_str) if moonset_str else None
+
+        # Validación: si los eventos siguen en el futuro, no reseteamos.
+        if moonrise and now < moonrise:
+            valid = True
+        elif moonset and now < moonset:
+            valid = True
         else:
-            dades = existing_data["dades"][0]
-            return {
-                "actualizado": update_date.isoformat() if update_date else now.isoformat(),
-                "moon_phase": dades.get("moon_phase"),
-                "moon_phase_name": dades.get("moon_phase_name"),
-                "moonrise": dades.get("moonrise"),
-                "moonset": dades.get("moonset"),
-            }
+            valid = False
+
+        if not valid:
+            _LOGGER.info("Los datos de la luna han expirado (ambos eventos pasados). Reiniciando valores.")
+            return self._reset_data()
+
+        # Si los datos son válidos, devolvemos normalmente
+        return {
+            "actualizado": update_date.isoformat(),
+            "moon_phase": dades.get("moon_phase"),
+            "moon_phase_name": dades.get("moon_phase_name"),
+            "moonrise": moonrise_str,
+            "moonset": moonset_str,
+        }
 
     def _reset_data(self):
         """Resetea los datos a valores nulos."""
