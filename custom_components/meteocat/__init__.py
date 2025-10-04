@@ -177,6 +177,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         ("lightning_file_coordinator", "MeteocatLightningFileCoordinator"),
         ("sun_coordinator", "MeteocatSunCoordinator"),
         ("sun_file_coordinator", "MeteocatSunFileCoordinator"),
+        ("moon_coordinator", "MeteocatMoonCoordinator"),
+        ("moon_file_coordinator", "MeteocatMoonFileCoordinator"),
     ]
 
     hass.data.setdefault(DOMAIN, {})
@@ -261,6 +263,7 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
                 files_folder / f"forecast_{town_id.lower()}_hourly_data.json",
                 files_folder / f"forecast_{town_id.lower()}_daily_data.json",
                 files_folder / f"sun_{town_id.lower()}_data.json",
+                files_folder / f"moon_{town_id.lower()}_data.json",
             ])
 
     # 3. Archivos de comarca (region_id)

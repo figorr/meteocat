@@ -7,6 +7,7 @@ import asyncio
 import unicodedata
 from pathlib import Path
 from astral.sun import sun
+from .moon import moon_phase, moon_rise_set
 from astral import LocationInfo
 from datetime import date, datetime, timedelta, timezone, time
 from zoneinfo import ZoneInfo
@@ -71,6 +72,8 @@ DEFAULT_LIGHTNING_UPDATE_INTERVAL = timedelta(minutes=10)
 DEFAULT_LIGHTNING_FILE_UPDATE_INTERVAL = timedelta(minutes=5)
 DEFAULT_SUN_UPDATE_INTERVAL = timedelta(minutes=1)
 DEFAULT_SUN_FILE_UPDATE_INTERVAL = timedelta(seconds=30)
+DEFAULT_MOON_UPDATE_INTERVAL = timedelta(hours=12)
+DEFAULT_MOON_FILE_UPDATE_INTERVAL = timedelta(minutes=5)
 
 # Definir la zona horaria local
 TIMEZONE = ZoneInfo("Europe/Madrid")
@@ -2114,4 +2117,161 @@ class MeteocatSunFileCoordinator(DataUpdateCoordinator):
             "actualizado": datetime.now(ZoneInfo(self.timezone_str)).isoformat(),
             "sunrise": None,
             "sunset": None
+        }
+
+class MeteocatMoonCoordinator(DataUpdateCoordinator):
+    """Coordinator para manejar la actualización de los datos de la fase lunar calculados con moon.py."""
+
+    def __init__(self, hass: HomeAssistant, entry_data: dict):
+        self.latitude = entry_data.get("latitude")
+        self.longitude = entry_data.get("longitude")
+        self.timezone_str = hass.config.time_zone or "Europe/Madrid"
+        self.town_id = entry_data.get("town_id")
+
+        self.location = LocationInfo(
+            name=entry_data.get("town_name", "Municipio"),
+            region="Spain",
+            timezone=self.timezone_str,
+            latitude=self.latitude,
+            longitude=self.longitude,
+        )
+
+        files_folder = get_storage_dir(hass, "files")
+        self.moon_file = files_folder / f"moon_{self.town_id.lower()}_data.json"
+
+        super().__init__(
+            hass,
+            _LOGGER,
+            name=f"{DOMAIN} Moon Coordinator",
+            update_interval=DEFAULT_MOON_UPDATE_INTERVAL,
+        )
+
+    def _get_moon_phase_name(self, phase: float) -> str:
+        """Convierte el valor numérico de la fase lunar en un nombre descriptivo."""
+        if 0 <= phase < 7:
+            return "new_moon"
+        elif 7 <= phase < 14:
+            return "first_quarter"
+        elif 14 <= phase < 21:
+            return "full_moon"
+        elif 21 <= phase < 28:
+            return "last_quarter"
+        return "unknown"
+
+    async def _async_update_data(self) -> Dict:
+        """Actualiza los datos de la fase lunar."""
+        existing_data = await load_json_from_file(self.moon_file) or {}
+
+        now = datetime.now(tz=ZoneInfo(self.timezone_str))
+
+        last_update_str = existing_data.get("actualitzat", {}).get("dataUpdate")
+        if not existing_data or not last_update_str:
+            return await self._calculate_and_save_new_data()
+
+        last_update = datetime.fromisoformat(last_update_str)
+        if last_update.date() < now.date():
+            return await self._calculate_and_save_new_data()
+        else:
+            _LOGGER.debug("Usando datos existentes de la luna: %s", existing_data)
+            return {"actualizado": existing_data['actualitzat']['dataUpdate']}
+
+    async def _calculate_and_save_new_data(self):
+        """Calcula nuevos datos de la fase lunar y los guarda en el archivo JSON."""
+        try:
+            now = datetime.now(tz=ZoneInfo(self.timezone_str))
+            today = now.date()
+
+            # Fase lunar y eventos
+            moon_phase_value = moon_phase(today)
+            moon_phase_name = self._get_moon_phase_name(moon_phase_value)
+            moonrise, moonset = moon_rise_set(self.latitude, self.longitude, today)
+
+            # Convertir eventos a hora local
+            if moonrise:
+                moonrise = moonrise.astimezone(ZoneInfo(self.timezone_str))
+            if moonset:
+                moonset = moonset.astimezone(ZoneInfo(self.timezone_str))
+
+            # Normalizar a ISO string
+            moonrise_str = moonrise.isoformat() if moonrise else None
+            moonset_str = moonset.isoformat() if moonset else None
+
+            data_with_timestamp = {
+                "actualitzat": {"dataUpdate": now.isoformat()},
+                "dades": [
+                    {
+                        "moon_phase": moon_phase_value,
+                        "moon_phase_name": moon_phase_name,
+                        "moonrise": moonrise_str,
+                        "moonset": moonset_str,
+                    }
+                ],
+            }
+
+            await save_json_to_file(data_with_timestamp, self.moon_file)
+
+            _LOGGER.debug("Datos de la luna actualizados: %s", data_with_timestamp)
+            return {"actualizado": data_with_timestamp['actualitzat']['dataUpdate']}
+
+        except Exception as err:
+            _LOGGER.exception("Error calculando los datos de la luna: %s", err)
+
+            cached_data = await load_json_from_file(self.moon_file)
+            if cached_data:
+                _LOGGER.warning("Usando datos en caché para los datos de la luna.")
+                return {"actualizado": cached_data['actualitzat']['dataUpdate']}
+
+            _LOGGER.error("No se pudo calcular datos de la luna ni cargar datos en caché.")
+            return None
+
+class MeteocatMoonFileCoordinator(DataUpdateCoordinator):
+    """Coordinator para manejar la actualización de los datos de la luna desde moon_{town_id}.json."""
+
+    def __init__(self, hass: HomeAssistant, entry_data: dict):
+        self.town_id = entry_data["town_id"]
+        self.timezone_str = hass.config.time_zone or "Europe/Madrid"
+
+        files_folder = get_storage_dir(hass, "files")
+        self.moon_file = files_folder / f"moon_{self.town_id.lower()}_data.json"
+
+        super().__init__(
+            hass,
+            _LOGGER,
+            name="Meteocat Moon File Coordinator",
+            update_interval=DEFAULT_MOON_FILE_UPDATE_INTERVAL,
+        )
+
+    async def _async_update_data(self) -> Dict[str, Any]:
+        """Carga los datos de la luna desde el archivo JSON y procesa la información."""
+        existing_data = await load_json_from_file(self.moon_file)
+
+        if not existing_data or "dades" not in existing_data or not existing_data["dades"]:
+            _LOGGER.warning("No se encontraron datos en %s.", self.moon_file)
+            return self._reset_data()
+
+        update_date_str = existing_data.get("actualitzat", {}).get("dataUpdate", "")
+        update_date = datetime.fromisoformat(update_date_str) if update_date_str else None
+        now = datetime.now(ZoneInfo(self.timezone_str))
+
+        if update_date and update_date.date() < now.date():
+            _LOGGER.info("Los datos de la luna están caducados. Reiniciando valores.")
+            return self._reset_data()
+        else:
+            dades = existing_data["dades"][0]
+            return {
+                "actualizado": update_date.isoformat() if update_date else now.isoformat(),
+                "moon_phase": dades.get("moon_phase"),
+                "moon_phase_name": dades.get("moon_phase_name"),
+                "moonrise": dades.get("moonrise"),
+                "moonset": dades.get("moonset"),
+            }
+
+    def _reset_data(self):
+        """Resetea los datos a valores nulos."""
+        return {
+            "actualizado": datetime.now(ZoneInfo(self.timezone_str)).isoformat(),
+            "moon_phase": None,
+            "moon_phase_name": None,
+            "moonrise": None,
+            "moonset": None,
         }

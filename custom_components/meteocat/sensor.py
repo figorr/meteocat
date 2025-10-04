@@ -108,6 +108,10 @@ from .const import (
     SUNRISE,
     SUNSET,
     SUN_FILE_STATUS,
+    MOON_PHASE,
+    MOON_FILE_STATUS,
+    MOONRISE,
+    MOONSET,
 )
 
 from .coordinator import (
@@ -127,6 +131,8 @@ from .coordinator import (
     MeteocatLightningFileCoordinator,
     MeteocatSunCoordinator,
     MeteocatSunFileCoordinator,
+    MeteocatMoonCoordinator,
+    MeteocatMoonFileCoordinator,
 )
 
 # Definir la zona horaria local
@@ -456,6 +462,31 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         icon="mdi:update",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
+    MeteocatSensorEntityDescription(
+        key=MOON_PHASE,
+        translation_key="moon_phase",
+        device_class=SensorDeviceClass.ENUM,
+        options=["new_moon", "first_quarter", "full_moon", "last_quarter", "unknown"],
+        state_class=None,
+    ),
+    MeteocatSensorEntityDescription(
+        key=MOON_FILE_STATUS,
+        translation_key="moon_file_status",
+        icon="mdi:update",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    MeteocatSensorEntityDescription(
+        key=MOONRISE,
+        translation_key="moonrise",
+        icon="mdi:weather-moonset-up",
+        device_class=SensorDeviceClass.TIMESTAMP,
+    ),
+    MeteocatSensorEntityDescription(
+        key=MOONSET,
+        translation_key="moonset",
+        icon="mdi:weather-moonset-down",
+        device_class=SensorDeviceClass.TIMESTAMP,
+    ),
 )
 
 @callback
@@ -480,6 +511,8 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
     lightning_file_coordinator = entry_data.get("lightning_file_coordinator")
     sun_coordinator = entry_data.get("sun_coordinator")
     sun_file_coordinator = entry_data.get("sun_file_coordinator")
+    moon_coordinator = entry_data.get("moon_coordinator")
+    moon_file_coordinator = entry_data.get("moon_file_coordinator")
 
     # Sensores generales
     async_add_entities(
@@ -631,6 +664,26 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
         if description.key in {SUNRISE, SUNSET}
     )
 
+    # Sensor de fase lunar
+    async_add_entities(
+        MeteocatMoonSensor(moon_file_coordinator, description, entry_data)
+        for description in SENSOR_TYPES
+        if description.key == MOON_PHASE
+    )
+
+    # Sensor de estado de archivo lunar
+    async_add_entities(
+        MeteocatMoonStatusSensor(moon_coordinator, description, entry_data)
+        for description in SENSOR_TYPES
+        if description.key == MOON_FILE_STATUS
+    )
+
+    # Sensores de salida y puesta de la luna
+    async_add_entities(
+        MeteocatMoonTimeSensor(moon_file_coordinator, description, entry_data)
+        for description in SENSOR_TYPES
+        if description.key in {MOONRISE, MOONSET}
+    )
 
 # Cambiar UTC a la zona horaria local
 def convert_to_local_time(utc_time: str, local_tz: str = "Europe/Madrid") -> datetime | None:
@@ -1883,6 +1936,178 @@ class MeteocatSunStatusSensor(CoordinatorEntity[MeteocatSunCoordinator], SensorE
     @property
     def device_info(self) -> DeviceInfo:
         """Return the device info."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._town_id)},
+            name=f"Meteocat {self._station_id} {self._town_name}",
+            manufacturer="Meteocat",
+            model="Meteocat API",
+        )
+
+class MeteocatMoonSensor(CoordinatorEntity[MeteocatMoonFileCoordinator], SensorEntity):
+    """Representation of Meteocat Moon sensor (moon phase)."""
+    _attr_has_entity_name = True
+
+    def __init__(self, moon_file_coordinator, description, entry_data):
+        """Initialize the Moon sensor."""
+        super().__init__(moon_file_coordinator)
+        self.entity_description = description
+        self._town_name = entry_data["town_name"]
+        self._town_id = entry_data["town_id"]
+        self._station_id = entry_data["station_id"]
+        self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_{self.entity_description.key}"
+        self._attr_entity_category = getattr(description, "entity_category", None)
+        
+        _LOGGER.debug(
+            "Inicializando sensor: %s, Unique ID: %s",
+            self.entity_description.name,
+            self._attr_unique_id,
+        )
+
+    @property
+    def native_value(self):
+        """Return the moon phase name as the state."""
+        return self.coordinator.data.get("moon_phase_name")
+
+    @property
+    def extra_state_attributes(self):
+        """Return additional attributes for the sensor."""
+        attributes = super().extra_state_attributes or {}
+        attributes["moon_phase_value"] = self.coordinator.data.get("moon_phase")
+        attributes["last_updated"] = self.coordinator.data.get("actualizado")
+        return attributes
+
+    @property
+    def icon(self):
+        """Return the icon based on the moon phase."""
+        phase = self.coordinator.data.get("moon_phase_name")
+        icon_map = {
+            "new_moon": "mdi:moon-new",
+            "first_quarter": "mdi:moon-first-quarter",
+            "full_moon": "mdi:moon-full",
+            "last_quarter": "mdi:moon-last-quarter",
+            "unknown": "mdi:moon",
+        }
+        return icon_map.get(phase, "mdi:moon")
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return the device info."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._town_id)},
+            name=f"Meteocat {self._station_id} {self._town_name}",
+            manufacturer="Meteocat",
+            model="Meteocat API",
+        )
+
+class MeteocatMoonStatusSensor(CoordinatorEntity[MeteocatMoonCoordinator], SensorEntity):
+    """Representation of Meteocat Moon file status sensor."""
+    _attr_has_entity_name = True
+
+    def __init__(self, moon_coordinator, description, entry_data):
+        """Initialize the Moon status sensor."""
+        super().__init__(moon_coordinator)
+        self.entity_description = description
+        self._town_name = entry_data["town_name"]
+        self._town_id = entry_data["town_id"]
+        self._station_id = entry_data["station_id"]
+        self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_moon_status"
+        self._attr_entity_category = getattr(description, "entity_category", None)
+        
+        _LOGGER.debug(
+            "Inicializando sensor: %s, Unique ID: %s",
+            self.entity_description.name,
+            self._attr_unique_id,
+        )
+
+    def _get_data_update(self):
+        """Obtain the update date from the coordinator and convert to UTC."""
+        data_update = self.coordinator.data.get("actualizado")
+        if data_update:
+            try:
+                local_time = datetime.fromisoformat(data_update)
+                return local_time.astimezone(ZoneInfo("UTC"))
+            except ValueError:
+                _LOGGER.error("Formato de fecha de actualización inválido: %s", data_update)
+        return None
+
+    @property
+    def native_value(self):
+        """Return the status of the moon file based on the update date."""
+        data_update = self._get_data_update()
+        if not data_update:
+            return "unknown"
+        now = datetime.now(timezone.utc).astimezone(TIMEZONE)
+        if (now - data_update) > timedelta(days=1):
+            return "obsolete"
+        return "updated"
+
+    @property
+    def extra_state_attributes(self):
+        """Return additional attributes for the sensor."""
+        attributes = super().extra_state_attributes or {}
+        data_update = self._get_data_update()
+        if data_update:
+            attributes["update_date"] = data_update.isoformat()
+        return attributes
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return the device info."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._town_id)},
+            name=f"Meteocat {self._station_id} {self._town_name}",
+            manufacturer="Meteocat",
+            model="Meteocat API",
+        )
+
+class MeteocatMoonTimeSensor(CoordinatorEntity[MeteocatMoonFileCoordinator], SensorEntity):
+    """Representation of Meteocat Moon time sensors (moonrise/moonset)."""
+    _attr_has_entity_name = True
+
+    def __init__(self, moon_file_coordinator, description, entry_data):
+        super().__init__(moon_file_coordinator)
+        self.entity_description = description
+        self._town_name = entry_data["town_name"]
+        self._town_id = entry_data["town_id"]
+        self._station_id = entry_data["station_id"]
+        self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_{self.entity_description.key}"
+        self._attr_entity_category = getattr(description, "entity_category", None)
+
+        _LOGGER.debug(
+            "Inicializando sensor lunar: %s, Unique ID: %s",
+            self.entity_description.name,
+            self._attr_unique_id,
+        )
+
+    @property
+    def native_value(self):
+        """Return the moonrise or moonset as a datetime."""
+        time_str = self.coordinator.data.get(self.entity_description.key)
+        if time_str:
+            try:
+                return datetime.fromisoformat(time_str)
+            except ValueError:
+                _LOGGER.error("Formato de fecha inválido para %s: %s", self.entity_description.key, time_str)
+                return None
+        return None
+
+    @property
+    def extra_state_attributes(self):
+        """Return additional attributes for the sensor."""
+        attributes = super().extra_state_attributes or {}
+        time_str = self.coordinator.data.get(self.entity_description.key)
+        if time_str:
+            try:
+                dt = datetime.fromisoformat(time_str)
+                attributes["friendly_time"] = dt.strftime("%H:%M")
+            except ValueError:
+                attributes["friendly_time"] = None
+        else:
+            attributes["friendly_time"] = None
+        return attributes
+
+    @property
+    def device_info(self) -> DeviceInfo:
         return DeviceInfo(
             identifiers={(DOMAIN, self._town_id)},
             name=f"Meteocat {self._station_id} {self._town_name}",

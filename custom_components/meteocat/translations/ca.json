@@ -862,6 +862,52 @@
             "name": "Data"
           }
         }
+      },
+      "moon_phase": {
+        "name": "Fase llunar",
+        "state": {
+          "new_moon": "Lluna nova",
+          "first_quarter": "Quart creixent",
+          "full_moon": "Lluna plena",
+          "last_quarter": "Quart minvant",
+          "unknown": "Desconegut"
+        },
+        "state_attributes": {
+          "moon_phase_value": {
+            "name": "Valor fase"
+          },
+          "last_updated": {
+            "name": "Actualitzat"
+          }
+        }
+      },
+      "moon_file_status": {
+        "name": "Arxiu LLuna",
+        "state": {
+          "updated": "Actualitzat",
+          "obsolete": "Obsolet"
+        },
+        "state_attributes": {
+          "update_date": {
+            "name": "Data"
+          }
+        }
+      },
+      "moonrise": {
+        "name": "Lluna sortida",
+        "state_attributes": {
+          "friendly_time": {
+            "name": "Time"
+          }
+        }
+      },
+      "moonset": {
+        "name": "Lluna posta",
+        "state_attributes": {
+          "friendly_time": {
+            "name": "Time"
+          }
+        }
       }
     }
   }

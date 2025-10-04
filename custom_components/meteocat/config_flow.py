@@ -5,7 +5,7 @@ import json
 import logging
 from pathlib import Path
 from typing import Any
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 
 import voluptuous as vol
@@ -14,6 +14,7 @@ import unicodedata
 
 from astral import LocationInfo
 from astral.sun import sun
+from .moon import moon_phase, moon_rise_set
 from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResult
 from homeassistant.core import callback
 from homeassistant.exceptions import HomeAssistantError
@@ -68,6 +69,18 @@ def normalize_name(name: str) -> str:
     """Normaliza el nombre eliminando acentos y convirtiendo a minúsculas."""
     name = unicodedata.normalize("NFKD", name).encode("ASCII", "ignore").decode("utf-8")
     return name.lower()
+
+def _get_moon_phase_name(phase: float) -> str:
+    """Convierte el valor numérico de la fase lunar en un nombre descriptivo."""
+    if 0 <= phase < 7:
+        return "new_moon"
+    elif 7 <= phase < 14:
+        return "first_quarter"
+    elif 14 <= phase < 21:
+        return "full_moon"
+    elif 21 <= phase < 28:
+        return "last_quarter"
+    return "unknown"
 
 class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
     """Flujo de configuración para Meteocat."""
@@ -230,6 +243,57 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
             except Exception as ex:
                 _LOGGER.error("Error al crear sun_%s_data.json: %s", town_id, ex)
 
+    async def create_moon_file(self):
+        """Crea el archivo moon_{town_id}_data.json con datos iniciales de la fase lunar, moonrise y moonset."""
+        if not self.selected_municipi or not self.latitude or not self.longitude:
+            _LOGGER.warning("No se puede crear moon_{town_id}_data.json: faltan municipio o coordenadas")
+            return
+
+        town_id = self.selected_municipi["codi"]
+        files_dir = get_storage_dir(self.hass, "files")
+        moon_file = files_dir / f"moon_{town_id}_data.json"
+
+        if not moon_file.exists():
+            try:
+                # Fecha actual en UTC
+                current_time = datetime.now(timezone.utc).astimezone(TIMEZONE)
+                today = current_time.date()
+
+                # Fase lunar usando nuestro módulo
+                phase = moon_phase(today)
+
+                # Nombres de fase
+                moon_phase_name = _get_moon_phase_name(phase)
+
+                # Moonrise y moonset aproximados (UTC)
+                rise_utc, set_utc = moon_rise_set(self.latitude, self.longitude, today)
+
+                # Convertir a ISO y a TZ local si existen
+                rise_local = rise_utc.astimezone(TIMEZONE).isoformat() if rise_utc else None
+                set_local = set_utc.astimezone(TIMEZONE).isoformat() if set_utc else None
+
+                # Formatear datos para guardar
+                moon_data_formatted = {
+                    "actualitzat": {"dataUpdate": current_time.isoformat()},
+                    "dades": [
+                        {
+                            "moon_phase": phase,
+                            "moon_phase_name": moon_phase_name,
+                            "moonrise": rise_local,
+                            "moonset": set_local,
+                            "date": today.isoformat()
+                        }
+                    ]
+                }
+
+                # Guardar el archivo
+                async with aiofiles.open(moon_file, "w", encoding="utf-8") as file:
+                    await file.write(json.dumps(moon_data_formatted, ensure_ascii=False, indent=4))
+                _LOGGER.info("Archivo moon_%s_data.json creado con datos iniciales", town_id)
+
+            except Exception as ex:
+                _LOGGER.error("Error al crear moon_%s_data.json: %s", town_id, ex)
+
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
@@ -366,9 +430,10 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
                     self.province_name = station_metadata.get("provincia", {}).get("nom", "")
                     self.station_status = station_metadata.get("estats", [{}])[0].get("codi", "")
 
-                    # Crear archivos de alertas y sun
+                    # Crear archivos de alertas, sol y luna
                     await self.create_alerts_file()
                     await self.create_sun_file()
+                    await self.create_moon_file()
                     return await self.async_step_set_api_limits()
                 except Exception as ex:
                     _LOGGER.error("Error al obtener los metadatos de la estación: %s", ex)

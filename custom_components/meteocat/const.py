@@ -45,6 +45,10 @@ LIGHTNING_FILE_STATUS = "lightning_file_status"
 SUNRISE = "sunrise"
 SUNSET = "sunset"
 SUN_FILE_STATUS = "sun_file_status"
+MOON_PHASE = "moon_phase"
+MOON_FILE_STATUS = "moon_file_status"
+MOONRISE = "moonrise"
+MOONSET = "moonset"
 
 from homeassistant.const import Platform
 

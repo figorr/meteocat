@@ -862,6 +862,52 @@
             "name": "Fecha"
           }
         }
+      },
+      "moon_phase": {
+        "name": "Fase lunar",
+        "state": {
+          "new_moon": "Luna nueva",
+          "first_quarter": "Cuarto creciente",
+          "full_moon": "Luna llena",
+          "last_quarter": "Cuarto menguante",
+          "unknown": "Desconocido"
+        },
+        "state_attributes": {
+          "moon_phase_value": {
+            "name": "Valor fase"
+          },
+          "last_updated": {
+            "name": "Actualitzado"
+          }
+        }
+      },
+      "moon_file_status": {
+        "name": "Archivo Luna",
+        "state": {
+          "updated": "Actualizado",
+          "obsolete": "Obsoleto"
+        },
+        "state_attributes": {
+          "update_date": {
+            "name": "Fecha"
+          }
+        }
+      },
+      "moonrise": {
+        "name": "Luna salida",
+        "state_attributes": {
+          "friendly_time": {
+            "name": "Time"
+          }
+        }
+      },
+      "moonset": {
+        "name": "Luna puesta",
+        "state_attributes": {
+          "friendly_time": {
+            "name": "Time"
+          }
+        }
       }
     }
   }
