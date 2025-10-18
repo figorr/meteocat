@@ -6,17 +6,17 @@ import logging
 import asyncio
 import unicodedata
 from pathlib import Path
-from astral.sun import sun
-from .moon import moon_phase, moon_rise_set
-from astral import LocationInfo
 from datetime import date, datetime, timedelta, timezone, time
 from zoneinfo import ZoneInfo
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from homeassistant.core import HomeAssistant, EVENT_HOMEASSISTANT_START
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.components.weather import Forecast
+
+from solarmoonpy.moon import moon_phase, moon_rise_set, illuminated_percentage, moon_distance, moon_angular_diameter
+from solarmoonpy.location import Location, LocationInfo
 
 from meteocatpy.data import MeteocatStationData
 from meteocatpy.uvi import MeteocatUviData
@@ -321,7 +321,7 @@ class MeteocatUviCoordinator(DataUpdateCoordinator):
         """Comprueba si el archivo JSON contiene datos válidos para el día actual y devuelve los datos si son válidos."""
         try:
             if not self.uvi_file.exists():
-                _LOGGER.info("El archivo %s no existe. Se considerará inválido.", self.uvi_file)
+                _LOGGER.warning("El archivo %s no existe. Se considerará inválido.", self.uvi_file)
                 return None
 
             async with aiofiles.open(self.uvi_file, "r", encoding="utf-8") as file:
@@ -352,10 +352,10 @@ class MeteocatUviCoordinator(DataUpdateCoordinator):
             )
 
             if (today - first_date).days > DEFAULT_VALIDITY_DAYS and current_time >= time(DEFAULT_VALIDITY_HOURS, DEFAULT_VALIDITY_MINUTES):
-                _LOGGER.info("Los datos en %s son antiguos. Se procederá a llamar a la API.", self.uvi_file)
+                _LOGGER.debug("Los datos en %s son antiguos. Se procederá a llamar a la API.", self.uvi_file)
                 return None
 
-            _LOGGER.info("Los datos en %s son válidos. Se usarán sin llamar a la API.", self.uvi_file)
+            _LOGGER.debug("Los datos en %s son válidos. Se usarán sin llamar a la API.", self.uvi_file)
             return data
 
         except json.JSONDecodeError:
@@ -514,7 +514,7 @@ class MeteocatEntityCoordinator(DataUpdateCoordinator):
     async def validate_forecast_data(self, file_path: Path) -> dict:
         """Valida y retorna datos de predicción si son válidos."""
         if not file_path.exists():
-            _LOGGER.info("El archivo %s no existe. Se considerará inválido.", file_path)
+            _LOGGER.warning("El archivo %s no existe. Se considerará inválido.", file_path)
             return None
         try:
             async with aiofiles.open(file_path, "r", encoding="utf-8") as f:
@@ -527,7 +527,7 @@ class MeteocatEntityCoordinator(DataUpdateCoordinator):
             current_time = datetime.now(timezone.utc).time()
 
             # Log detallado
-            _LOGGER.info(
+            _LOGGER.debug(
                 "Validando datos en %s: Fecha de hoy: %s, Fecha del primer elemento: %s",
                 file_path,
                 today,
@@ -539,12 +539,12 @@ class MeteocatEntityCoordinator(DataUpdateCoordinator):
             if (today - first_date).days > DEFAULT_VALIDITY_DAYS and current_time >= time(
                 DEFAULT_VALIDITY_HOURS, DEFAULT_VALIDITY_MINUTES
             ):
-                _LOGGER.info(
+                _LOGGER.debug(
                     "Los datos en %s son antiguos. Se procederá a llamar a la API.",
                     file_path,
                 )
                 return None
-            _LOGGER.info("Los datos en %s son válidos. Se usarán sin llamar a la API.", file_path)
+            _LOGGER.debug("Los datos en %s son válidos. Se usarán sin llamar a la API.", file_path)
             return data
         except Exception as e:
             _LOGGER.warning("Error validando datos en %s: %s", file_path, e)
@@ -783,7 +783,7 @@ class HourlyForecastCoordinator(DataUpdateCoordinator):
                 _LOGGER.warning("Error procesando '%s' para %s: %s", variable_name, valor, e)
                 continue
 
-        _LOGGER.info("No se encontró un valor válido para '%s' en %s.", variable_name, target_time)
+        _LOGGER.warning("No se encontró un valor válido para '%s' en %s.", variable_name, target_time)
         return None
     
 class DailyForecastCoordinator(DataUpdateCoordinator):
@@ -1418,7 +1418,7 @@ class MeteocatAlertsRegionCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self) -> Dict[str, Any]:
         """Carga y procesa los datos de alertas desde el archivo JSON."""
         data = await load_json_from_file(self._file_path)
-        _LOGGER.info("Datos cargados desde %s: %s", self._file_path, data)  # Log de la carga de datos
+        _LOGGER.debug("Datos cargados desde %s: %s", self._file_path, data)  # Log de la carga de datos
 
         if not data:
             _LOGGER.error("No se pudo cargar el archivo JSON de alertas en %s.", self._file_path)
@@ -1429,7 +1429,7 @@ class MeteocatAlertsRegionCoordinator(DataUpdateCoordinator):
     def _process_alerts_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Procesa los datos de alertas y devuelve un diccionario filtrado por región."""
         if not data.get("dades"):
-            _LOGGER.info("No hay alertas activas para la región %s.", self.region_id)
+            _LOGGER.debug("No hay alertas activas para la región %s.", self.region_id)
             return {
                 "estado": "Tancat",
                 "actualizado": data.get("actualitzat", {}).get("dataUpdate", ""),
@@ -1834,11 +1834,7 @@ class MeteocatLightningCoordinator(DataUpdateCoordinator):
 class MeteocatLightningFileCoordinator(DataUpdateCoordinator):
     """Coordinator para manejar la actualización de los datos de rayos desde lightning_{region_id}.json."""
 
-    def __init__(
-        self,
-        hass: HomeAssistant,
-        entry_data: dict,
-    ):
+    def __init__(self, hass: HomeAssistant, entry_data: dict):
         """
         Inicializa el coordinador de rayos desde archivo.
 
@@ -1853,6 +1849,9 @@ class MeteocatLightningFileCoordinator(DataUpdateCoordinator):
         files_folder = get_storage_dir(hass, "files")
         self.lightning_file = files_folder / f"lightning_{self.region_id}.json"
 
+        # ✅ Marca interna para recordar si ya se hizo reset con una fecha concreta
+        self._last_reset_date: Optional[date] = None
+
         super().__init__(
             hass,
             _LOGGER,
@@ -1866,51 +1865,69 @@ class MeteocatLightningFileCoordinator(DataUpdateCoordinator):
 
         if not existing_data:
             _LOGGER.warning("No se encontraron datos en %s.", self.lightning_file)
-            return {
-                "actualizado": datetime.now(TIMEZONE).isoformat(),
-                "region": self._reset_data(),
-                "town": self._reset_data()
-            }
+            return self._empty_state()
 
-        # Convertir la cadena de fecha a un objeto datetime y ajustar a la zona horaria local
-        update_date = datetime.fromisoformat(existing_data.get("actualitzat", {}).get("dataUpdate", ""))
-        update_date = update_date.astimezone(TIMEZONE)
+        # Obtener fecha de actualización del JSON
+        update_date_str = existing_data.get("actualitzat", {}).get("dataUpdate", "")
+        if not update_date_str:
+            _LOGGER.warning("El archivo %s no contiene campo 'dataUpdate'.", self.lightning_file)
+            return self._empty_state()
+
+        try:
+            update_date = datetime.fromisoformat(update_date_str).astimezone(TIMEZONE)
+        except ValueError:
+            _LOGGER.warning("Formato de fecha inválido en %s: %s", self.lightning_file, update_date_str)
+            return self._empty_state()
+
         now = datetime.now(TIMEZONE)
 
-        if update_date.date() != now.date():  # Si la fecha no es la de hoy
-            _LOGGER.info("Los datos de rayos son de un día diferente. Reiniciando valores a cero.")
-            region_data = town_data = self._reset_data()
-            update_date = datetime.now(TIMEZONE).isoformat()  # Usar la fecha actual
-        else:
-            region_data = self._process_region_data(existing_data.get("dades", []))
-            town_data = self._process_town_data(existing_data.get("dades", []))
+        # 📆 Si los datos son de otro día:
+        if update_date.date() != now.date():
+            # Si ya hicimos reset para esta fecha, no volver a procesar el JSON
+            if self._last_reset_date == update_date.date():
+                _LOGGER.debug(
+                    "Archivo de rayos aún sin actualizar (última: %s, hoy: %s). Manteniendo datos a cero.",
+                    update_date.date(),
+                    now.date(),
+                )
+                return self._empty_state()
+
+            # Primer reset detectado para esta fecha
+            _LOGGER.debug("Los datos de rayos son de un día diferente. Reiniciando valores a cero.")
+            self._last_reset_date = update_date.date()
+            return self._empty_state()
+
+        # 📅 Si los datos son actuales:
+        self._last_reset_date = None  # borrar marca de reset
+        region_data = self._process_region_data(existing_data.get("dades", []))
+        town_data = self._process_town_data(existing_data.get("dades", []))
 
         return {
             "actualizado": update_date,
             "region": region_data,
-            "town": town_data
+            "town": town_data,
         }
 
     def _process_region_data(self, data_list):
         """Suma los tipos de descargas para toda la región."""
         region_counts = {
-            "cc": 0, 
-            "cg-": 0, 
+            "cc": 0,
+            "cg-": 0,
             "cg+": 0
         }
         for town in data_list:
             for discharge in town.get("descarregues", []):
                 if discharge["tipus"] in region_counts:
                     region_counts[discharge["tipus"]] += discharge["recompte"]
-        
+
         region_counts["total"] = sum(region_counts.values())
         return region_counts
 
     def _process_town_data(self, data_list):
         """Encuentra y suma los tipos de descargas para un municipio específico."""
         town_counts = {
-            "cc": 0, 
-            "cg-": 0, 
+            "cc": 0,
+            "cg-": 0,
             "cg+": 0
         }
         for town in data_list:
@@ -1919,7 +1936,7 @@ class MeteocatLightningFileCoordinator(DataUpdateCoordinator):
                     if discharge["tipus"] in town_counts:
                         town_counts[discharge["tipus"]] += discharge["recompte"]
                 break  # Solo necesitamos datos de un municipio
-        
+
         town_counts["total"] = sum(town_counts.values())
         return town_counts
 
@@ -1929,43 +1946,40 @@ class MeteocatLightningFileCoordinator(DataUpdateCoordinator):
             "cc": 0,
             "cg-": 0,
             "cg+": 0,
-            "total": 0
+            "total": 0,
+        }
+
+    def _empty_state(self) -> Dict[str, Any]:
+        """Devuelve un estado vacío (valores a cero) para los sensores."""
+        now_iso = datetime.now(TIMEZONE).isoformat()
+        empty = self._reset_data()
+        return {
+            "actualizado": now_iso,
+            "region": empty,
+            "town": empty,
         }
 
 class MeteocatSunCoordinator(DataUpdateCoordinator):
-    """Coordinator para manejar la actualización de los datos de sol calculados con Astral."""
+    """Coordinator para manejar la actualización de los datos de sol calculados con sun.py."""
 
-    def __init__(
-        self,
-        hass: HomeAssistant,
-        entry_data: dict,
-    ):
-        """
-        Inicializa el coordinador de sol de Meteocat.
-        
-        Args:
-            hass (HomeAssistant): Instancia de Home Assistant.
-            entry_data (dict): Datos de configuración obtenidos de core.config_entries.
-        """
+    def __init__(self, hass: HomeAssistant, entry_data: dict):
+        """Inicializa el coordinador de sol de Meteocat."""
         self.latitude = entry_data.get("latitude")
         self.longitude = entry_data.get("longitude")
+        self.elevation = entry_data.get("altitude", 0.0)
         self.timezone_str = hass.config.time_zone or "Europe/Madrid"
         self.town_id = entry_data.get("town_id")
-        
-        # Creamos un LocationInfo "custom" con los datos de configuración.
-        # Nota: No dependemos de la base de datos interna de Astral (ni de lookup),
-        # por lo que el town_name puede ser cualquier cadena descriptiva.
-        # Esta es precisamente la opción recomendada por la documentación de Astral
-        # cuando la localización no está en su base de datos.
-        self.location = LocationInfo(
+
+        # Crear ubicación para cálculos solares
+        self.location = Location(LocationInfo(
             name=entry_data.get("town_name", "Municipio"),
             region="Spain",
             timezone=self.timezone_str,
             latitude=self.latitude,
             longitude=self.longitude,
-        )
+            elevation=self.elevation,
+        ))
 
-        # Ruta persistente en /config/meteocat_files/files
         files_folder = get_storage_dir(hass, "files")
         self.sun_file = files_folder / f"sun_{self.town_id.lower()}_data.json"
 
@@ -1973,88 +1987,135 @@ class MeteocatSunCoordinator(DataUpdateCoordinator):
             hass,
             _LOGGER,
             name=f"{DOMAIN} Sun Coordinator",
-            update_interval=DEFAULT_SUN_UPDATE_INTERVAL,  # Ej. timedelta(minutes=1)
+            update_interval=DEFAULT_SUN_UPDATE_INTERVAL,
         )
 
-    async def _async_update_data(self) -> Dict:
-        """Actualiza los datos de sol calculados o usa datos en caché según si los eventos han pasado."""
-        existing_data = await load_json_from_file(self.sun_file) or {}
-
+    async def _async_update_data(self) -> dict:
+        """Comprueba si es necesario actualizar los datos solares (evitando escrituras innecesarias)."""
+        _LOGGER.debug("☀️ Comprobando si es necesario actualizar los datos solares...")
         now = datetime.now(tz=ZoneInfo(self.timezone_str))
+        today = now.date()
+        tomorrow = today + timedelta(days=1)
 
+        # Calcular eventos siempre (barato y necesario para comparar)
+        events_today = self.location.sun_events(date=today, local=True)
+        events_tomorrow = self.location.sun_events(date=tomorrow, local=True)
+
+        # Definir qué datos deberían guardarse ahora, según el escenario actual
+        def get_expected_sun_data():
+            if now < events_today["sunrise"]:
+                _LOGGER.debug("☀️ Escenario 1: antes del amanecer (todo hoy)")
+                # Primer escenario: todo hoy
+                return {
+                    "sunrise": events_today["sunrise"],
+                    "noon": events_today["noon"],
+                    "sunset": events_today["sunset"],
+                }
+            elif events_today["sunrise"] <= now < events_today["noon"]:
+                _LOGGER.debug("☀️ Escenario 2: entre amanecer y mediodía (sunrise mañana)")
+                # Segundo: sunrise mañana, resto hoy
+                return {
+                    "sunrise": events_tomorrow["sunrise"],
+                    "noon": events_today["noon"],
+                    "sunset": events_today["sunset"],
+                }
+            elif events_today["noon"] <= now < events_today["sunset"]:
+                _LOGGER.debug("☀️ Escenario 3: entre mediodía y atardecer (sunrise/noon mañana)")
+                # Tercero: sunrise y noon mañana, sunset hoy
+                return {
+                    "sunrise": events_tomorrow["sunrise"],
+                    "noon": events_tomorrow["noon"],
+                    "sunset": events_today["sunset"],
+                }
+            else:
+                _LOGGER.debug("☀️ Escenario 4: después del atardecer (todo mañana)")
+                # Cuarto: todo mañana
+                return {
+                    "sunrise": events_tomorrow["sunrise"],
+                    "noon": events_tomorrow["noon"],
+                    "sunset": events_tomorrow["sunset"],
+                }
+
+        expected = get_expected_sun_data()
+
+        # Cargar datos existentes
+        existing_data = await load_json_from_file(self.sun_file) or {}
         if not existing_data or "dades" not in existing_data or not existing_data["dades"]:
-            return await self._calculate_and_save_new_data()
-
-        last_update_str = existing_data.get('actualitzat', {}).get('dataUpdate')
-        if not last_update_str:
-            return await self._calculate_and_save_new_data()
-
-        last_update = datetime.fromisoformat(last_update_str)
+            _LOGGER.debug("☀️ No hay datos solares previos. Generando nuevos datos.")
+            return await self._calculate_and_save_new_data(
+                sunrise=expected["sunrise"], noon=expected["noon"], sunset=expected["sunset"]
+            )
 
         dades = existing_data["dades"][0]
-        saved_sunrise = datetime.fromisoformat(dades["sunrise"])
-        saved_sunset = datetime.fromisoformat(dades["sunset"])
+        try:
+            saved_sunrise = datetime.fromisoformat(dades["sunrise"])
+            saved_sunset = datetime.fromisoformat(dades["sunset"])
+            saved_noon = datetime.fromisoformat(dades.get("noon")) if "noon" in dades else None
+        except Exception as e:
+            _LOGGER.warning("☀️ Error al leer el archivo solar: %s", e)
+            return await self._calculate_and_save_new_data(
+                sunrise=expected["sunrise"], noon=expected["noon"], sunset=expected["sunset"]
+            )
 
-        # Verificar si los datos necesitan actualización
-        if now > saved_sunrise or now > saved_sunset:
-            return await self._calculate_and_save_new_data()
+        # Si noon falta, consideramos que no coincide (forzará recalculo con noon incluido)
+        if saved_noon is None:
+            _LOGGER.debug("☀️ El archivo previo no incluye 'noon'; recalculando para incluirlo.")
+            return await self._calculate_and_save_new_data(
+                sunrise=expected["sunrise"], noon=expected["noon"], sunset=expected["sunset"]
+            )
+
+        # Comparar si los guardados coinciden con lo esperado
+        if (
+            saved_sunrise == expected["sunrise"]
+            and saved_noon == expected["noon"]
+            and saved_sunset == expected["sunset"]
+        ):
+            _LOGGER.debug("☀️ Datos solares actuales coinciden con lo esperado. No se actualiza.")
+            return existing_data
         else:
-            _LOGGER.debug("Usando datos existentes de sol: %s", existing_data)
-            return {"actualizado": existing_data['actualitzat']['dataUpdate']}
+            _LOGGER.debug("☀️ Datos solares no coinciden con lo esperado. Actualizando.")
+            return await self._calculate_and_save_new_data(
+                sunrise=expected["sunrise"], noon=expected["noon"], sunset=expected["sunset"]
+            )
 
-    async def _calculate_and_save_new_data(self):
-        """Calcula nuevos datos de sol y los guarda en el archivo JSON."""
+    async def _calculate_and_save_new_data(self, sunrise=None, noon=None, sunset=None):
+        """Guarda los datos solares pasados (asumiendo que ya son los correctos)."""
         try:
             now = datetime.now(tz=ZoneInfo(self.timezone_str))
-            today = now.date()
-            
-            sun_data_today = sun(self.location.observer, date=today, tzinfo=ZoneInfo(self.timezone_str))
-            sunrise = sun_data_today["sunrise"]
-            sunset = sun_data_today["sunset"]
-            
-            if now > sunset:
-                next_day = today + timedelta(days=1)
-                sun_data_next = sun(self.location.observer, date=next_day, tzinfo=ZoneInfo(self.timezone_str))
-                sunrise = sun_data_next["sunrise"]
-                sunset = sun_data_next["sunset"]
-            elif now > sunrise:
-                next_day = today + timedelta(days=1)
-                sun_data_next = sun(self.location.observer, date=next_day, tzinfo=ZoneInfo(self.timezone_str))
-                sunrise = sun_data_next["sunrise"]
-                # sunset permanece como el de hoy
-            
-            # Estructurar los datos en el formato correcto
-            current_time = now.isoformat()
+
+            # Si no se pasan, usar defaults (pero en práctica siempre se pasan desde arriba)
+            if not sunrise or not noon or not sunset:
+                today = now.date()
+                events_today = self.location.sun_events(date=today, local=True)
+                sunrise = events_today["sunrise"]
+                noon = events_today["noon"]
+                sunset = events_today["sunset"]
+
             data_with_timestamp = {
-                "actualitzat": {
-                    "dataUpdate": current_time
-                },
+                "actualitzat": {"dataUpdate": now.isoformat()},
                 "dades": [
                     {
                         "sunrise": sunrise.isoformat(),
-                        "sunset": sunset.isoformat()
+                        "noon": noon.isoformat(),
+                        "sunset": sunset.isoformat(),
                     }
-                ]
+                ],
             }
 
-            # Guardar los datos en un archivo JSON
             await save_json_to_file(data_with_timestamp, self.sun_file)
-
-            _LOGGER.debug("Datos de sol actualizados exitosamente: %s", data_with_timestamp)
-
-            return {"actualizado": data_with_timestamp['actualitzat']['dataUpdate']}
+            _LOGGER.info(
+                "☀️ Archivo solar actualizado: sunrise=%s | noon=%s | sunset=%s",
+                sunrise, noon, sunset
+            )
+            return data_with_timestamp
 
         except Exception as err:
-            _LOGGER.exception("Error inesperado al calcular los datos de sol: %s", err)
-
-        # Intentar cargar datos en caché si falla el cálculo (aunque es improbable)
-        cached_data = await load_json_from_file(self.sun_file)
-        if cached_data:
-            _LOGGER.warning("Usando datos en caché para los datos de sol.")
-            return {"actualizado": cached_data['actualitzat']['dataUpdate']}
-
-        _LOGGER.error("No se pudo calcular datos actualizados ni cargar datos en caché.")
-        return None
+            _LOGGER.exception("☀️ Error al calcular/guardar los datos solares: %s", err)
+            cached = await load_json_from_file(self.sun_file)
+            if cached:
+                _LOGGER.warning("☀️ Usando datos solares en caché por error.")
+                return cached
+            return None
 
 class MeteocatSunFileCoordinator(DataUpdateCoordinator):
     """Coordinator para manejar la actualización de los datos de sol desde sun_{town_id}.json."""
@@ -2102,7 +2163,7 @@ class MeteocatSunFileCoordinator(DataUpdateCoordinator):
         saved_sunset = datetime.fromisoformat(dades["sunset"])
 
         if saved_sunrise < now and saved_sunset < now:
-            _LOGGER.info("Los datos de sol están caducados. Reiniciando valores.")
+            _LOGGER.warning("Los datos de sol están caducados. Reiniciando valores.")
             return self._reset_data()
         else:
             return {
@@ -2120,7 +2181,7 @@ class MeteocatSunFileCoordinator(DataUpdateCoordinator):
         }
 
 class MeteocatMoonCoordinator(DataUpdateCoordinator):
-    """Coordinator para manejar la actualización de los datos de la fase lunar calculados con moon.py."""
+    """Coordinator para manejar la actualización de los datos de la luna desde moon.py."""
 
     def __init__(self, hass: HomeAssistant, entry_data: dict):
         self.latitude = entry_data.get("latitude")
@@ -2148,106 +2209,279 @@ class MeteocatMoonCoordinator(DataUpdateCoordinator):
 
     def _get_moon_phase_name(self, phase: float) -> str:
         """Convierte el valor numérico de la fase lunar en un nombre descriptivo."""
-        if 0 <= phase < 7:
+        phase = phase % 30
+        if 0 <= phase < 1.84566:
             return "new_moon"
-        elif 7 <= phase < 14:
+        elif 1.84566 <= phase < 5.53699:
+            return "waxing_crescent"
+        elif 5.53699 <= phase < 9.22831:
             return "first_quarter"
-        elif 14 <= phase < 21:
+        elif 9.22831 <= phase < 12.91963:
+            return "waxing_gibbous"
+        elif 12.91963 <= phase < 16.61096:
             return "full_moon"
-        elif 21 <= phase < 28:
+        elif 16.61096 <= phase < 20.30228:
+            return "waning_gibbous"
+        elif 20.30228 <= phase < 23.99361:
             return "last_quarter"
-        return "unknown"
+        elif 23.99361 <= phase < 27.68493:
+            return "waning_crescent"
+        else:
+            return "new_moon"
 
-    async def _async_update_data(self) -> Dict:
-        """Actualiza los datos de la fase lunar según validez de moonrise/moonset."""
-        existing_data = await load_json_from_file(self.moon_file) or {}
+    async def _async_update_data(self) -> dict:
+        """Determina si los datos de la luna son válidos o requieren actualización."""
+        _LOGGER.debug("🌙 Iniciando actualización de datos de la luna...")
         now = datetime.now(tz=ZoneInfo(self.timezone_str))
+        existing_data = await load_json_from_file(self.moon_file) or {}
 
-        # Si no hay datos guardados → calcular directamente
-        if not existing_data or "dades" not in existing_data or not existing_data["dades"]:
-            return await self._calculate_and_save_new_data()
+        # 🟡 Si no hay datos previos o JSON incompleto → calcular todo para hoy
+        if (
+            not existing_data
+            or "dades" not in existing_data
+            or not existing_data["dades"]
+            or "actualitzat" not in existing_data
+            or "dataUpdate" not in existing_data["actualitzat"]
+        ):
+            _LOGGER.warning("🌙 Datos previos incompletos o ausentes: calculando todos los datos para hoy.")
+            return await self._calculate_and_save_new_data(today_only=True, existing_data=existing_data)
 
         dades = existing_data["dades"][0]
-        moonrise_str = dades.get("moonrise")
-        moonset_str = dades.get("moonset")
 
-        moonrise = datetime.fromisoformat(moonrise_str) if moonrise_str else None
-        moonset = datetime.fromisoformat(moonset_str) if moonset_str else None
+        # 🟢 Comprobar si los datos lunares necesitan actualización
+        last_lunar_update_date_str = existing_data["actualitzat"].get("last_lunar_update_date")
+        last_lunar_update_date = (
+            datetime.fromisoformat(f"{last_lunar_update_date_str}T00:00:00").date()
+            if last_lunar_update_date_str
+            else now.date() - timedelta(days=1)  # Fallback: permitir actualización si falta
+        )
+        if now.date() > last_lunar_update_date:
+            _LOGGER.debug("🌙 Fecha actual superior a last_lunar_update_date: actualizando datos lunares.")
+            return await self._calculate_and_save_new_data(
+                update_type="update_lunar_data",
+                existing_data=existing_data
+            )
 
-        # Si ya pasó el moonrise de hoy → recalcular todo (fase incluida)
-        if moonrise and now > moonrise:
-            return await self._calculate_and_save_new_data(force_next_day=True)
+        try:
+            moonrise_str = dades["moonrise"]
+            moonset_str = dades["moonset"]
+            moonrise = datetime.fromisoformat(moonrise_str) if moonrise_str else None
+            moonset = datetime.fromisoformat(moonset_str) if moonset_str else None
+        except Exception as e:
+            _LOGGER.warning("🌙 Error interpretando fechas previas: %s", e)
+            return await self._calculate_and_save_new_data(today_only=True, existing_data=existing_data)
 
-        # Si ya pasó el moonset de hoy → recalcular solo el moonset
-        if moonset and now > moonset:
-            return await self._calculate_and_save_new_data(update_only="moonset")
+        _LOGGER.debug(
+            "🌙 Estado actual → now=%s | moonrise=%s | moonset=%s",
+            now.isoformat(), moonrise, moonset
+        )
 
-        # En cualquier otro caso seguimos con los datos existentes
-        _LOGGER.debug("Usando datos existentes de la luna: %s", existing_data)
-        return {"actualizado": existing_data['actualitzat']['dataUpdate']}
+        # Lógica para eventos moonrise y moonset
+        if moonrise is None and moonset is None:
+            _LOGGER.debug("🌙 Ambos eventos None: verificando si datos son actuales.")
+            return {"actualizado": existing_data["actualitzat"]["dataUpdate"]}
 
-    async def _calculate_and_save_new_data(self, force_next_day: bool = False, update_only: str = None):
-        """Calcula y guarda nuevos datos de la luna (moonrise, moonset, fase)."""
+        elif moonrise is None:
+            _LOGGER.debug("🌙 No moonrise: tratando moonset como único evento.")
+            if now < moonset:
+                _LOGGER.debug("🌙 Antes del moonset: no se actualiza.")
+                return {"actualizado": existing_data["actualitzat"]["dataUpdate"]}
+            else:
+                _LOGGER.debug("🌙 Después del moonset: actualizar moonset para mañana.")
+                return await self._calculate_and_save_new_data(update_type="update_set_tomorrow", existing_data=existing_data)
+
+        elif moonset is None:
+            _LOGGER.debug("🌙 No moonset: tratando moonrise como único evento.")
+            if now < moonrise:
+                _LOGGER.debug("🌙 Antes del moonrise: no se actualiza.")
+                return {"actualizado": existing_data["actualitzat"]["dataUpdate"]}
+            else:
+                _LOGGER.debug("🌙 Después del moonrise: actualizar moonrise para mañana.")
+                return await self._calculate_and_save_new_data(update_type="update_rise_tomorrow", existing_data=existing_data)
+
+        else:
+            min_event = min(moonrise, moonset)
+            max_event = max(moonrise, moonset)
+            first_is_rise = (min_event == moonrise)
+
+            if now < min_event:
+                _LOGGER.debug("🌙 Momento actual antes del primer evento → no se actualiza nada.")
+                return {"actualizado": existing_data["actualitzat"]["dataUpdate"]}
+
+            elif now < max_event:
+                if first_is_rise:
+                    _LOGGER.debug("🌙 Después del moonrise pero antes del moonset → actualizar solo moonrise para mañana.")
+                    return await self._calculate_and_save_new_data(update_type="update_rise_tomorrow", existing_data=existing_data)
+                else:
+                    _LOGGER.debug("🌙 Después del moonset pero antes del moonrise → actualizar solo moonset para mañana.")
+                    return await self._calculate_and_save_new_data(update_type="update_set_tomorrow", existing_data=existing_data)
+
+            else:
+                _LOGGER.debug("🌙 Después de ambos eventos → actualizar moonrise y moonset para mañana.")
+                return await self._calculate_and_save_new_data(update_type="update_both_tomorrow", existing_data=existing_data)
+
+    async def _calculate_and_save_new_data(self, today_only: bool = False, update_type: str = None, existing_data: dict = None):
+        """Calcula y guarda nuevos datos de la luna según el tipo de actualización."""
         try:
             now = datetime.now(tz=ZoneInfo(self.timezone_str))
+            tz = ZoneInfo(self.timezone_str)
             today = now.date()
-            target_date = today
+            next_day = today + timedelta(days=1)
+            next_next_day = today + timedelta(days=2)
 
-            if force_next_day:
-                target_date = today + timedelta(days=1)
+            _LOGGER.debug("🌙 Calculando nuevos datos (update_type=%s)...", update_type)
 
-            # Calcular fase lunar
-            moon_phase_value = moon_phase(target_date)
+            # 🟣 Calcular fase e iluminación, distancia y diámetro angular
+            moon_phase_value = moon_phase(today)
             moon_phase_name = self._get_moon_phase_name(moon_phase_value)
+            illum_percentage = round(illuminated_percentage(today), 2)
+            distance = round(moon_distance(today), 0)
+            angular_diameter = round(moon_angular_diameter(today), 2)
 
-            # Calcular eventos
-            moonrise, moonset = moon_rise_set(self.latitude, self.longitude, target_date)
-            if moonrise:
-                moonrise = moonrise.astimezone(ZoneInfo(self.timezone_str))
-            if moonset:
-                moonset = moonset.astimezone(ZoneInfo(self.timezone_str))
+            # Inicializar moonrise_final y moonset_final
+            moonrise_final = None
+            moonset_final = None
 
-            # Cargar datos existentes si solo queremos actualizar moonset
-            if update_only == "moonset":
-                existing_data = await load_json_from_file(self.moon_file) or {}
-                if existing_data and "dades" in existing_data and existing_data["dades"]:
-                    dades = existing_data["dades"][0]
-                    moonrise_str = dades.get("moonrise")
-                    moon_phase_value = dades.get("moon_phase")
-                    moon_phase_name = dades.get("moon_phase_name")
-                    moonrise = datetime.fromisoformat(moonrise_str) if moonrise_str else moonrise
-                # aquí sí sustituimos solo moonset
+            # 🟢 Caso: actualizar solo datos lunares
+            if update_type == "update_lunar_data":
+                dades = existing_data.get("dades", [{}])[0]
+                moonrise_str = dades.get("moonrise")
+                moonset_str = dades.get("moonset")
+                moonrise_final = datetime.fromisoformat(moonrise_str) if moonrise_str else None
+                moonset_final = datetime.fromisoformat(moonset_str) if moonset_str else None
 
-            # Normalizar a ISO string
-            moonrise_str = moonrise.isoformat() if moonrise else None
-            moonset_str = moonset.isoformat() if moonset else None
+                # Si faltan moonrise o moonset, calcular de fallback
+                if moonrise_final is None or moonset_final is None:
+                    _LOGGER.debug("🌙 Falta algún evento lunar, calculando de fallback.")
+                    moonrise_today, moonset_today = moon_rise_set(self.latitude, self.longitude, today)
+                    moonrise_tomorrow, moonset_tomorrow = moon_rise_set(self.latitude, self.longitude, next_day)
+                    moonrise_next_tomorrow, moonset_next_tomorrow = moon_rise_set(self.latitude, self.longitude, next_next_day)
+
+                    # Convertir a zona local
+                    events = {
+                        "moonrise_today": moonrise_today,
+                        "moonset_today": moonset_today,
+                        "moonrise_tomorrow": moonrise_tomorrow,
+                        "moonset_tomorrow": moonset_tomorrow,
+                        "moonrise_next_tomorrow": moonrise_next_tomorrow,
+                        "moonset_next_tomorrow": moonset_next_tomorrow,
+                    }
+                    for key, val in events.items():
+                        if val:
+                            events[key] = val.astimezone(tz)
+                    moonrise_today, moonset_today, moonrise_tomorrow, moonset_tomorrow, moonrise_next_tomorrow, moonset_next_tomorrow = (
+                        events["moonrise_today"],
+                        events["moonset_today"],
+                        events["moonrise_tomorrow"],
+                        events["moonset_tomorrow"],
+                        events["moonrise_next_tomorrow"],
+                        events["moonset_next_tomorrow"],
+                    )
+
+                    # Seleccionar los eventos más próximos disponibles
+                    moonrise_final = moonrise_final or (moonrise_today if moonrise_today else (moonrise_tomorrow if moonrise_tomorrow else moonrise_next_tomorrow))
+                    moonset_final = moonset_final or (moonset_today if moonset_today else (moonset_tomorrow if moonset_tomorrow else moonset_next_tomorrow))
+                    _LOGGER.debug("🌙 Fallback: usando moonrise=%s y moonset=%s", moonrise_final, moonset_final)
+
+            else:
+                # Calcular eventos lunares
+                moonrise_today, moonset_today = moon_rise_set(self.latitude, self.longitude, today)
+                moonrise_tomorrow, moonset_tomorrow = moon_rise_set(self.latitude, self.longitude, next_day)
+                moonrise_next_tomorrow, moonset_next_tomorrow = moon_rise_set(self.latitude, self.longitude, next_next_day)
+
+                # Convertir a zona local
+                events = {
+                    "moonrise_today": moonrise_today,
+                    "moonset_today": moonset_today,
+                    "moonrise_tomorrow": moonrise_tomorrow,
+                    "moonset_tomorrow": moonset_tomorrow,
+                    "moonrise_next_tomorrow": moonrise_next_tomorrow,
+                    "moonset_next_tomorrow": moonset_next_tomorrow,
+                }
+                for key, val in events.items():
+                    if val:
+                        events[key] = val.astimezone(tz)
+                moonrise_today, moonset_today, moonrise_tomorrow, moonset_tomorrow, moonrise_next_tomorrow, moonset_next_tomorrow = (
+                    events["moonrise_today"],
+                    events["moonset_today"],
+                    events["moonrise_tomorrow"],
+                    events["moonset_tomorrow"],
+                    events["moonrise_next_tomorrow"],
+                    events["moonset_next_tomorrow"],
+                )
+
+                # 🧭 Determinar valores finales según el contexto
+                if today_only:
+                    moonrise_final = moonrise_today
+                    moonset_final = moonset_today
+                elif update_type == "update_set_tomorrow":
+                    if existing_data and "dades" in existing_data and existing_data["dades"] and "moonrise" in existing_data["dades"][0]:
+                        moonrise_str = existing_data["dades"][0]["moonrise"]
+                        moonrise_final = datetime.fromisoformat(moonrise_str) if moonrise_str else None
+                    else:
+                        moonrise_final = moonrise_today
+                    moonset_final = moonset_tomorrow if moonset_tomorrow else moonset_next_tomorrow
+                    _LOGGER.debug("🌙 Actualizado moonset para mañana: %s (manteniendo moonrise: %s)", moonset_final, moonrise_final)
+                elif update_type == "update_rise_tomorrow":
+                    if existing_data and "dades" in existing_data and existing_data["dades"] and "moonset" in existing_data["dades"][0]:
+                        moonset_str = existing_data["dades"][0]["moonset"]
+                        moonset_final = datetime.fromisoformat(moonset_str) if moonset_str else None
+                    else:
+                        moonset_final = moonset_today
+                    moonrise_final = moonrise_tomorrow if moonrise_tomorrow else moonrise_next_tomorrow
+                    _LOGGER.debug("🌙 Actualizado moonrise para mañana: %s (manteniendo moonset: %s)", moonrise_final, moonset_final)
+                elif update_type == "update_both_tomorrow":
+                    moonrise_final = moonrise_tomorrow if moonrise_tomorrow else moonrise_next_tomorrow
+                    moonset_final = moonset_tomorrow if moonset_tomorrow else moonset_next_tomorrow
+                    _LOGGER.debug("🌙 Actualizados moonrise y moonset para mañana: %s / %s", moonrise_final, moonset_final)
+                else:
+                    moonrise_final = moonrise_today
+                    moonset_final = moonset_today
+
+                # Si algún evento final es None, intentar con el del día siguiente o el posterior
+                if moonrise_final is None:
+                    moonrise_final = moonrise_tomorrow if moonrise_tomorrow else moonrise_next_tomorrow
+                    if moonrise_final:
+                        _LOGGER.debug("🌙 Moonrise era None: usando el del día siguiente o posterior: %s", moonrise_final)
+                if moonset_final is None:
+                    moonset_final = moonset_tomorrow if moonset_tomorrow else moonset_next_tomorrow
+                    if moonset_final:
+                        _LOGGER.debug("🌙 Moonset era None: usando el del día siguiente o posterior: %s", moonset_final)
 
             data_with_timestamp = {
-                "actualitzat": {"dataUpdate": now.isoformat()},
+                "actualitzat": {
+                    "dataUpdate": now.isoformat(),
+                    # 🟢 Determinar last_lunar_update_date de forma legible
+                    "last_lunar_update_date": (
+                        today.isoformat()
+                        if update_type in ("update_lunar_data", None) or today_only
+                        else existing_data.get("actualitzat", {}).get("last_lunar_update_date", today.isoformat())
+                    ),
+                },
                 "dades": [
                     {
-                        "moon_phase": moon_phase_value,
+                        "moon_phase": round(moon_phase_value, 2),
                         "moon_phase_name": moon_phase_name,
-                        "moonrise": moonrise_str,
-                        "moonset": moonset_str,
+                        "illuminated_percentage": illum_percentage,
+                        "moon_distance": distance,
+                        "moon_angular_diameter": angular_diameter,
+                        "moonrise": moonrise_final.isoformat() if moonrise_final else None,
+                        "moonset": moonset_final.isoformat() if moonset_final else None,
                     }
                 ],
             }
 
             await save_json_to_file(data_with_timestamp, self.moon_file)
-            _LOGGER.debug("Datos de la luna actualizados: %s", data_with_timestamp)
-
-            return {"actualizado": data_with_timestamp['actualitzat']['dataUpdate']}
+            _LOGGER.debug("🌙 Datos de luna guardados correctamente → %s", data_with_timestamp)
+            return {"actualizado": data_with_timestamp["actualitzat"]["dataUpdate"]}
 
         except Exception as err:
-            _LOGGER.exception("Error calculando los datos de la luna: %s", err)
-
+            _LOGGER.exception("🌙 Error al calcular datos de la luna: %s", err)
             cached_data = await load_json_from_file(self.moon_file)
             if cached_data:
-                _LOGGER.warning("Usando datos en caché para los datos de la luna.")
-                return {"actualizado": cached_data['actualitzat']['dataUpdate']}
-
-            _LOGGER.error("No se pudo calcular datos de la luna ni cargar datos en caché.")
+                _LOGGER.warning("🌙 Se usaron datos en caché por error de cálculo.")
+                return {"actualizado": cached_data["actualitzat"]["dataUpdate"]}
+            _LOGGER.error("🌙 No se pudo calcular ni cargar datos en caché de luna.")
             return None
 
 class MeteocatMoonFileCoordinator(DataUpdateCoordinator):
@@ -2273,47 +2507,39 @@ class MeteocatMoonFileCoordinator(DataUpdateCoordinator):
 
         if not existing_data or "dades" not in existing_data or not existing_data["dades"]:
             _LOGGER.warning("No se encontraron datos en %s.", self.moon_file)
-            return self._reset_data()
+            return {
+                "actualizado": datetime.now(ZoneInfo(self.timezone_str)).isoformat(),
+                "last_lunar_update_date": None,
+                "moon_phase": None,
+                "moon_phase_name": None,
+                "illuminated_percentage": None,
+                "moon_distance": None,
+                "moon_angular_diameter": None,
+                "moonrise": None,
+                "moonset": None,
+            }
 
         dades = existing_data["dades"][0]
         moonrise_str = dades.get("moonrise")
         moonset_str = dades.get("moonset")
         update_date_str = existing_data.get("actualitzat", {}).get("dataUpdate", "")
+        last_lunar_update_date_str = existing_data.get("actualitzat", {}).get("last_lunar_update_date", "")
 
-        now = datetime.now(ZoneInfo(self.timezone_str))
-        update_date = datetime.fromisoformat(update_date_str) if update_date_str else now
+        update_date = (
+            datetime.fromisoformat(update_date_str)
+            if update_date_str
+            else datetime.now(ZoneInfo(self.timezone_str))
+        )
 
-        # Convertir a datetime (si existen)
-        moonrise = datetime.fromisoformat(moonrise_str) if moonrise_str else None
-        moonset = datetime.fromisoformat(moonset_str) if moonset_str else None
-
-        # Validación: si los eventos siguen en el futuro, no reseteamos.
-        if moonrise and now < moonrise:
-            valid = True
-        elif moonset and now < moonset:
-            valid = True
-        else:
-            valid = False
-
-        if not valid:
-            _LOGGER.info("Los datos de la luna han expirado (ambos eventos pasados). Reiniciando valores.")
-            return self._reset_data()
-
-        # Si los datos son válidos, devolvemos normalmente
+        # Simplemente devolvemos los datos cargados, aunque estén desfasados
         return {
             "actualizado": update_date.isoformat(),
+            "last_lunar_update_date": last_lunar_update_date_str,
             "moon_phase": dades.get("moon_phase"),
             "moon_phase_name": dades.get("moon_phase_name"),
+            "illuminated_percentage": dades.get("illuminated_percentage"),
+            "moon_distance": dades.get("moon_distance"),
+            "moon_angular_diameter": dades.get("moon_angular_diameter"),
             "moonrise": moonrise_str,
             "moonset": moonset_str,
-        }
-
-    def _reset_data(self):
-        """Resetea los datos a valores nulos."""
-        return {
-            "actualizado": datetime.now(ZoneInfo(self.timezone_str)).isoformat(),
-            "moon_phase": None,
-            "moon_phase_name": None,
-            "moonrise": None,
-            "moonset": None,
         }
