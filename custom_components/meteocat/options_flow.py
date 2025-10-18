@@ -16,6 +16,7 @@ from .const import (
     LIMIT_BASIC,
     LATITUDE,
     LONGITUDE,
+    ALTITUDE,
 )
 
 from meteocatpy.town import MeteocatTown
@@ -43,6 +44,7 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
         self.limit_basic: int | None = None
         self.latitude: float | None = None
         self.longitude: float | None = None
+        self.altitude: float | None = None
 
     async def async_step_init(self, user_input: dict | None = None):
         """Paso inicial del flujo de opciones."""
@@ -65,7 +67,7 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
                             "update_api_and_limits",
                             "update_limits_only",
                             "regenerate_assets",
-                            "update_coordinates"  # Nueva opción
+                            "update_coordinates"
                         ],
                         translation_key="option"
                     )
@@ -196,6 +198,7 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
         if user_input is not None:
             self.latitude = user_input.get(LATITUDE)
             self.longitude = user_input.get(LONGITUDE)
+            self.altitude = user_input.get(ALTITUDE)
 
             # Validar que las coordenadas estén dentro del rango de Cataluña
             if not (40.5 <= self.latitude <= 42.5 and 0.1 <= self.longitude <= 3.3):
@@ -204,6 +207,10 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
                     self.latitude, self.longitude
                 )
                 errors["base"] = "invalid_coordinates"
+            # Validar que la altitud sea positiva
+            elif self.altitude < 0:
+                _LOGGER.error("Altitud inválida: %s. Debe ser >= 0.", self.altitude)
+                errors["base"] = "invalid_altitude"
             else:
                 # Actualizar la configuración con las nuevas coordenadas
                 self.hass.config_entries.async_update_entry(
@@ -211,20 +218,22 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
                     data={
                         **self._config_entry.data,
                         LATITUDE: self.latitude,
-                        LONGITUDE: self.longitude
+                        LONGITUDE: self.longitude,
+                        ALTITUDE: self.altitude
                     },
                 )
                 # Recargar la integración para aplicar los cambios
                 await self.hass.config_entries.async_reload(self._config_entry.entry_id)
                 _LOGGER.info(
-                    "Coordenadas actualizadas a latitude: %s, longitude: %s",
-                    self.latitude, self.longitude
+                    "Coordenadas actualizadas a latitude: %s, longitude: %s, altitude=%s.",
+                    self.latitude, self.longitude, self.altitude
                 )
                 return self.async_create_entry(title="", data={})
 
         schema = vol.Schema({
             vol.Required(LATITUDE, default=self._config_entry.data.get(LATITUDE)): cv.latitude,
             vol.Required(LONGITUDE, default=self._config_entry.data.get(LONGITUDE)): cv.longitude,
+            vol.Required(ALTITUDE, default=self._config_entry.data.get(ALTITUDE)): vol.Coerce(float),
         })
         return self.async_show_form(
             step_id="update_coordinates",
@@ -232,7 +241,8 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
             errors=errors,
             description_placeholders={
                 "current_latitude": self._config_entry.data.get(LATITUDE),
-                "current_longitude": self._config_entry.data.get(LONGITUDE)
+                "current_longitude": self._config_entry.data.get(LONGITUDE),
+                "current_altitude": self._config_entry.data.get(ALTITUDE, 0.0)
             }
         )
 
