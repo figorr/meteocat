@@ -34,7 +34,6 @@
         ├── coordinator.py
         ├── helpers.py
         ├── manifest.json
-        ├── moon.py
         ├── options_flow.py
         ├── sensor.py
         ├── strings.json
