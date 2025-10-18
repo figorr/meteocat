@@ -51,11 +51,12 @@
         "title": "Límits de l'API"
       },
       "update_coordinates": {
-        "description": "Introduïu noves coordenades. Coordenades actuals: latitud {current_latitude}, longitud {current_longitude}.",
+        "description": "Introduïu noves coordenades. Coordenades actuals: latitud {current_latitude}, longitud {current_longitude}. Altitud actual: {current_altitude} metres.",
         "title": "Actualitzar coordenades",
         "data": {
           "latitude": "Latitud",
-          "longitude": "Longitud"
+          "longitude": "Longitud",
+          "altitude": "Altitud (metres)"
         }
       },
       "confirm_regenerate_assets": {
@@ -70,7 +71,8 @@
       "cannot_connect": "Error de conexió. Error al comprovar la nova API Key.",
       "unknown": "Error desconegut al comprovar la nova API Key.",
       "invalid_limit": "Límit no vàlid. El límit ha de ser un nombre positiu.",
-      "invalid_coordinates": "Les coordenades han d'estar dins del rang de Catalunya (latitud: 40.5 a 42.5, longitud: 0.1 a 3.3)."
+      "invalid_coordinates": "Les coordenades han d'estar dins del rang de Catalunya (latitud: 40.5 a 42.5, longitud: 0.1 a 3.3).",
+      "invalid_altitude": "Altitud no pot ser negativa."
     }
   },
   "selector": {
@@ -79,7 +81,7 @@
         "update_api_and_limits": "Actualitzar API Key i límits.",
         "update_limits_only": "Actualitzar API límits.",
         "regenerate_assets": "Regenera arxius a 'assets'.",
-        "update_coordinates": "Actualitzar coordenades (latitud i longitud)."
+        "update_coordinates": "Actualitzar coordenades (latitud i longitud) i altitud (metres)."
       }
     }
   },
@@ -840,6 +842,21 @@
         "state_attributes": {
           "friendly_time": {
             "name": "Hora"
+          },
+          "friendly_date": {
+            "name": "Data"
+          },
+          "friendly_day": {
+            "name": "Dia",
+            "state": {
+              "monday": "Dilluns",
+              "tuesday": "Dimarts",
+              "wednesday": "Dimecres",
+              "thursday": "Dijous",
+              "friday": "Divendres",
+              "saturday": "Dissabte",
+              "sunday": "Diumenge"
+            }
           }
         }
       },
@@ -848,6 +865,21 @@
         "state_attributes": {
           "friendly_time": {
             "name": "Hora"
+          },
+          "friendly_date": {
+            "name": "Data"
+          },
+          "friendly_day": {
+            "name": "Dia",
+            "state": {
+              "monday": "Dilluns",
+              "tuesday": "Dimarts",
+              "wednesday": "Dimecres",
+              "thursday": "Dijous",
+              "friday": "Divendres",
+              "saturday": "Dissabte",
+              "sunday": "Diumenge"
+            }
           }
         }
       },
@@ -867,14 +899,27 @@
         "name": "Fase llunar",
         "state": {
           "new_moon": "Lluna nova",
+          "waxing_crescent": "Creixent",
           "first_quarter": "Quart creixent",
+          "waxing_gibbous": "Gibosa creixent",
           "full_moon": "Lluna plena",
+          "waning_gibbous": "Gibosa minvant",
           "last_quarter": "Quart minvant",
+          "waning_crescent": "Minvant",
           "unknown": "Desconegut"
         },
         "state_attributes": {
           "moon_phase_value": {
             "name": "Valor fase"
+          },
+          "illuminated_percentage": {
+            "name": "Il.luminada (%)"
+          },
+          "moon_distance": {
+            "name": "Distància (Km)"
+          },
+          "moon_angular_diameter": {
+            "name": "Diàmetre angular (arcseg)"
           },
           "last_updated": {
             "name": "Actualitzat"
@@ -898,6 +943,21 @@
         "state_attributes": {
           "friendly_time": {
             "name": "Hora"
+          },
+          "friendly_date": {
+            "name": "Data"
+          },
+          "friendly_day": {
+            "name": "Dia",
+            "state": {
+              "monday": "Dilluns",
+              "tuesday": "Dimarts",
+              "wednesday": "Dimecres",
+              "thursday": "Dijous",
+              "friday": "Divendres",
+              "saturday": "Dissabte",
+              "sunday": "Diumenge"
+            }
           }
         }
       },
@@ -906,6 +966,21 @@
         "state_attributes": {
           "friendly_time": {
             "name": "Hora"
+          },
+          "friendly_date": {
+            "name": "Data"
+          },
+          "friendly_day": {
+            "name": "Dia",
+            "state": {
+              "monday": "Dilluns",
+              "tuesday": "Dimarts",
+              "wednesday": "Dimecres",
+              "thursday": "Dijous",
+              "friday": "Divendres",
+              "saturday": "Dissabte",
+              "sunday": "Diumenge"
+            }
           }
         }
       }

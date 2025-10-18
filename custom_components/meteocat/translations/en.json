@@ -51,11 +51,12 @@
         "title": "API limits"
       },
       "update_coordinates": {
-        "description": "Enter new coordinates. Current coordinates: latitude {current_latitude}, longitude {current_longitude}.",
+        "description": "Enter new coordinates. Current coordinates: latitude {current_latitude}, longitude {current_longitude}. Current altitude: {current_altitude} meters.",
         "title": "Update Coordinates",
         "data": {
           "latitude": "Latitude",
-          "longitude": "Longitude"
+          "longitude": "Longitude",
+          "altitude": "Altitude (meters)"
         }
       },
       "confirm_regenerate_assets": {
@@ -70,7 +71,8 @@
       "cannot_connect": "Cannot connect. Error when checking the new API Key.",
       "unknown": "Unknown error when checking the new API Key.",
       "invalid_limit": "Invalid limit. The limit must be a positive number.",
-      "invalid_coordinates": "Coordinates must be within Catalonia's range (latitude: 40.5 to 42.5, longitude: 0.1 to 3.3)."
+      "invalid_coordinates": "Coordinates must be within Catalonia's range (latitude: 40.5 to 42.5, longitude: 0.1 to 3.3).",
+      "invalid_altitude": "Altitude must be a non-negative number."
     }
   },
   "selector": {
@@ -79,7 +81,7 @@
         "update_api_and_limits": "Update API Key and limits.",
         "update_limits_only": "Update API limits.",
         "regenerate_assets": "Regenerate 'assets' files.",
-        "update_coordinates": "Update coordinates (latitude and longitude)."
+        "update_coordinates": "Update coordinates (latitude and longitude) and altitude (meters)."
       }
     }
   },
@@ -840,6 +842,21 @@
         "state_attributes": {
           "friendly_time": {
             "name": "Time"
+          },
+          "friendly_date": {
+            "name": "Date"
+          },
+          "friendly_day": {
+            "name": "Day",
+            "state": {
+              "monday": "Monday",
+              "tuesday": "Tuesday",
+              "wednesday": "Wednesday",
+              "thursday": "Thursday",
+              "friday": "Friday",
+              "saturday": "Saturday",
+              "sunday": "Sunday"
+            }
           }
         }
       },
@@ -848,6 +865,21 @@
         "state_attributes": {
           "friendly_time": {
             "name": "Time"
+          },
+          "friendly_date": {
+            "name": "Date"
+          },
+          "friendly_day": {
+            "name": "Day",
+            "state": {
+              "monday": "Monday",
+              "tuesday": "Tuesday",
+              "wednesday": "Wednesday",
+              "thursday": "Thursday",
+              "friday": "Friday",
+              "saturday": "Saturday",
+              "sunday": "Sunday"
+            }
           }
         }
       },
@@ -867,14 +899,27 @@
         "name": "Moon phase",
         "state": {
           "new_moon": "New moon",
+          "waxing_crescent": "Waxing crescent",
           "first_quarter": "First quarter",
+          "waxing_gibbous": "Waxing gibbous",
           "full_moon": "Full moon",
+          "waning_gibbous": "Waning gibbous",
           "last_quarter": "Last quarter",
+          "waning_crescent": "Waning crescent",
           "unknown": "Unknown"
         },
         "state_attributes": {
           "moon_phase_value": {
             "name": "Phase Value"
+          },
+          "illuminated_percentage": {
+            "name": "Illuminated (%)"
+          },
+          "moon_distance": {
+            "name": "Distance (Km)"
+          },
+          "moon_angular_diameter": {
+            "name": "Angular diameter (arcsec)"
           },
           "last_updated": {
             "name": "Last Updated"
@@ -898,6 +943,21 @@
         "state_attributes": {
           "friendly_time": {
             "name": "Time"
+          },
+          "friendly_date": {
+            "name": "Date"
+          },
+          "friendly_day": {
+            "name": "Day",
+            "state": {
+              "monday": "Monday",
+              "tuesday": "Tuesday",
+              "wednesday": "Wednesday",
+              "thursday": "Thursday",
+              "friday": "Friday",
+              "saturday": "Saturday",
+              "sunday": "Sunday"
+            }
           }
         }
       },
@@ -906,6 +966,21 @@
         "state_attributes": {
           "friendly_time": {
             "name": "Time"
+          },
+          "friendly_date": {
+            "name": "Date"
+          },
+          "friendly_day": {
+            "name": "Day",
+            "state": {
+              "monday": "Monday",
+              "tuesday": "Tuesday",
+              "wednesday": "Wednesday",
+              "thursday": "Thursday",
+              "friday": "Friday",
+              "saturday": "Saturday",
+              "sunday": "Sunday"
+            }
           }
         }
       }

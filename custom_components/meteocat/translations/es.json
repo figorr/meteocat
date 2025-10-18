@@ -51,11 +51,12 @@
         "title": "Límites de la API"
       },
       "update_coordinates": {
-        "description": "Introduce nuevas coordenadas. Coordenadas actuales: latitud {current_latitude}, longitud {current_longitude}.",
+        "description": "Introduce nuevas coordenadas. Coordenadas actuales: latitud {current_latitude}, longitud {current_longitude}. Altitud actual: {current_altitude} metros.",
         "title": "Actualizar coordenadas",
         "data": {
           "latitude": "Latitud",
-          "longitude": "Longitud"
+          "longitude": "Longitud",
+          "altitude": "Altitud (metros)"
         }
       },
       "confirm_regenerate_assets": {
@@ -70,7 +71,8 @@
       "cannot_connect": "Error de conexión. Error al comprobar la nueva API Key.",
       "unknown": "Error desconocido al comprobar la nueva API Key.",
       "invalid_limit": "Límite no válido. El límite debe ser un número positivo.",
-      "invalid_coordinates": "Las coordenadas deben estar dentro del rango de Cataluña (latitud: 40.5 a 42.5, longitud: 0.1 a 3.3)."
+      "invalid_coordinates": "Las coordenadas deben estar dentro del rango de Cataluña (latitud: 40.5 a 42.5, longitud: 0.1 a 3.3).",
+      "invalid_altitude": "Altitud no puede ser negativa."
     }
   },
   "selector": {
@@ -79,7 +81,7 @@
         "update_api_and_limits": "Actualizar API Key y límites.",
         "update_limits_only": "Actualizar API límites.",
         "regenerate_assets": "Regenerar archivos de 'assets'.",
-        "update_coordinates": "Actualizar coordenadas (latitud y longitud)."
+        "update_coordinates": "Actualizar coordenadas (latitud y longitud) y altitud (metros)."
       }
     }
   },
@@ -840,6 +842,21 @@
         "state_attributes": {
           "friendly_time": {
             "name": "Hora"
+          },
+          "friendly_date": {
+            "name": "Fecha"
+          },
+          "friendly_day": {
+            "name": "Día",
+            "state": {
+              "monday": "Lunes",
+              "tuesday": "Martes",
+              "wednesday": "Miércoles",
+              "thursday": "Jueves",
+              "friday": "Viernes",
+              "saturday": "Sábado",
+              "sunday": "Domingo"
+            }
           }
         }
       },
@@ -848,6 +865,21 @@
         "state_attributes": {
           "friendly_time": {
             "name": "Hora"
+          },
+          "friendly_date": {
+            "name": "Fecha"
+          },
+          "friendly_day": {
+            "name": "Día",
+            "state": {
+              "monday": "Lunes",
+              "tuesday": "Martes",
+              "wednesday": "Miércoles",
+              "thursday": "Jueves",
+              "friday": "Viernes",
+              "saturday": "Sábado",
+              "sunday": "Domingo"
+            }
           }
         }
       },
@@ -867,17 +899,30 @@
         "name": "Fase lunar",
         "state": {
           "new_moon": "Luna nueva",
+          "waxing_crescent": "Creciente",
           "first_quarter": "Cuarto creciente",
+          "waxing_gibbous": "Gibosa creciente",
           "full_moon": "Luna llena",
+          "waning_gibbous": "Gibosa menguante",
           "last_quarter": "Cuarto menguante",
+          "waning_crescent": "Menguante",
           "unknown": "Desconocido"
         },
         "state_attributes": {
           "moon_phase_value": {
             "name": "Valor fase"
           },
+          "illuminated_percentage": {
+            "name": "Iluminada (%)"
+          },
+          "moon_distance": {
+            "name": "Distancia (Km)"
+          },
+          "moon_angular_diameter": {
+            "name": "Diámetro angular (arcseg)"
+          },
           "last_updated": {
-            "name": "Actualitzado"
+            "name": "Actualizado"
           }
         }
       },
@@ -898,6 +943,21 @@
         "state_attributes": {
           "friendly_time": {
             "name": "Hora"
+          },
+          "friendly_date": {
+            "name": "Fecha"
+          },
+          "friendly_day": {
+            "name": "Día",
+            "state": {
+              "monday": "Lunes",
+              "tuesday": "Martes",
+              "wednesday": "Miércoles",
+              "thursday": "Jueves",
+              "friday": "Viernes",
+              "saturday": "Sábado",
+              "sunday": "Domingo"
+            }
           }
         }
       },
@@ -906,6 +966,21 @@
         "state_attributes": {
           "friendly_time": {
             "name": "Hora"
+          },
+          "friendly_date": {
+            "name": "Fecha"
+          },
+          "friendly_day": {
+            "name": "Día",
+            "state": {
+              "monday": "Lunes",
+              "tuesday": "Martes",
+              "wednesday": "Miércoles",
+              "thursday": "Jueves",
+              "friday": "Viernes",
+              "saturday": "Sábado",
+              "sunday": "Domingo"
+            }
           }
         }
       }
