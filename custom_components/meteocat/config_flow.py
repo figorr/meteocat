@@ -13,7 +13,7 @@ import aiofiles
 import unicodedata
 
 from solarmoonpy.location import Location, LocationInfo
-from solarmoonpy.moon import moon_phase, moon_rise_set, illuminated_percentage, moon_distance, moon_angular_diameter
+from solarmoonpy.moon import moon_phase, moon_day, moon_rise_set, illuminated_percentage, moon_distance, moon_angular_diameter
 from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResult
 from homeassistant.core import callback
 from homeassistant.exceptions import HomeAssistantError
@@ -275,6 +275,9 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
                 # Nombres de fase
                 moon_phase_name = _get_moon_phase_name(phase)
 
+                # Día lunar usando nuestro módulo
+                moon_day_today = moon_day(today)
+
                 # Porcentaje iluminado usando la función de moon.py
                 illuminated = illuminated_percentage(phase)
 
@@ -297,6 +300,7 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
                     "last_lunar_update_date": today.isoformat(),
                     "dades": [
                         {
+                            "moon_day": moon_day_today,
                             "moon_phase": phase,
                             "moon_phase_name": moon_phase_name,
                             "illuminated_percentage": illuminated,
