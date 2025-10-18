@@ -466,7 +466,17 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         key=MOON_PHASE,
         translation_key="moon_phase",
         device_class=SensorDeviceClass.ENUM,
-        options=["new_moon", "first_quarter", "full_moon", "last_quarter", "unknown"],
+        options=[
+            "new_moon",
+            "waxing_crescent",
+            "first_quarter",
+            "waxing_gibbous",
+            "full_moon",
+            "waning_gibbous",
+            "last_quarter",
+            "waning_crescent",
+            "unknown",
+        ],
         state_class=None,
     ),
     MeteocatSensorEntityDescription(
@@ -1429,7 +1439,7 @@ class MeteocatAlertRegionSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
                 _LOGGER.warning("Meteor desconocido sin mapeo: '%s'. Añadirlo a 'METEOR_MAPPING' del coordinador 'MeteocatAlertRegionSensor' si es necesario.", meteor)
                 mapped_name = "unknown"
             attributes[f"alert_{i+1}"] = mapped_name
-        _LOGGER.info("Atributos traducidos del sensor: %s", attributes)
+        _LOGGER.debug("Atributos traducidos del sensor: %s", attributes)
         return attributes
     
     @property
@@ -1838,7 +1848,7 @@ class MeteocatSunSensor(CoordinatorEntity[MeteocatSunFileCoordinator], SensorEnt
         self._attr_entity_category = getattr(description, "entity_category", None)
         
         _LOGGER.debug(
-            "Inicializando sensor: %s, Unique ID: %s",
+            "Inicializando sensor solar: %s, Unique ID: %s",
             self.entity_description.name,
             self._attr_unique_id,
         )
@@ -1866,10 +1876,20 @@ class MeteocatSunSensor(CoordinatorEntity[MeteocatSunFileCoordinator], SensorEnt
                 try:
                     dt = datetime.fromisoformat(time_str)
                     attributes["friendly_time"] = dt.strftime("%H:%M")
+                    attributes["friendly_date"] = dt.strftime("%Y-%m-%d")
+
+                    # Día base en inglés (minúsculas)
+                    day_key = dt.strftime("%A").lower()
+                    attributes["friendly_day"] = day_key
+
                 except ValueError:
                     attributes["friendly_time"] = None
+                    attributes["friendly_date"] = None
+                    attributes["friendly_day"] = None
             else:
                 attributes["friendly_time"] = None
+                attributes["friendly_date"] = None
+                attributes["friendly_day"] = None
         return attributes
 
     @property
@@ -1904,7 +1924,7 @@ class MeteocatSunStatusSensor(CoordinatorEntity[MeteocatSunCoordinator], SensorE
 
     def _get_data_update(self):
         """Obtain the update date from the coordinator and convert to UTC."""
-        data_update = self.coordinator.data.get("actualizado")
+        data_update = self.coordinator.data.get("actualitzat", {}).get("dataUpdate")
         if data_update:
             try:
                 local_time = datetime.fromisoformat(data_update)
@@ -1973,7 +1993,10 @@ class MeteocatMoonSensor(CoordinatorEntity[MeteocatMoonFileCoordinator], SensorE
         """Return additional attributes for the sensor."""
         attributes = super().extra_state_attributes or {}
         attributes["moon_phase_value"] = self.coordinator.data.get("moon_phase")
-        attributes["last_updated"] = self.coordinator.data.get("actualizado")
+        attributes["illuminated_percentage"] = self.coordinator.data.get("illuminated_percentage")
+        attributes["moon_distance"] = self.coordinator.data.get("moon_distance")
+        attributes["moon_angular_diameter"] = self.coordinator.data.get("moon_angular_diameter")
+        attributes["last_updated"] = self.coordinator.data.get("last_lunar_update_date")
         return attributes
 
     @property
@@ -1982,9 +2005,13 @@ class MeteocatMoonSensor(CoordinatorEntity[MeteocatMoonFileCoordinator], SensorE
         phase = self.coordinator.data.get("moon_phase_name")
         icon_map = {
             "new_moon": "mdi:moon-new",
+            "waxing_crescent": "mdi:moon-waxing-crescent",
             "first_quarter": "mdi:moon-first-quarter",
+            "waxing_gibbous": "mdi:moon-waxing-gibbous",
             "full_moon": "mdi:moon-full",
+            "waning_gibbous": "mdi:moon-waning-gibbous",
             "last_quarter": "mdi:moon-last-quarter",
+            "waning_crescent": "mdi:moon-waning-crescent",
             "unknown": "mdi:moon",
         }
         return icon_map.get(phase, "mdi:moon")
@@ -2096,14 +2123,29 @@ class MeteocatMoonTimeSensor(CoordinatorEntity[MeteocatMoonFileCoordinator], Sen
         """Return additional attributes for the sensor."""
         attributes = super().extra_state_attributes or {}
         time_str = self.coordinator.data.get(self.entity_description.key)
+        key = self.entity_description.key  # "moonrise" o "moonset"
+
         if time_str:
             try:
                 dt = datetime.fromisoformat(time_str)
+                # Atributos adicionales amigables
                 attributes["friendly_time"] = dt.strftime("%H:%M")
+                attributes["friendly_date"] = dt.strftime("%Y-%m-%d")
+                
+                # Día base en inglés (minúsculas)
+                day_key = dt.strftime("%A").lower()
+                attributes["friendly_day"] = day_key
+                
+                # No establecemos "status" aquí para evitar que HA lo muestre como "desconocido"
+
             except ValueError:
                 attributes["friendly_time"] = None
+                attributes["friendly_date"] = None
+                attributes["friendly_day"] = None
         else:
             attributes["friendly_time"] = None
+            attributes["friendly_date"] = None
+            attributes["friendly_day"] = None
         return attributes
 
     @property
