@@ -1992,6 +1992,7 @@ class MeteocatMoonSensor(CoordinatorEntity[MeteocatMoonFileCoordinator], SensorE
     def extra_state_attributes(self):
         """Return additional attributes for the sensor."""
         attributes = super().extra_state_attributes or {}
+        attributes["moon_day"] = self.coordinator.data.get("moon_day")
         attributes["moon_phase_value"] = self.coordinator.data.get("moon_phase")
         attributes["illuminated_percentage"] = self.coordinator.data.get("illuminated_percentage")
         attributes["moon_distance"] = self.coordinator.data.get("moon_distance")
