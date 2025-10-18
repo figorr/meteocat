@@ -909,8 +909,11 @@
           "unknown": "Unknown"
         },
         "state_attributes": {
+          "moon_day": {
+            "name": "Moon day"
+          },
           "moon_phase_value": {
-            "name": "Phase Value"
+            "name": "Phase value"
           },
           "illuminated_percentage": {
             "name": "Illuminated (%)"
@@ -922,7 +925,7 @@
             "name": "Angular diameter (arcsec)"
           },
           "last_updated": {
-            "name": "Last Updated"
+            "name": "Last updated"
           }
         }
       },

@@ -909,6 +909,9 @@
           "unknown": "Desconocido"
         },
         "state_attributes": {
+          "moon_day": {
+            "name": "Día lunar"
+          },
           "moon_phase_value": {
             "name": "Valor fase"
           },

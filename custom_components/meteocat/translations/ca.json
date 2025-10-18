@@ -909,6 +909,9 @@
           "unknown": "Desconegut"
         },
         "state_attributes": {
+          "moon_day": {
+            "name": "Dia lunar"
+          },
           "moon_phase_value": {
             "name": "Valor fase"
           },
