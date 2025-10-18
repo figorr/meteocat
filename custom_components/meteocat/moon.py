@@ -1,28 +1,70 @@
 from datetime import date, datetime, timedelta, timezone
 import math
 from typing import Optional, Tuple
+from .sun import julianday, julianday_to_juliancentury, sun_apparent_long, sun_distance
 
 _SYNODIC_MONTH = 29.530588853
+AU = 149597870.7  # km por unidad astronómica (valor estándar)
 
-def moon_phase(date_utc: date) -> int:
-    """Devuelve la fase de la luna (0=nueva, 14=llena)."""
-    known_new_moon = datetime(2000, 1, 6, 18, 14, tzinfo=timezone.utc)
-    diff = datetime(date_utc.year, date_utc.month, date_utc.day, tzinfo=timezone.utc) - known_new_moon
+def moon_phase(date_utc: date) -> float:
+    """
+    Devuelve la fase de la luna como valor fraccionario (0 a ~29.53, 0=nueva, ~14.77=llena).
+    Usa una luna nueva reciente (21 Sep 2025) para mayor precisión y opcionalmente elongación eclíptica.
+    Args:
+        date_utc (date): Fecha en UTC.
+    Returns:
+        float: Días desde la última luna nueva (0 a ~29.53).
+    """
+    # Luna nueva de referencia: 21 de septiembre de 2025, 19:54 UTC
+    known_new_moon = datetime(2025, 9, 21, 19, 54, tzinfo=timezone.utc)
+    dt = datetime(date_utc.year, date_utc.month, date_utc.day, tzinfo=timezone.utc)
+    diff = dt - known_new_moon
     days = diff.days + (diff.seconds / 86400.0)
+    
+    # Cálculo aproximado con mes sinódico
     lunations = days / _SYNODIC_MONTH
-    frac = lunations % 1
-    return round(frac * _SYNODIC_MONTH) % 30  # Wrap a 0 si llega a 30
+    approx_phase = (lunations % 1) * _SYNODIC_MONTH
 
-def _julian_day(dt: datetime) -> float:
-    """Convierte fecha UTC a día juliano."""
-    year, month = dt.year, dt.month
-    day = dt.day + (dt.hour + dt.minute / 60 + dt.second / 3600) / 24
-    if month <= 2:
-        year -= 1
-        month += 12
-    A = year // 100
-    B = 2 - A + (A // 4)
-    return math.floor(365.25 * (year + 4716)) + math.floor(30.6001 * (month + 1)) + day + B - 1524.5
+    # Cálculo preciso usando elongación eclíptica
+    jd = julianday(dt.date()) + 0.5  # Mediodía UTC
+    jc = julianday_to_juliancentury(jd)
+    lambda_m, _, _, _ = _moon_ecliptic_position(jd)
+    lambda_s = sun_apparent_long(jc)
+    elong = _normalize_angle(lambda_m - lambda_s)
+    
+    # Convertir elongación a fase (0°=nueva, 180°=llena, 360°=nueva)
+    precise_phase = (elong / 360.0) * _SYNODIC_MONTH
+    if precise_phase > _SYNODIC_MONTH:
+        precise_phase -= _SYNODIC_MONTH
+
+    # Promedio ponderado: favorece cálculo preciso, pero usa aproximado como respaldo
+    return round(0.9 * precise_phase + 0.1 * approx_phase, 6)
+
+def illuminated_percentage(date_utc: date) -> float:
+    """
+    Calcula el porcentaje de luna iluminada para una fecha UTC (versión precisa).
+    Usa posiciones eclípticas reales de Sol y Luna (Meeus) para la elongación y corrección por distancias.
+    Args:
+        date_utc (date): Fecha en UTC.
+    Returns:
+        float: Porcentaje de superficie lunar iluminada (0–100).
+    """
+    dt = datetime(date_utc.year, date_utc.month, date_utc.day, 12, 0, 0, tzinfo=timezone.utc)  # Mediodía UTC
+    jd = julianday(dt.date()) + (dt.hour + dt.minute / 60 + dt.second / 3600) / 24
+    jc = julianday_to_juliancentury(jd)
+    lambda_m, beta_m, R, delta_psi = _moon_ecliptic_position(jd)
+    lambda_s = sun_apparent_long(jc)
+    r_sun = sun_distance(jc)
+    diff = _normalize_angle(lambda_m - lambda_s)
+    elong_rad = math.radians(diff)
+    beta_rad = math.radians(beta_m)
+    cos_E = math.cos(beta_rad) * math.cos(elong_rad)
+    d = r_sun * AU
+    s2 = d**2 + R**2 - 2 * d * R * cos_E
+    s = math.sqrt(s2)
+    cos_i = (s**2 + R**2 - d**2) / (2 * s * R)
+    illum_fraction = (1 + cos_i) / 2
+    return illum_fraction * 100.0
 
 def _normalize_angle(angle: float) -> float:
     """Normaliza ángulo a 0-360 grados."""
@@ -189,61 +231,46 @@ def _periodic_terms(D, M, Mp, F, T):
 
     return sigma_l, sigma_r, sigma_b
 
-def _calculate_position_and_alt(t: datetime, lat_r: float, lon: float) -> tuple[float, float]:
-    """Calcula alt, h0 para un tiempo dado t (ra no usado)."""
-    jd = _julian_day(t)
+def _moon_ecliptic_position(jd: float) -> Tuple[float, float, float, float]:
+    """Calcula longitud eclíptica aparente, latitud, distancia y delta_psi de la Luna."""
     T = (jd - 2451545.0) / 36525.0
-
-    # Argumentos fundamentales (en grados)
     Lp = _normalize_angle(218.3164477 + 481267.88123421 * T - 0.0015786 * T**2 + T**3 / 538841.0 - T**4 / 65194000.0)
     D = _normalize_angle(297.8501921 + 445267.1114034 * T - 0.0018819 * T**2 + T**3 / 545868.0 - T**4 / 113065000.0)
-    M = _normalize_angle(357.5291092 + 35999.0502909 * T - 0.0001536 * T**2 + T**3 / 24490000.0)  # Anomalía Sol
+    M = _normalize_angle(357.5291092 + 35999.0502909 * T - 0.0001536 * T**2 + T**3 / 24490000.0)
     Mp = _normalize_angle(134.9633964 + 477198.8675055 * T + 0.0087414 * T**2 + T**3 / 69699.0 - T**4 / 14712000.0)
     F = _normalize_angle(93.2720950 + 483202.0175238 * T - 0.0036539 * T**2 - T**3 / 3526000.0 + T**4 / 863310000.0)
-    Omega = _normalize_angle(125.04452 - 1934.136261 * T + 0.0020708 * T**2 + T**3 / 450000.0)  # Para nutación
+    Omega = _normalize_angle(125.04452 - 1934.136261 * T + 0.0020708 * T**2 + T**3 / 450000.0)
 
     sigma_l, sigma_r, sigma_b = _periodic_terms(D, M, Mp, F, T)
 
-    # Longitud eclíptica (con términos seculares adicionales)
     lambda_ = Lp + sigma_l + 0.003958 * math.sin(math.radians(119.75 + 131.849 * T)) + 0.000319 * math.sin(math.radians(53.09 + 479264.290 * T)) + 0.000024 * math.sin(math.radians(313.45 + 481266.484 * T))
-
-    # Latitud eclíptica
     beta = sigma_b - 0.000024 * math.sin(math.radians(313.45 + 481266.484 * T - 2 * F))
-
-    # Distancia (km)
     R = 385000.529 + sigma_r
-
-    # Paralaje
-    par = math.asin(6378.14 / R)
-
-    # Obliquidad de la eclíptica
-    eps = math.radians(23.439281 - 0.0000004 * T)
-
-    # Nutación aproximada en longitud (arcsegundos a grados)
     delta_psi = (-17.20 * math.sin(math.radians(Omega)) - 1.32 * math.sin(math.radians(2 * (Lp - F))) + 0.23 * math.sin(math.radians(2 * Lp)) + 0.21 * math.sin(math.radians(2 * Omega))) / 3600.0
-
-    # Posición aparente
     lambda_ += delta_psi
 
-    # Conversión a RA y Dec
+    return lambda_, beta, R, delta_psi
+
+def _calculate_position_and_alt(t: datetime, lat_r: float, lon: float) -> tuple[float, float]:
+    """Calcula alt, h0 para un tiempo dado t (ra no usado)."""
+    jd = julianday(t.date()) + (t.hour + t.minute / 60 + t.second / 3600) / 24
+    T = (jd - 2451545.0) / 36525.0
+    lambda_, beta, R, delta_psi = _moon_ecliptic_position(jd)
+
+    par = math.asin(6378.14 / R)
+    eps = math.radians(23.439281 - 0.0000004 * T)
     lambda_r = math.radians(lambda_)
     beta_r = math.radians(beta)
     ra = math.atan2(math.sin(lambda_r) * math.cos(eps) - math.tan(beta_r) * math.sin(eps), math.cos(lambda_r))
     dec = math.asin(math.sin(beta_r) * math.cos(eps) + math.cos(beta_r) * math.sin(eps) * math.sin(lambda_r))
-
-    # Umbral h0 (radianes) - CORREGIDO: par - sd - ref (positivo pequeño)
-    sd = 0.2725076 * par  # Semidiámetro
-    ref = math.radians(0.5667)  # Refracción media
+    sd = 0.2725076 * par
+    ref = math.radians(0.5667)
     h0 = par - sd - ref
-
-    # GMST y HA
     gmst = (280.46061837 + 360.98564736629 * (jd - 2451545.0) + 0.000387933 * T**2 - T**3 / 38710000.0) % 360.0
     lst = math.radians((gmst + lon) % 360.0)
     ha = lst - ra
     if ha < -math.pi: ha += 2 * math.pi
     elif ha > math.pi: ha -= 2 * math.pi
-
-    # Altitud
     alt = math.asin(math.sin(lat_r) * math.sin(dec) + math.cos(lat_r) * math.cos(dec) * math.cos(ha))
 
     return alt, h0
@@ -260,7 +287,6 @@ def moon_rise_set(lat: float, lon: float, date_utc: date) -> Tuple[Optional[date
     prev_t = None
     prev_alt = None
 
-    # Paso grueso para detectar intervalos de cruce
     step_grueso = 1.0
     intervalos_rise = []
     intervalos_set = []
@@ -271,7 +297,7 @@ def moon_rise_set(lat: float, lon: float, date_utc: date) -> Tuple[Optional[date
         if prev_alt is not None:
             den = alt - prev_alt
             if abs(den) < 1e-12:
-                continue  # Evita división por cero en detección grueso
+                continue
             if prev_alt < h0 and alt >= h0:
                 intervalos_rise.append((prev_t, t, prev_alt, alt))
             elif prev_alt >= h0 and alt < h0:
@@ -279,21 +305,19 @@ def moon_rise_set(lat: float, lon: float, date_utc: date) -> Tuple[Optional[date
         prev_t = t
         prev_alt = alt
 
-    # Función de refinamiento con bisección y guards
     def refine_event(start_t: datetime, end_t: datetime, start_alt: float, end_alt: float, is_rise: bool) -> datetime:
-        for _ in range(10):  # Iteraciones para ~1 seg precisión
+        for _ in range(10):
             mid_t = start_t + (end_t - start_t) / 2
             mid_alt, mid_h0 = _calculate_position_and_alt(mid_t, lat_r, lon)
-            den = mid_alt - start_alt if is_rise else mid_alt - end_alt  # Aproximado para check
+            den = mid_alt - start_alt if is_rise else mid_alt - end_alt
             if abs(den) < 1e-12:
-                return mid_t  # Caso plano, toma medio
+                return mid_t
             if (is_rise and mid_alt < mid_h0) or (not is_rise and mid_alt >= mid_h0):
                 start_t, start_alt = mid_t, mid_alt
             else:
                 end_t, end_alt = mid_t, mid_alt
         return start_t + (end_t - start_t) / 2
 
-    # Refina el primero detectado (típicamente uno por evento por día)
     if intervalos_rise and rise is None:
         start_t, end_t, start_alt, end_alt = intervalos_rise[0]
         rise = refine_event(start_t, end_t, start_alt, end_alt, True)
@@ -301,5 +325,32 @@ def moon_rise_set(lat: float, lon: float, date_utc: date) -> Tuple[Optional[date
         start_t, end_t, start_alt, end_alt = intervalos_set[0]
         set_ = refine_event(start_t, end_t, start_alt, end_alt, False)
 
-    # Break implícito no necesario aquí, ya que el loop grueso es corto
     return rise, set_
+
+def moon_distance(date_utc: date) -> float:
+    """
+    Calcula la distancia Tierra-Luna en kilómetros para una fecha UTC.
+    Args:
+        date_utc (date): Fecha en UTC.
+    Returns:
+        float: Distancia en kilómetros.
+    """
+    dt = datetime(date_utc.year, date_utc.month, date_utc.day, 12, 0, 0, tzinfo=timezone.utc)  # Mediodía UTC
+    jd = julianday(dt.date()) + (dt.hour + dt.minute / 60 + dt.second / 3600) / 24
+    _, _, R, _ = _moon_ecliptic_position(jd)
+    return R
+
+def moon_angular_diameter(date_utc: date) -> float:
+    """
+    Calcula el diámetro angular de la Luna en arcosegundos para una fecha UTC.
+    Args:
+        date_utc (date): Fecha en UTC.
+    Returns:
+        float: Diámetro angular en arcosegundos.
+    """
+    dt = datetime(date_utc.year, date_utc.month, date_utc.day, 12, 0, 0, tzinfo=timezone.utc)  # Mediodía UTC
+    jd = julianday(dt.date()) + (dt.hour + dt.minute / 60 + dt.second / 3600) / 24
+    _, _, R, _ = _moon_ecliptic_position(jd)
+    par = math.asin(6378.14 / R)  # Paralaje horizontal
+    sd = 0.2725076 * par  # Semi-diámetro
+    return 2 * math.degrees(sd) * 3600  # Diámetro angular en arcosegundos
