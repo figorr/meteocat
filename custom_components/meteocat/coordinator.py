@@ -15,7 +15,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.components.weather import Forecast
 
-from solarmoonpy.moon import moon_phase, moon_rise_set, illuminated_percentage, moon_distance, moon_angular_diameter
+from solarmoonpy.moon import moon_phase, moon_day, moon_rise_set, illuminated_percentage, moon_distance, moon_angular_diameter
 from solarmoonpy.location import Location, LocationInfo
 
 from meteocatpy.data import MeteocatStationData
@@ -2333,6 +2333,7 @@ class MeteocatMoonCoordinator(DataUpdateCoordinator):
 
             # 🟣 Calcular fase e iluminación, distancia y diámetro angular
             moon_phase_value = moon_phase(today)
+            moon_day_today = moon_day(today)
             moon_phase_name = self._get_moon_phase_name(moon_phase_value)
             illum_percentage = round(illuminated_percentage(today), 2)
             distance = round(moon_distance(today), 0)
@@ -2460,6 +2461,7 @@ class MeteocatMoonCoordinator(DataUpdateCoordinator):
                 },
                 "dades": [
                     {
+                        "moon_day": moon_day_today,
                         "moon_phase": round(moon_phase_value, 2),
                         "moon_phase_name": moon_phase_name,
                         "illuminated_percentage": illum_percentage,
@@ -2510,6 +2512,7 @@ class MeteocatMoonFileCoordinator(DataUpdateCoordinator):
             return {
                 "actualizado": datetime.now(ZoneInfo(self.timezone_str)).isoformat(),
                 "last_lunar_update_date": None,
+                "moon_day": None,
                 "moon_phase": None,
                 "moon_phase_name": None,
                 "illuminated_percentage": None,
@@ -2535,6 +2538,7 @@ class MeteocatMoonFileCoordinator(DataUpdateCoordinator):
         return {
             "actualizado": update_date.isoformat(),
             "last_lunar_update_date": last_lunar_update_date_str,
+            "moon_day": dades.get("moon_day"),
             "moon_phase": dades.get("moon_phase"),
             "moon_phase_name": dades.get("moon_phase_name"),
             "illuminated_percentage": dades.get("illuminated_percentage"),
