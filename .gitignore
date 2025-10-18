@@ -99,3 +99,8 @@ badges/
 
 # TEMPORAL COMMIT MESSAGES
 commit-msg.txt
+
+# SUN AND MOON LOCAL FILES
+custom_components/meteocat/location.py
+custom_components/meteocat/moon.py
+custom_components/meteocat/sun.py
