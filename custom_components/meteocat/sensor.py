@@ -1997,6 +1997,7 @@ class MeteocatMoonSensor(CoordinatorEntity[MeteocatMoonFileCoordinator], SensorE
         attributes["illuminated_percentage"] = self.coordinator.data.get("illuminated_percentage")
         attributes["moon_distance"] = self.coordinator.data.get("moon_distance")
         attributes["moon_angular_diameter"] = self.coordinator.data.get("moon_angular_diameter")
+        attributes["lunation"] = self.coordinator.data.get("lunation")
         attributes["last_updated"] = self.coordinator.data.get("last_lunar_update_date")
         return attributes
 
