@@ -5,7 +5,7 @@ import json
 import logging
 from pathlib import Path
 from typing import Any
-from datetime import datetime, timezone, timedelta
+from datetime import date, datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 
 import voluptuous as vol
@@ -13,7 +13,17 @@ import aiofiles
 import unicodedata
 
 from solarmoonpy.location import Location, LocationInfo
-from solarmoonpy.moon import moon_phase, moon_day, moon_rise_set, illuminated_percentage, moon_distance, moon_angular_diameter
+from solarmoonpy.moon import (
+    moon_phase,
+    moon_day,
+    moon_rise_set,
+    illuminated_percentage,
+    moon_distance,
+    moon_angular_diameter,
+    lunation_number,
+    moon_elongation,
+    find_last_phase_exact
+)
 from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResult
 from homeassistant.core import callback
 from homeassistant.exceptions import HomeAssistantError
@@ -69,27 +79,40 @@ def normalize_name(name: str) -> str:
     name = unicodedata.normalize("NFKD", name).encode("ASCII", "ignore").decode("utf-8")
     return name.lower()
 
-def _get_moon_phase_name(phase: float) -> str:
-    """Convierte el valor numérico de la fase lunar en un nombre descriptivo."""
-    phase = phase % 30
-    if 0 <= phase < 1.84566:
-        return "new_moon"
-    elif 1.84566 <= phase < 5.53699:
-        return "waxing_crescent"
-    elif 5.53699 <= phase < 9.22831:
-        return "first_quarter"
-    elif 9.22831 <= phase < 12.91963:
-        return "waxing_gibbous"
-    elif 12.91963 <= phase < 16.61096:
-        return "full_moon"
-    elif 16.61096 <= phase < 20.30228:
-        return "waning_gibbous"
-    elif 20.30228 <= phase < 23.99361:
-        return "last_quarter"
-    elif 23.99361 <= phase < 27.68493:
-        return "waning_crescent"
+def get_moon_phase_name(d: date) -> str:
+    """Determina el nombre de la fase lunar para la fecha dada."""
+    percentage = illuminated_percentage(d)
+    elongation = moon_elongation(d)
+
+    # Determinar nombre intermedio basado en elongación y porcentaje iluminado
+    is_waxing = elongation < 180.0  # <180° creciente, >=180° menguante
+    if percentage < 50.0:
+        phase_name = "waxing_crescent" if is_waxing else "waning_crescent"
     else:
+        phase_name = "waxing_gibbous" if is_waxing else "waning_gibbous"
+
+    # Verificar fases primarias exactas y override si corresponde
+    last_new = find_last_phase_exact(d, 0.0)
+    if last_new and last_new.date() == d:
         return "new_moon"
+    elif percentage < 1.0:  # Backup para luna nueva cercana
+        return "new_moon"
+
+    last_first = find_last_phase_exact(d, 90.0)
+    if last_first and last_first.date() == d:
+        return "first_quarter"
+
+    last_full = find_last_phase_exact(d, 180.0)
+    if last_full and last_full.date() == d:
+        return "full_moon"
+    elif percentage > 99.0:  # Backup para luna llena cercana
+        return "full_moon"
+
+    last_last = find_last_phase_exact(d, 270.0)
+    if last_last and last_last.date() == d:
+        return "last_quarter"
+
+    return phase_name
 
 class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
     """Flujo de configuración para Meteocat."""
@@ -253,6 +276,7 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
         except Exception as ex:
             _LOGGER.error("Error al crear sun_%s_data.json: %s", town_id, ex)
 
+
     async def create_moon_file(self):
         """Crea el archivo moon_{town_id}_data.json con datos iniciales de la fase lunar, moonrise y moonset."""
         if not self.selected_municipi or not self.latitude or not self.longitude:
@@ -272,20 +296,23 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
                 # Fase lunar usando nuestro módulo
                 phase = moon_phase(today)
 
-                # Nombres de fase
-                moon_phase_name = _get_moon_phase_name(phase)
-
                 # Día lunar usando nuestro módulo
                 moon_day_today = moon_day(today)
 
+                # Lunación
+                lunation = lunation_number(today)
+
                 # Porcentaje iluminado usando la función de moon.py
-                illuminated = illuminated_percentage(phase)
+                illuminated = round(illuminated_percentage(today), 2)
 
                 # Distancia entre la Tierra y la Luna en Km
                 distance = round(moon_distance(today), 0)
 
                 # Diámetro angular en arcseconds
                 angular_diameter = round(moon_angular_diameter(today), 2)
+
+                # Nombres de fase
+                moon_phase_name = self.get_moon_phase_name(today)
 
                 # Moonrise y moonset aproximados (UTC)
                 rise_utc, set_utc = moon_rise_set(self.latitude, self.longitude, today)
@@ -306,6 +333,7 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
                             "illuminated_percentage": illuminated,
                             "moon_distance": distance,
                             "moon_angular_diameter": angular_diameter,
+                            "lunation": lunation,
                             "moonrise": rise_local,
                             "moonset": set_local
                         }
