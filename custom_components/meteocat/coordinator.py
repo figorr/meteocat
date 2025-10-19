@@ -15,7 +15,17 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.components.weather import Forecast
 
-from solarmoonpy.moon import moon_phase, moon_day, moon_rise_set, illuminated_percentage, moon_distance, moon_angular_diameter
+from solarmoonpy.moon import (
+    moon_phase,
+    moon_day,
+    moon_rise_set,
+    illuminated_percentage,
+    moon_distance,
+    moon_angular_diameter,
+    lunation_number,
+    moon_elongation,
+    find_last_phase_exact
+)
 from solarmoonpy.location import Location, LocationInfo
 
 from meteocatpy.data import MeteocatStationData
@@ -2207,27 +2217,40 @@ class MeteocatMoonCoordinator(DataUpdateCoordinator):
             update_interval=DEFAULT_MOON_UPDATE_INTERVAL,
         )
 
-    def _get_moon_phase_name(self, phase: float) -> str:
-        """Convierte el valor numérico de la fase lunar en un nombre descriptivo."""
-        phase = phase % 30
-        if 0 <= phase < 1.84566:
-            return "new_moon"
-        elif 1.84566 <= phase < 5.53699:
-            return "waxing_crescent"
-        elif 5.53699 <= phase < 9.22831:
-            return "first_quarter"
-        elif 9.22831 <= phase < 12.91963:
-            return "waxing_gibbous"
-        elif 12.91963 <= phase < 16.61096:
-            return "full_moon"
-        elif 16.61096 <= phase < 20.30228:
-            return "waning_gibbous"
-        elif 20.30228 <= phase < 23.99361:
-            return "last_quarter"
-        elif 23.99361 <= phase < 27.68493:
-            return "waning_crescent"
+    def _get_moon_phase_name(self, d: date) -> str:
+        """Determina el nombre de la fase lunar para la fecha dada."""
+        percentage = illuminated_percentage(d)
+        elongation = moon_elongation(d)
+
+        # Determinar nombre intermedio basado en elongación y porcentaje iluminado
+        is_waxing = elongation < 180.0  # <180° creciente, >=180° menguante
+        if percentage < 50.0:
+            phase_name = "waxing_crescent" if is_waxing else "waning_crescent"
         else:
+            phase_name = "waxing_gibbous" if is_waxing else "waning_gibbous"
+
+        # Verificar fases primarias exactas y override si corresponde
+        last_new = find_last_phase_exact(d, 0.0)
+        if last_new and last_new.date() == d:
             return "new_moon"
+        elif percentage < 1.0:  # Backup para luna nueva cercana
+            return "new_moon"
+
+        last_first = find_last_phase_exact(d, 90.0)
+        if last_first and last_first.date() == d:
+            return "first_quarter"
+
+        last_full = find_last_phase_exact(d, 180.0)
+        if last_full and last_full.date() == d:
+            return "full_moon"
+        elif percentage > 99.0:  # Backup para luna llena cercana
+            return "full_moon"
+
+        last_last = find_last_phase_exact(d, 270.0)
+        if last_last and last_last.date() == d:
+            return "last_quarter"
+
+        return phase_name
 
     async def _async_update_data(self) -> dict:
         """Determina si los datos de la luna son válidos o requieren actualización."""
@@ -2334,10 +2357,11 @@ class MeteocatMoonCoordinator(DataUpdateCoordinator):
             # 🟣 Calcular fase e iluminación, distancia y diámetro angular
             moon_phase_value = moon_phase(today)
             moon_day_today = moon_day(today)
-            moon_phase_name = self._get_moon_phase_name(moon_phase_value)
+            lunation = lunation_number(today)
             illum_percentage = round(illuminated_percentage(today), 2)
             distance = round(moon_distance(today), 0)
             angular_diameter = round(moon_angular_diameter(today), 2)
+            moon_phase_name = self._get_moon_phase_name(today)
 
             # Inicializar moonrise_final y moonset_final
             moonrise_final = None
@@ -2467,6 +2491,7 @@ class MeteocatMoonCoordinator(DataUpdateCoordinator):
                         "illuminated_percentage": illum_percentage,
                         "moon_distance": distance,
                         "moon_angular_diameter": angular_diameter,
+                        "lunation": lunation,
                         "moonrise": moonrise_final.isoformat() if moonrise_final else None,
                         "moonset": moonset_final.isoformat() if moonset_final else None,
                     }
@@ -2518,6 +2543,7 @@ class MeteocatMoonFileCoordinator(DataUpdateCoordinator):
                 "illuminated_percentage": None,
                 "moon_distance": None,
                 "moon_angular_diameter": None,
+                "lunation": None,
                 "moonrise": None,
                 "moonset": None,
             }
@@ -2544,6 +2570,7 @@ class MeteocatMoonFileCoordinator(DataUpdateCoordinator):
             "illuminated_percentage": dades.get("illuminated_percentage"),
             "moon_distance": dades.get("moon_distance"),
             "moon_angular_diameter": dades.get("moon_angular_diameter"),
+            "lunation": dades.get("lunation"),
             "moonrise": moonrise_str,
             "moonset": moonset_str,
         }
