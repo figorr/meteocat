@@ -924,6 +924,9 @@
           "moon_angular_diameter": {
             "name": "Angular diameter (arcsec)"
           },
+          "lunation": {
+            "name": "Lunation"
+          },
           "last_updated": {
             "name": "Last updated"
           }
