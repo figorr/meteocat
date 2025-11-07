@@ -1,7 +1,7 @@
 # Meteocat for Home Assistant
 ![Meteocat Banner](images/banner.png)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Python](https://img.shields.io/badge/Language-Python-blue)]
+![Python](https://img.shields.io/badge/Language-Python-blue)
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg)](https://github.com/hacs/integration)
 [![Validate](https://github.com/figorr/meteocat/actions/workflows/validate.yaml/badge.svg)](https://github.com/figorr/meteocat/actions/workflows/validate.yaml)
 [![Release](https://github.com/figorr/meteocat/actions/workflows/release.yml/badge.svg)](https://github.com/figorr/meteocat/actions/workflows/release.yml)
