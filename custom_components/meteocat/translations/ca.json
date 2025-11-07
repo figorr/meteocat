@@ -837,6 +837,67 @@
           }
         }
       },
+      "sun": {
+        "name": "Sol",
+        "state": {
+          "above_horizon": "Sobre l'horitzó",
+          "below_horizon": "Sota l'horitzó"
+        },
+        "state_attributes": {
+          "elevation": {
+            "name": "Elevació"
+          },
+          "azimuth": {
+            "name": "Azimut"
+          },
+          "rising": {
+            "name": "Ascendent",
+            "state": {
+              "false": "No",
+              "true": "Sí"
+            }
+          },
+          "last_updated": {
+            "name": "Actualitzat"
+          },
+          "sunrise": {
+            "name": "Sortida del sol"
+          },
+          "sunset": {
+            "name": "Posta de sol"
+          },
+          "noon": {
+            "name": "Migdia"
+          },
+          "dawn_civil": {
+            "name": "Alba civil"
+          },
+          "dusk_civil": {
+            "name": "Crepuscle civil"
+          },
+          "dawn_nautical": {
+            "name": "Alba nàutica"
+          },
+          "dusk_nautical": {
+            "name": "Crepuscle nàutic"
+          },
+          "dawn_astronomical": {
+            "name": "Alba astronòmica"
+          },
+          "dusk_astronomical": {
+            "name": "Crepuscle astronòmic"
+          },
+          "midnight": {
+            "name": "Mitjanit solar"
+          },
+          "daylight_duration": {
+            "name": "Durada del dia"
+          },
+          "daylight_duration_hms": {
+            "name": "Durada del dia (HH:MM:SS)"
+          }
+        }
+      },
       "sunrise": {
         "name": "Sortida del sol",
         "state_attributes": {
@@ -926,6 +987,9 @@
           },
           "lunation": {
             "name": "Llunació"
+          },
+          "lunation_duration": {
+            "name": "Durada llunació"
           },
           "last_updated": {
             "name": "Actualitzat"

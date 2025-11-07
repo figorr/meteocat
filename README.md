@@ -135,6 +135,9 @@ You will see three available options:
   If for any reason some files in the `assets` folder (`towns.json`, `stations.json`, `variables.json`, `symbols.json`, or `stations_<town_id>.json`) are missing or outdated, you can regenerate them directly from the options menu.  
   > ℹ️ If the Meteocat API is not available at that moment, the integration will still start, and you can retry regeneration later.
 
+- **Update coordinates and elevation**  
+  Change the default station coordinates and elevation that were set during the first setup. So you can use your location coordinates and elevation for more accurate sun and moon data.
+
 ### Accessing the Options Menu
 
 You can access the Options Menu in two ways, both inside the integration:
@@ -168,7 +171,7 @@ Meteocat integration has its own weather card.
 
 To install the card, please follow the instructions from its own repository, [🎫 Meteocat Card](https://github.com/figorr/meteocat-card).
 
-![Meteocat Card](images/daily_forecast_2_alerts.png)
+![Meteocat Card](images/daily_forecast_no_alerts.png)
 
 # Documentation
 

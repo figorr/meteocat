@@ -837,6 +837,67 @@
           }
         }
       },
+      "sun": {
+        "name": "Sun",
+        "state": {
+          "above_horizon": "Above Horizon",
+          "below_horizon": "Below Horizon"
+        },
+        "state_attributes": {
+          "elevation": {
+            "name": "Elevation"
+          },
+          "azimuth": {
+            "name": "Azimuth"
+          },
+          "rising": {
+            "name": "Rising",
+            "state": {
+              "false": "No",
+              "true": "Yes"
+            }
+          },
+          "last_updated": {
+            "name": "Last Updated"
+          },
+          "sunrise": {
+            "name": "Sunrise"
+          },
+          "sunset": {
+            "name": "Sunset"
+          },
+          "noon": {
+            "name": "Noon"
+          },
+          "dawn_civil": {
+            "name": "Civil Dawn"
+          },
+          "dusk_civil": {
+            "name": "Civil Dusk"
+          },
+          "dawn_nautical": {
+            "name": "Nautical Dawn"
+          },
+          "dusk_nautical": {
+            "name": "Nautical Dusk"
+          },
+          "dawn_astronomical": {
+            "name": "Astronomical Dawn"
+          },
+          "dusk_astronomical": {
+            "name": "Astronomical Dusk"
+          },
+          "midnight": {
+            "name": "Solar Midnight"
+          },
+          "daylight_duration": {
+            "name": "Daylight Duration"
+          },
+          "daylight_duration_hms": {
+            "name": "Daylight Duration (HH:MM:SS)"
+          }
+        }
+      },
       "sunrise": {
         "name": "Sunrise",
         "state_attributes": {
@@ -926,6 +987,9 @@
           },
           "lunation": {
             "name": "Lunation"
+          },
+          "lunation_duration": {
+            "name": "Lunation duration"
           },
           "last_updated": {
             "name": "Last updated"

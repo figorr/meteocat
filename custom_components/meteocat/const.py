@@ -42,6 +42,7 @@ QUOTA_BASIC = "quota_basic"
 QUOTA_XEMA = "quota_xema"
 QUOTA_QUERIES = "quota_queries"
 LIGHTNING_FILE_STATUS = "lightning_file_status"
+SUN = "sun"
 SUNRISE = "sunrise"
 SUNSET = "sunset"
 SUN_FILE_STATUS = "sun_file_status"
@@ -52,14 +53,18 @@ MOONSET = "moonset"
 
 from homeassistant.const import Platform
 
-ATTRIBUTION = "Powered by Meteocatpy"
+ATTRIBUTION = "Powered by Meteocatpy & Solarmoonpy"
 PLATFORMS = [Platform.SENSOR, Platform.WEATHER]
 DEFAULT_NAME = "METEOCAT"
 
 # Tiempos para validación de API
 DEFAULT_VALIDITY_DAYS = 1  # Número de días a partir de los cuales se considera que el archivo de información está obsoleto
-DEFAULT_VALIDITY_HOURS = 5  # Hora a partir de la cual la API tiene la información actualizada de predicciones disponible para descarga
+DEFAULT_VALIDITY_HOURS = 6  # Hora a partir de la cual la API tiene la información actualizada de predicciones disponible para descarga
 DEFAULT_VALIDITY_MINUTES = 0  # Minutos a partir de los cuales la API tiene la información actualizada de predicciones disponible para descarga
+DEFAULT_UVI_LOW_VALIDITY_HOURS = 5  # Hora a partir de la cual la API tiene la información actualizada de datos UVI disponible para descarga con límite bajo de cuota
+DEFAULT_UVI_LOW_VALIDITY_MINUTES = 0  # Minutos a partir de los cuales la API tiene la información actualizada de datos UVI disponible para descarga con límite bajo de cuota
+DEFAULT_UVI_HIGH_VALIDITY_HOURS = 9  # Hora a partir de la cual la API tiene la información actualizada de datos UVI disponible para descarga con límite alto de cuota
+DEFAULT_UVI_HIGH_VALIDITY_MINUTES = 0  # Minutos a partir de los cuales la API tiene la información actualizada de datos UVI disponible para descarga con límite alto de cuota
 DEFAULT_ALERT_VALIDITY_TIME = 120  # Minutos a partir de los cuales las alertas están obsoletas y se se debe proceder a una nueva llamada a la API
 DEFAULT_QUOTES_VALIDITY_TIME = 240 # Minutos a partir de los cuales los datos de cuotas están obsoletos y se se debe proceder a una nueva llamada a la API
 DEFAULT_LIGHTNING_VALIDITY_TIME = 240 # Minutos a partir de los cuales los datos de rayos están obsoletos y se se debe proceder a una nueva llamada a la API
@@ -71,6 +76,9 @@ ALERT_VALIDITY_MULTIPLIER_100 = 12  # para limit_prediccio <= 100
 ALERT_VALIDITY_MULTIPLIER_200 = 6   # para 100 < limit_prediccio <= 200
 ALERT_VALIDITY_MULTIPLIER_500 = 3   # para 200 < limit_prediccio <= 500
 ALERT_VALIDITY_MULTIPLIER_DEFAULT = 1  # para limit_prediccio > 500
+
+# CUOTA ALTA PARA FAVORECER ACTUALIZACIONES DIARIAS DE LAS PREDICCIONES
+PREDICCIO_HIGH_QUOTA_LIMIT = 550
 
 # Códigos de sensores de la API
 WIND_SPEED = "wind_speed"  # Velocidad del viento

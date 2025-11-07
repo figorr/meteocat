@@ -4,8 +4,8 @@ import logging
 from datetime import datetime
 from pathlib import Path
 from homeassistant.core import HomeAssistant
-from homeassistant.util.dt import as_local, as_utc, start_of_local_day
-from homeassistant.helpers.sun import get_astral_event_date
+from homeassistant.util import dt as dt_util
+from solarmoonpy.location import Location
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -19,45 +19,40 @@ def get_storage_dir(hass: HomeAssistant, subdir: str | None = None) -> Path:
     return base_dir
 
 # Cálculo de amanecer y atardecer para definir cuando es de noche
-def get_sun_times(hass, current_time=None):
-    """Obtén las horas de amanecer y atardecer para el día actual."""
-    if current_time is None:
-        current_time = datetime.now()
+def get_sun_times(location: Location, current_time: datetime | None = None) -> tuple[datetime, datetime]:
+    """Obtiene las horas de amanecer y atardecer para una ubicación usando solarmoonpy."""
+    now = dt_util.as_local(current_time or dt_util.now())
+    today = now.date()
+    sunrise = location.sunrise(date=today, local=True)
+    sunset = location.sunset(date=today, local=True)
 
-    # Asegúrate de que current_time es aware (UTC)
-    current_time = as_utc(current_time)
-    today = start_of_local_day(as_local(current_time))
-
-    # Obtén los eventos de amanecer y atardecer del día actual
-    sunrise = get_astral_event_date(hass, "sunrise", today)
-    sunset = get_astral_event_date(hass, "sunset", today)
+    if not sunrise or not sunset:
+        raise ValueError("No se pudieron calcular amanecer o atardecer.")
 
     _LOGGER.debug(
-        "Sunrise: %s, Sunset: %s, Current Time: %s",
-        sunrise,
-        sunset,
-        as_local(current_time),
+        "[solarmoonpy] Amanecer: %s, Atardecer: %s, Hora actual: %s",
+        sunrise, sunset, now
     )
+    return sunrise, sunset
 
-    if sunrise and sunset:
-        return sunrise, sunset
-
-    raise ValueError("No se pudieron determinar los datos de amanecer y atardecer.")
-
-def is_night(current_time, hass):
-    """Determina si actualmente es de noche."""
-    # Asegúrate de que current_time es aware (UTC)
+def is_night(current_time, location: Location) -> bool:
+    """Determina si actualmente es de noche usando una instancia de Location."""
+    # Asegurarse de que current_time sea aware y en zona local
     if current_time.tzinfo is None:
-        current_time = as_utc(current_time)
+        _LOGGER.warning("current_time sin zona horaria, asumiendo UTC")
+        current_time = dt_util.as_local(dt_util.utc_to_local(current_time))
+    else:
+        current_time = dt_util.as_local(current_time)
 
-    sunrise, sunset = get_sun_times(hass, current_time)
+    try:
+        sunrise, sunset = get_sun_times(location, current_time)
+    except Exception as e:
+        _LOGGER.warning("Fallo al calcular amanecer/atardecer con solarmoonpy: %s", e)
+        return False  # fallback seguro
 
+    is_night_now = current_time < sunrise or current_time > sunset
     _LOGGER.debug(
-        "Hora actual: %s, Amanecer: %s, Atardecer: %s",
-        as_local(current_time),
-        as_local(sunrise),
-        as_local(sunset),
+        "[solarmoonpy] Hora actual: %s | Amanecer: %s | Atardecer: %s → Noche: %s",
+        current_time, sunrise, sunset, is_night_now
     )
-
-    # Es de noche si es antes del amanecer o después del atardecer
-    return current_time < sunrise or current_time > sunset
+    return is_night_now

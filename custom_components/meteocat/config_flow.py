@@ -21,8 +21,8 @@ from solarmoonpy.moon import (
     moon_distance,
     moon_angular_diameter,
     lunation_number,
-    moon_elongation,
-    find_last_phase_exact
+    get_moon_phase_name,
+    get_lunation_duration
 )
 from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResult
 from homeassistant.core import callback
@@ -79,41 +79,6 @@ def normalize_name(name: str) -> str:
     name = unicodedata.normalize("NFKD", name).encode("ASCII", "ignore").decode("utf-8")
     return name.lower()
 
-def get_moon_phase_name(d: date) -> str:
-    """Determina el nombre de la fase lunar para la fecha dada."""
-    percentage = illuminated_percentage(d)
-    elongation = moon_elongation(d)
-
-    # Determinar nombre intermedio basado en elongación y porcentaje iluminado
-    is_waxing = elongation < 180.0  # <180° creciente, >=180° menguante
-    if percentage < 50.0:
-        phase_name = "waxing_crescent" if is_waxing else "waning_crescent"
-    else:
-        phase_name = "waxing_gibbous" if is_waxing else "waning_gibbous"
-
-    # Verificar fases primarias exactas y override si corresponde
-    last_new = find_last_phase_exact(d, 0.0)
-    if last_new and last_new.date() == d:
-        return "new_moon"
-    elif percentage < 1.0:  # Backup para luna nueva cercana
-        return "new_moon"
-
-    last_first = find_last_phase_exact(d, 90.0)
-    if last_first and last_first.date() == d:
-        return "first_quarter"
-
-    last_full = find_last_phase_exact(d, 180.0)
-    if last_full and last_full.date() == d:
-        return "full_moon"
-    elif percentage > 99.0:  # Backup para luna llena cercana
-        return "full_moon"
-
-    last_last = find_last_phase_exact(d, 270.0)
-    if last_last and last_last.date() == d:
-        return "last_quarter"
-
-    return phase_name
-
 class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
     """Flujo de configuración para Meteocat."""
 
@@ -135,6 +100,8 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
         self.longitude: float | None = None
         self.altitude: float | None = None
         self.station_status: str | None = None
+        self.location: Location | None = None
+        self.timezone_str: str | None = None
 
     async def fetch_and_save_quotes(self, api_key: str):
         """Obtiene las cuotas de la API de Meteocat y las guarda en quotes.json."""
@@ -231,7 +198,7 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
                 )
 
     async def create_sun_file(self):
-        """Crea el archivo sun_{town_id}_data.json usando location.sun_events."""
+        """Crea el archivo sun_{town_id}_data.json con eventos solares + posición inicial del sol."""
         if not self.selected_municipi or self.latitude is None or self.longitude is None:
             _LOGGER.warning("No se puede crear sun_{town_id}_data.json: faltan municipio o coordenadas")
             return
@@ -241,10 +208,16 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
         sun_file = files_dir / f"sun_{town_id.lower()}_data.json"
 
         if sun_file.exists():
+            _LOGGER.debug("El archivo %s ya existe, no se crea de nuevo.", sun_file)
             return
 
         try:
-            loc = Location(LocationInfo(
+            # ZONA HORARIA DEL HASS
+            self.timezone_str = self.hass.config.time_zone or "Europe/Madrid"
+            tz = ZoneInfo(self.timezone_str)
+
+            # CREAR UBICACIÓN
+            self.location = Location(LocationInfo(
                 name=self.selected_municipi.get("nom", "Municipio"),
                 region="Spain",
                 timezone=self.timezone_str,
@@ -253,29 +226,81 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
                 elevation=self.altitude or 0.0,
             ))
 
-            current_date = datetime.now(loc.tzinfo).date()
-            events = loc.sun_events(date=current_date, local=True)
+            now = datetime.now(tz)
+            today = now.date()
+            tomorrow = today + timedelta(days=1)
 
-            sun_data_formatted = {
-                "actualitzat": {"dataUpdate": datetime.now(loc.tzinfo).isoformat()},
-                "dades": [
-                    {
-                        "sunrise": events["sunrise"].isoformat(),
-                        "noon": events["noon"].isoformat(),
-                        "sunset": events["sunset"].isoformat(),
-                        "date": current_date.isoformat()
-                    }
-                ]
+            # EVENTOS HOY Y MAÑANA
+            events_today = self.location.sun_events(date=today, local=True)
+            events_tomorrow = self.location.sun_events(date=tomorrow, local=True)
+
+            # LÓGICA DE EVENTOS (igual que en el coordinador)
+            expected = {}
+            events_list = [
+                "dawn_astronomical", "dawn_nautical", "dawn_civil",
+                "sunrise", "noon", "sunset",
+                "dusk_civil", "dusk_nautical", "dusk_astronomical",
+                "midnight",
+            ]
+
+            for event in events_list:
+                event_time = events_today.get(event)
+                if event_time and now >= event_time:
+                    expected[event] = events_tomorrow.get(event)
+                else:
+                    expected[event] = event_time
+
+            # daylight_duration según sunrise
+            sunrise = expected["sunrise"]
+            expected["daylight_duration"] = (
+                events_tomorrow["daylight_duration"]
+                if sunrise == events_tomorrow["sunrise"]
+                else events_today["daylight_duration"]
+            )
+
+            # POSICIÓN ACTUAL DEL SOL
+            sun_pos = self.location.sun_position(dt=now, local=True)
+
+            # CONSTRUIR DADES 
+            dades_dict = {
+                "dawn_civil": expected["dawn_civil"].isoformat() if expected["dawn_civil"] else None,
+                "dawn_nautical": expected["dawn_nautical"].isoformat() if expected["dawn_nautical"] else None,
+                "dawn_astronomical": expected["dawn_astronomical"].isoformat() if expected["dawn_astronomical"] else None,
+                "sunrise": expected["sunrise"].isoformat() if expected["sunrise"] else None,
+                "noon": expected["noon"].isoformat() if expected["noon"] else None,
+                "sunset": expected["sunset"].isoformat() if expected["sunset"] else None,
+                "dusk_civil": expected["dusk_civil"].isoformat() if expected["dusk_civil"] else None,
+                "dusk_nautical": expected["dusk_nautical"].isoformat() if expected["dusk_nautical"] else None,
+                "dusk_astronomical": expected["dusk_astronomical"].isoformat() if expected["dusk_astronomical"] else None,
+                "midnight": expected["midnight"].isoformat() if expected["midnight"] else None,
+                "daylight_duration": expected["daylight_duration"],
+
+                # CAMPOS DE POSICIÓN SOLAR
+                "sun_elevation": round(sun_pos["elevation"], 2),
+                "sun_azimuth": round(sun_pos["azimuth"], 2),
+                "sun_horizon_position": sun_pos["horizon_position"],
+                "sun_rising": sun_pos["rising"],
+                "sun_position_updated": now.isoformat(),
             }
 
-            # Guardar el archivo
+            # JSON FINAL
+            data_with_timestamp = {
+                "actualitzat": {"dataUpdate": now.isoformat()},
+                "dades": [dades_dict],
+            }
+
+            # GUARDAR
+            sun_file.parent.mkdir(parents=True, exist_ok=True)
             async with aiofiles.open(sun_file, "w", encoding="utf-8") as file:
-                await file.write(json.dumps(sun_data_formatted, ensure_ascii=False, indent=4))
-            _LOGGER.info("Archivo sun_%s_data.json creado con datos iniciales", town_id)
+                await file.write(json.dumps(data_with_timestamp, ensure_ascii=False, indent=4))
+
+            _LOGGER.info(
+                "Archivo sun_%s_data.json creado con eventos + posición solar inicial (elev=%.2f°, az=%.2f°)",
+                town_id, sun_pos["elevation"], sun_pos["azimuth"]
+            )
 
         except Exception as ex:
             _LOGGER.error("Error al crear sun_%s_data.json: %s", town_id, ex)
-
 
     async def create_moon_file(self):
         """Crea el archivo moon_{town_id}_data.json con datos iniciales de la fase lunar, moonrise y moonset."""
@@ -293,33 +318,66 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
                 current_time = datetime.now(timezone.utc).astimezone(TIMEZONE)
                 today = current_time.date()
 
-                # Fase lunar usando nuestro módulo
-                phase = moon_phase(today)
+                # Inicializar parámetros con valores por defecto
+                phase = None
+                moon_day_today = None
+                lunation = None
+                illuminated = None
+                distance = None
+                angular_diameter = None
+                moon_phase_name = None
+                lunation_duration = None
 
-                # Día lunar usando nuestro módulo
-                moon_day_today = moon_day(today)
+                # Calcular parámetros con manejo de errores individual
+                try:
+                    phase = round(moon_phase(today), 2)
+                except Exception as ex:
+                    _LOGGER.error("Error al calcular moon_phase: %s", ex)
 
-                # Lunación
-                lunation = lunation_number(today)
+                try:
+                    moon_day_today = moon_day(today)
+                except Exception as ex:
+                    _LOGGER.error("Error al calcular moon_day: %s", ex)
 
-                # Porcentaje iluminado usando la función de moon.py
-                illuminated = round(illuminated_percentage(today), 2)
+                try:
+                    lunation = lunation_number(today)
+                except Exception as ex:
+                    _LOGGER.error("Error al calcular lunation_number: %s", ex)
 
-                # Distancia entre la Tierra y la Luna en Km
-                distance = round(moon_distance(today), 0)
+                try:
+                    illuminated = round(illuminated_percentage(today), 2)
+                except Exception as ex:
+                    _LOGGER.error("Error al calcular illuminated_percentage: %s", ex)
 
-                # Diámetro angular en arcseconds
-                angular_diameter = round(moon_angular_diameter(today), 2)
+                try:
+                    distance = round(moon_distance(today), 0)
+                except Exception as ex:
+                    _LOGGER.error("Error al calcular moon_distance: %s", ex)
 
-                # Nombres de fase
-                moon_phase_name = self.get_moon_phase_name(today)
+                try:
+                    angular_diameter = round(moon_angular_diameter(today), 2)
+                except Exception as ex:
+                    _LOGGER.error("Error al calcular moon_angular_diameter: %s", ex)
+
+                try:
+                    moon_phase_name = get_moon_phase_name(today)
+                except Exception as ex:
+                    _LOGGER.error("Error al calcular moon_phase_name: %s", ex)
+                
+                try:
+                    lunation_duration = get_lunation_duration(today)
+                except Exception as ex:
+                    _LOGGER.error("Error al calcular lunation_duration: %s", ex)
 
                 # Moonrise y moonset aproximados (UTC)
-                rise_utc, set_utc = moon_rise_set(self.latitude, self.longitude, today)
-
-                # Convertir a ISO y a TZ local si existen
-                rise_local = rise_utc.astimezone(TIMEZONE).isoformat() if rise_utc else None
-                set_local = set_utc.astimezone(TIMEZONE).isoformat() if set_utc else None
+                try:
+                    rise_utc, set_utc = moon_rise_set(self.latitude, self.longitude, today)
+                    rise_local = rise_utc.astimezone(TIMEZONE).isoformat() if rise_utc else None
+                    set_local = set_utc.astimezone(TIMEZONE).isoformat() if set_utc else None
+                except Exception as ex:
+                    _LOGGER.error("Error al calcular moon_rise_set: %s", ex)
+                    rise_local = None
+                    set_local = None
 
                 # Formatear datos para guardar
                 moon_data_formatted = {
@@ -334,6 +392,7 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
                             "moon_distance": distance,
                             "moon_angular_diameter": angular_diameter,
                             "lunation": lunation,
+                            "lunation_duration": lunation_duration,
                             "moonrise": rise_local,
                             "moonset": set_local
                         }
@@ -346,7 +405,7 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
                 _LOGGER.info("Archivo moon_%s_data.json creado con datos iniciales", town_id)
 
             except Exception as ex:
-                _LOGGER.error("Error al crear moon_%s_data.json: %s", town_id, ex)
+                _LOGGER.error("Error general al crear moon_%s_data.json: %s", town_id, ex)
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None

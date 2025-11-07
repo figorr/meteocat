@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 from .const import CONDITION_MAPPING
 from .helpers import is_night
 import logging
@@ -8,7 +9,10 @@ import logging
 _LOGGER = logging.getLogger(__name__)
 
 def get_condition_from_statcel(
-    codi_estatcel, current_time: datetime, hass, is_hourly: bool = True
+    codi_estatcel: Any,
+    current_time: datetime,
+    location,
+    is_hourly: bool = True
 ) -> dict:
     """
     Convierte el código 'estatCel' en condición de Home Assistant.
@@ -33,7 +37,7 @@ def get_condition_from_statcel(
         codi_estatcel = [codi_estatcel]
 
     # Determinar si es de noche
-    is_night_flag = is_night(current_time, hass)
+    is_night_flag = is_night(current_time, location)
 
     # Identificar la condición basada en el código
     for condition, codes in CONDITION_MAPPING.items():

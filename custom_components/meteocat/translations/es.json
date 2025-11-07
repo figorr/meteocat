@@ -837,6 +837,67 @@
           }
         }
       },
+      "sun": {
+        "name": "Sol",
+        "state": {
+          "above_horizon": "Sobre el horizonte",
+          "below_horizon": "Bajo el horizonte"
+        },
+        "state_attributes": {
+          "elevation": {
+            "name": "Elevación"
+          },
+          "azimuth": {
+            "name": "Azimut"
+          },
+          "rising": {
+            "name": "Ascendente",
+            "state": {
+              "false": "No",
+              "true": "Sí"
+            }
+          },
+          "last_updated": {
+            "name": "Actualizado"
+          },
+          "sunrise": {
+            "name": "Amanecer"
+          },
+          "sunset": {
+            "name": "Atardecer"
+          },
+          "noon": {
+            "name": "Mediodía"
+          },
+          "dawn_civil": {
+            "name": "Amanecer civil"
+          },
+          "dusk_civil": {
+            "name": "Atardecer civil"
+          },
+          "dawn_nautical": {
+            "name": "Amanecer náutico"
+          },
+          "dusk_nautical": {
+            "name": "Atardecer náutico"
+          },
+          "dawn_astronomical": {
+            "name": "Amanecer astronómico"
+          },
+          "dusk_astronomical": {
+            "name": "Atardecer astronómico"
+          },
+          "midnight": {
+            "name": "Medianoche solar"
+          },
+          "daylight_duration": {
+            "name": "Duración del día"
+          },
+          "daylight_duration_hms": {
+            "name": "Duración del día (HH:MM:SS)"
+          }
+        }
+      },
       "sunrise": {
         "name": "Amanecer",
         "state_attributes": {
@@ -926,6 +987,9 @@
           },
           "lunation": {
             "name": "Lunación"
+          },
+          "lunation_duration": {
+            "name": "Duración lunación"
           },
           "last_updated": {
             "name": "Actualizado"

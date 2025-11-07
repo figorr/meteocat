@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone, time, timedelta
 from zoneinfo import ZoneInfo
+from typing import Dict, Any, Optional
 import os
 import json
 import aiofiles
@@ -105,6 +106,7 @@ from .const import (
     DEFAULT_LIGHTNING_VALIDITY_TIME,
     DEFAULT_LIGHTNING_VALIDITY_HOURS,
     DEFAULT_LIGHTNING_VALIDITY_MINUTES,
+    SUN,
     SUNRISE,
     SUNSET,
     SUN_FILE_STATUS,
@@ -443,7 +445,13 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         icon="mdi:counter",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
-    # Nuevos sensores de sol
+    MeteocatSensorEntityDescription(
+        key=SUN,
+        translation_key="sun",
+        icon="mdi:weather-sunny",
+        device_class=SensorDeviceClass.ENUM,
+        options=["above_horizon", "below_horizon"],
+    ),
     MeteocatSensorEntityDescription(
         key=SUNRISE,
         translation_key="sunrise",
@@ -667,6 +675,13 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
         if description.key == SUN_FILE_STATUS
     )
 
+    # Sensor de posición del sol
+    async_add_entities(
+        MeteocatSunPositionSensor(sun_file_coordinator, description, entry_data)
+        for description in SENSOR_TYPES
+        if description.key == SUN
+    )
+    
     # Sensores de sol
     async_add_entities(
         MeteocatSunSensor(sun_file_coordinator, description, entry_data)
@@ -1833,6 +1848,83 @@ class MeteocatLightningSensor(CoordinatorEntity[MeteocatLightningFileCoordinator
             model="Meteocat API",
         )
 
+class MeteocatSunPositionSensor(CoordinatorEntity[MeteocatSunFileCoordinator], SensorEntity):
+    """Representation of Meteocat Sun position sensor."""
+    _attr_has_entity_name = True
+    entity_description: MeteocatSensorEntityDescription
+
+    def __init__(self, coordinator, description, entry_data):
+        """Initialize the Sun position sensor."""
+        super().__init__(coordinator)
+        self.entity_description = description
+        self._town_name = entry_data.get(TOWN_NAME)
+        self._town_id = entry_data.get(TOWN_ID)
+        self._station_id = entry_data.get(STATION_ID)
+        self._attr_unique_id = f"{DOMAIN}_{self._town_id}_{description.key}"
+
+        _LOGGER.debug(
+            "Inicializando sensor de posición solar: %s (ID: %s)",
+            description.translation_key, self._attr_unique_id
+        )
+
+    @property
+    def native_value(self) -> str | None:
+        """Return 'above_horizon' or 'below_horizon'."""
+        return self.coordinator.data.get("sun_horizon_position")
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return all sun-related attributes as raw values (datetime strings or numbers)."""
+        data = self.coordinator.data
+        attrs = {}
+
+        # === POSICIÓN ACTUAL ===
+        attrs["elevation"] = data.get("sun_elevation")
+        attrs["azimuth"] = data.get("sun_azimuth")
+        attrs["rising"] = data.get("sun_rising")
+
+        # === DURACIÓN DE LUZ DIURNA EN H:M:S (justo antes de daylight_duration) ===
+        daylight_duration = data.get("daylight_duration")
+        if isinstance(daylight_duration, (int, float)) and daylight_duration >= 0:
+            total_seconds = int(round(daylight_duration * 3600))  # Horas → segundos con redondeo
+            hours = total_seconds // 3600
+            minutes = (total_seconds % 3600) // 60
+            seconds = total_seconds % 60
+            attrs["daylight_duration_hms"] = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+        # === EVENTOS DEL DÍA (orden garantizado por inserción) ===
+        event_keys = [
+            "daylight_duration",
+            "dawn_astronomical",
+            "dawn_nautical",
+            "dawn_civil",
+            "sunrise",
+            "noon",
+            "sunset",
+            "dusk_civil",
+            "dusk_nautical",
+            "dusk_astronomical",
+            "midnight",
+        ]
+
+        for key in event_keys:
+            if key in data:
+                attrs[key] = data[key]
+        
+        attrs["last_updated"] = data.get("sun_position_updated")
+
+        return attrs
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return the device info."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._town_id)},
+            name=f"Meteocat {self._station_id} {self._town_name}",
+            manufacturer="Meteocat",
+            model="Meteocat API",
+        )
+
 class MeteocatSunSensor(CoordinatorEntity[MeteocatSunFileCoordinator], SensorEntity):
     """Representation of Meteocat Sun sensors (sunrise/sunset)."""
     _attr_has_entity_name = True
@@ -1998,6 +2090,7 @@ class MeteocatMoonSensor(CoordinatorEntity[MeteocatMoonFileCoordinator], SensorE
         attributes["moon_distance"] = self.coordinator.data.get("moon_distance")
         attributes["moon_angular_diameter"] = self.coordinator.data.get("moon_angular_diameter")
         attributes["lunation"] = self.coordinator.data.get("lunation")
+        attributes["lunation_duration"] = self.coordinator.data.get("lunation_duration")
         attributes["last_updated"] = self.coordinator.data.get("last_lunar_update_date")
         return attributes
 
