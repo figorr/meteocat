@@ -1,3 +1,37 @@
+# [3.2.0](https://github.com/figorr/meteocat/compare/v3.1.0...v3.2.0) (2025-11-07)
+
+
+### Bug Fixes
+
+* add validation date for moon coordinator ([8644f56](https://github.com/figorr/meteocat/commit/8644f56d8f8b6b607ba8809499afbfb81eb70b28))
+* adjust moon update interval ([ea51d90](https://github.com/figorr/meteocat/commit/ea51d905a232ab947607333ea4abaf449cd2e786))
+* fix friendly time translation ([9081a34](https://github.com/figorr/meteocat/commit/9081a343fd1562cb001f8a4b69948be3e26cbe00))
+* fix reset data moon file coordinator ([f3cf22f](https://github.com/figorr/meteocat/commit/f3cf22f1fb1d1a19d6ee9fefd2be304850be1180))
+* more accurate moon calculation ([dcee6e0](https://github.com/figorr/meteocat/commit/dcee6e0040d1cf77860fc7cbd06a5518145d3a72))
+
+
+### Features
+
+* add new moon day data ([77edf68](https://github.com/figorr/meteocat/commit/77edf681af037f00748b2b3cf2d281655d225718))
+* add new moon day data ([d2be96e](https://github.com/figorr/meteocat/commit/d2be96ec7f4f9d48c1f018ba2c642f29558d05fe))
+* add translations for lunation attribute ([10e3409](https://github.com/figorr/meteocat/commit/10e3409f82fa6530f0edf81c5e8406d019aeeaf1))
+* bump solarmoonpy to v1.0.0 ([65c2a04](https://github.com/figorr/meteocat/commit/65c2a0495250bac284c060b575256f95f4fb0be0))
+* bump solarmoonpy to v1.0.1 ([aa86747](https://github.com/figorr/meteocat/commit/aa86747ed41d69a80ac009b75b596746762548fe))
+* bump solarmoonpy to v1.0.3 ([246bd83](https://github.com/figorr/meteocat/commit/246bd835589978940efc11722b79e420f838ecab))
+* include latitude, longitude and altitude as new required variables ([5ef864c](https://github.com/figorr/meteocat/commit/5ef864ca38fa17ed05b36a19a96b8c7182f66be7))
+* new latitude, longitude and altitude update options setup ([1aeb968](https://github.com/figorr/meteocat/commit/1aeb9682c8e65b3cb0b29a7b7467edcc455304c9))
+* new lunation attribute for moon and moon phase name code ([60c7129](https://github.com/figorr/meteocat/commit/60c7129757916908baf26439819458ea3a173ad4))
+* new lunation attribute for moon sensor ([9bb32ff](https://github.com/figorr/meteocat/commit/9bb32ff03bd7eba291a1ee1aa578e2838dcf9bd5))
+* new lunation data and moon phase name rework ([0616401](https://github.com/figorr/meteocat/commit/0616401243334c21736d0877e5e50e435279e002))
+* new moon day attribute ([86ec6e3](https://github.com/figorr/meteocat/commit/86ec6e311fc098174027f17d3502e8be740d7e86))
+* new moon sensors ([7c7c1d3](https://github.com/figorr/meteocat/commit/7c7c1d38393a40fd2e69eeba2c24bb185ae349ef))
+* new solarmoonpy requirement for sun and moon events calculation ([1d25a62](https://github.com/figorr/meteocat/commit/1d25a6252cf568e1242f654c389aeada2b5d73f6))
+* new sun and moon coordinators ([af2290e](https://github.com/figorr/meteocat/commit/af2290e7384a9ad5416afdf4d6767ad69099813c))
+* new sun and moon files ([b489d7a](https://github.com/figorr/meteocat/commit/b489d7a9abc5af747fc50a2e0d7b0d661408b824))
+* new sun and moon sensors ([91265f3](https://github.com/figorr/meteocat/commit/91265f3c6cbd512b3706c29d466f9bb01df6d45e))
+* translation for new moon day attribute ([162859e](https://github.com/figorr/meteocat/commit/162859e2822374b81835cb1af07325dceaf5a55e))
+* translations for the new moon and sun sensors ([91a33b6](https://github.com/figorr/meteocat/commit/91a33b6b52e34ed69eed4eb5fbfaf9dffd20df57))
+
 # [3.1.0](https://github.com/figorr/meteocat/compare/v3.0.0...v3.1.0) (2025-09-27)
 
 
