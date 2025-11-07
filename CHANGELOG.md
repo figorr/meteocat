@@ -1,4 +1,4 @@
-# [4.2.0](https://github.com/figorr/meteocat/compare/v3.2.0...v4.0.0) (2025-11-07)
+# [4.0.0](https://github.com/figorr/meteocat/compare/v3.2.0...v4.0.0) (2025-11-07)
 
 
 ## 🚀 Release Meteocat integration v4.0.0 — major improvements and new solar/lunar system
