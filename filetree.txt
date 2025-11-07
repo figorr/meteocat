@@ -51,6 +51,7 @@
     ├── banner.png
     ├── change_units.png
     ├── daily_forecast_2_alerts.png
+    ├── daily_forecast_no_alerts.png
     ├── devices.png
     ├── diagnostic_sensors.png
     ├── dynamic_sensors.png
