@@ -1,3 +1,25 @@
+# [4.2.0](https://github.com/figorr/meteocat/compare/v3.2.0...v4.0.0) (2025-11-07)
+
+
+## 🚀 Release Meteocat integration v4.0.0 — major improvements and new solar/lunar system
+My own custom Python package `Solarmoonpy` is introduced in this major release.
+`Solarmoonpy` added support for new native sun and moon sensors in the Meteocat integration.
+
+### ✨ Highlights:
+- Introduced new Python package `Solarmoonpy` to handle all solar and lunar data and event calculations.
+  → Replaces the `astral` dependency completely.
+- Added new solar and lunar sensors to provide richer astronomical data with many extra attributes.
+- Added configuration option to manually adjust default coordinates and elevation.
+  → This allows users to fine-tune their position for more accurate solar and lunar event calculations instead of using the default station coordinates and elevation.
+
+### 🛠 Changes:
+- Major refactor and optimization of coordinator logic for better performance and stability.
+- The default validation hour for forecasts is set to 6.
+
+### ⚠️ Note:
+- The new v4.0.0 is required for using Meteocat Card v3.0.0 and later.
+- Upgrade is recommended if you plan to use the updated card.
+
 # [3.2.0](https://github.com/figorr/meteocat/compare/v3.1.0...v3.2.0) (2025-11-07)
 
 
