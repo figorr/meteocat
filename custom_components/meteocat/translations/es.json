@@ -824,8 +824,10 @@
               "thickness_10_at_800": "grosor > 10 cm en cotas superiores a 800 metros hasta 1000 metros",
               "thickness_5_at_300": "grosor > 5 cm en cotas inferiores a 300 metros",
               "thickness_5_at_600": "grosor > 5 cm en cotas superiores a 600 metros hasta 800 metros",
+              "thickness_2_at_400": "grosor > 2 cm en cotas superiores a 400 metros",
               "thickness_2_at_300": "grosor > 2 cm en cotas superiores a 300 metros hasta 600 metros",
               "thickness_0_at_300": "grosor ≥ 0 cm en cotas inferiores a 300 metros",
+              "thickness_0_at_200": "grosor ≥ 0 cm en cotas superiores a 200 metros",
               "unknown": "Desconocido"
             }
           },

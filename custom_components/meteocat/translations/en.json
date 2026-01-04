@@ -824,8 +824,10 @@
               "thickness_10_at_800": "thickness > 10 cm at altitudes above 800 meters up to 1000 meters",
               "thickness_5_at_300": "thickness > 5 cm at altitudes below 300 meters",
               "thickness_5_at_600": "thickness > 5 cm at altitudes above 600 meters up to 800 meters",
+              "thickness_2_at_400": "thickness > 2 cm at altitudes above 400 meters",
               "thickness_2_at_300": "thickness > 2 cm at altitudes above 300 meters up to 600 meters",
               "thickness_0_at_300": "thickness ≥ 0 cm at altitudes below 300 meters",
+              "thickness_0_at_200": "thickness ≥ 0 cm at altitudes above 200 meters",
               "unknown": "Unknown"
             }
           },

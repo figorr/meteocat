@@ -824,8 +824,10 @@
               "thickness_10_at_800": "gruix > 10 cm a cotes superiors a 800 metres fins a 1000 metres",
               "thickness_5_at_300": "gruix > 5 cm a cotes inferiors a 300 metres",
               "thickness_5_at_600": "gruix > 5 cm a cotes superiors a 600 metres fins a 800 metres",
+              "thickness_2_at_400": "gruix > 2 cm a cotes superiors a 400 metres",
               "thickness_2_at_300": "gruix > 2 cm a cotes superiors a 300 metres fins a 600 metres",
               "thickness_0_at_300": "gruix ≥ 0 cm a cotes inferiors a 300 metres",
+              "thickness_0_at_200": "gruix ≥ 0 cm a cotes superiors a 200 metres",
               "unknown": "Desconegut"
             }
           },
