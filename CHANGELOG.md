@@ -1,3 +1,12 @@
+## [4.0.1](https://github.com/figorr/meteocat/compare/v4.0.0...v4.0.1) (2026-01-04)
+
+
+### Bug Fixes
+
+* add translation for new snow thresholds ([e57a0b6](https://github.com/figorr/meteocat/commit/e57a0b618a241e9df89855a211e0f8b4a68750cf))
+* fix snow meteor name and include new threshold ([fbec1e2](https://github.com/figorr/meteocat/commit/fbec1e23d6b5157a1e02f30bcd4f461b54ee519c))
+* improve cache ([d36c43a](https://github.com/figorr/meteocat/commit/d36c43a831a4515d1fade109fc5b5154b2d425e4))
+
 # [4.0.0](https://github.com/figorr/meteocat/compare/v3.2.0...v4.0.0) (2025-11-07)
 
 
