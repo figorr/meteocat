@@ -290,27 +290,54 @@ class MeteocatSensorCoordinator(DataUpdateCoordinator):
             raise
         except Exception as err:
             if isinstance(err, ConfigEntryNotReady):
-                _LOGGER.exception(
-                    "No se pudo inicializar el dispositivo (Station ID: %s): %s",
-                    self.station_id,
-                    err,
-                )
+                _LOGGER.exception("No se pudo inicializar el dispositivo (Station ID: %s): %s", self.station_id, err)
                 raise
             else:
-                _LOGGER.exception(
-                    "Error inesperado al obtener datos de los sensores (Station ID: %s): %s",
-                    self.station_id,
-                    err,
-                )
-
-        # Cargar datos en caché si la API falla
+                _LOGGER.exception("Error inesperado al obtener datos de sensores (Station ID: %s): %s", self.station_id, err)
+           
+        # === FALLBACK SEGURO ===
         cached_data = await load_json_from_file(self.station_file)
-        if cached_data:
-            _LOGGER.warning("Usando datos en caché para la estación %s.", self.station_id)
+        if cached_data and isinstance(cached_data, list) and cached_data:
+            # Buscar la última lectura (cualquier variable)
+            last_reading = None
+            last_time_str = "unknown"
+            for var_block in cached_data:
+                for variable in var_block.get("variables", []):
+                    lectures = variable.get("lectures", [])
+                    if lectures:
+                        candidate = lectures[-1].get("data")
+                        if candidate and (last_reading is None or candidate > last_time_str):
+                            last_reading = candidate
+                            last_time_str = candidate
+            
+            # Formatear hora legible
+            try:
+                if last_time_str != "unknown":
+                    dt = datetime.fromisoformat(last_time_str.replace("Z", "+00:00"))
+                    local_dt = dt.astimezone(TIMEZONE)
+                    display_time = local_dt.strftime("%d/%m/%Y %H:%M")
+                else:
+                    display_time = "unknown"
+            except (ValueError, TypeError, AttributeError):
+                display_time = last_time_str.split("T")[0] if "T" in last_time_str else last_time_str
+            
+            _LOGGER.warning(
+                "SENSOR: API falló → usando caché local:\n"
+                "   • Estación: %s (%s)\n"
+                "   • Archivo: %s\n"
+                "   • Última lectura: %s",
+                self.station_name,
+                self.station_id,
+                self.station_file.name,
+                display_time
+            )
+            
+            self.async_set_updated_data(cached_data)
             return cached_data
-
-        _LOGGER.error("No se pudo obtener datos actualizados ni cargar datos en caché.")
-        return None
+        
+        _LOGGER.error("SENSOR: No hay caché disponible para los datos de la estación %s.", self.station_id)
+        self.async_set_updated_data([])
+        return []
 
 class MeteocatStaticSensorCoordinator(DataUpdateCoordinator):
     """Coordinator to manage and update static sensor data."""
@@ -490,13 +517,30 @@ class MeteocatUviCoordinator(DataUpdateCoordinator):
             raise
         except Exception as err:
             _LOGGER.exception("Error inesperado al obtener datos del índice UV para %s: %s", self.town_id, err)
-
-        # Fallback a caché en disco
+            
+        # === FALLBACK SEGURO ===
         cached_data = await load_json_from_file(self.uvi_file)
-        if cached_data:
-            _LOGGER.warning("Usando datos en caché para la ciudad %s.", self.town_id)
-            return cached_data.get("uvi", [])
-        _LOGGER.error("No se pudo obtener datos UVI ni cargar caché.")
+        if cached_data and "uvi" in cached_data and cached_data["uvi"]:
+            raw_date = cached_data["uvi"][0].get("date", "unknown")
+            # Formatear fecha para log
+            try:
+                first_date = datetime.strptime(raw_date, "%Y-%m-%d").strftime("%d/%m/%Y")
+            except (ValueError, TypeError):
+                first_date = raw_date
+                
+            _LOGGER.warning(
+                "API UVI falló → usando caché local:\n"
+                " • Archivo: %s\n"
+                " • Datos desde: %s",
+                self.uvi_file.name,
+                first_date
+            )
+            
+            self.async_set_updated_data(cached_data["uvi"])
+            return cached_data["uvi"]
+        
+        _LOGGER.error("No hay datos UVI ni en caché para %s", self.town_id)
+        self.async_set_updated_data([])
         return []
 
 class MeteocatUviFileCoordinator(BaseFileCoordinator):
@@ -753,20 +797,36 @@ class MeteocatEntityCoordinator(DataUpdateCoordinator):
             raise
         except Exception as err:
             _LOGGER.exception("Error inesperado al obtener datos de predicción: %s", err)
-
-        # -----------------------------------------------------------------
-        #  Fallback: usar caché local si todo falla
-        # -----------------------------------------------------------------
+           
+        # === FALLBACK SEGURO ===
         hourly_cache = await load_json_from_file(self.hourly_file) or {}
         daily_cache = await load_json_from_file(self.daily_file) or {}
-
+        
+        # --- Fecha horaria ---
+        h_raw = hourly_cache.get("dies", [{}])[0].get("data", "")
+        try:
+            h_date = h_raw.replace("Z", "").split("T")[0]
+            h_display = datetime.strptime(h_date, "%Y-%m-%d").strftime("%d/%m/%Y")
+        except (ValueError, AttributeError, IndexError):
+            h_display = "unknown"
+        
+        # --- Fecha diaria ---
+        d_raw = daily_cache.get("dies", [{}])[0].get("data", "")
+        try:
+            d_date = d_raw.replace("Z", "").split("T")[0]
+            d_display = datetime.strptime(d_date, "%Y-%m-%d").strftime("%d/%m/%Y")
+        except (ValueError, AttributeError, IndexError):
+            d_display = "unknown"
+        
         _LOGGER.warning(
-            "Cargando datos desde caché para %s. Datos horarios: %s, Datos diarios: %s",
-            self.town_id,
-            "Encontrados" if hourly_cache else "No encontrados",
-            "Encontrados" if daily_cache else "No encontrados",
+            "API falló → usando caché local:\n"
+            "   • %s → %s\n"
+            "   • %s → %s",
+            self.hourly_file.name, h_display,
+            self.daily_file.name, d_display
         )
-
+        
+        self.async_set_updated_data({"hourly": hourly_cache, "daily": daily_cache})
         return {"hourly": hourly_cache, "daily": daily_cache}
 
 def get_condition_from_code(code: int) -> str:
@@ -1381,20 +1441,36 @@ class MeteocatAlertsCoordinator(DataUpdateCoordinator):
             _LOGGER.error("Error al obtener datos de alertas: %s", err)
             raise
         except Exception as err:
-            _LOGGER.exception("Error inesperado al obtener datos de alertas: %s", err)
-
-        # Intentar cargar datos en caché si hay un error
+            _LOGGER.exception("Error al obtener alertas: %s", err)
+            
+        # === FALLBACK SEGURO ===
         cached_data = await load_json_from_file(self.alerts_file)
         if self._is_valid_alert_data(cached_data):
+            update_str = cached_data["actualitzat"]["dataUpdate"]
+            try:
+                update_dt = datetime.fromisoformat(update_str)
+                local_dt = update_dt.astimezone(TIMEZONE)
+                display_time = local_dt.strftime("%d/%m/%Y %H:%M")
+            except (ValueError, TypeError):
+                display_time = update_str
+            
             _LOGGER.warning(
-                "Usando datos en caché para las alertas. Última actualización: %s",
-                cached_data["actualitzat"]["dataUpdate"],
+                "ALERTAS: API falló → usando caché local:\n"
+                "   • Archivo: %s\n"
+                "   • Última actualización: %s\n"
+                "   • Alertas activas: %d",
+                self.alerts_file.name,
+                display_time
             )
-            return {"actualizado": cached_data['actualitzat']['dataUpdate']}
-
-        # Si no se puede actualizar ni cargar datos en caché, retornar None
-        _LOGGER.error("No se pudo obtener datos actualizados ni cargar datos en caché de alertas.")
-        return None
+            
+            self.async_set_updated_data({
+                "actualizado": cached_data["actualitzat"]["dataUpdate"]
+            })
+            return {"actualizado": cached_data["actualitzat"]["dataUpdate"]}
+        
+        _LOGGER.error("ALERTAS: No hay caché disponible. Sin datos de alertas.")
+        self.async_set_updated_data({})
+        return {}
 
     @staticmethod
     def _is_valid_alert_data(data: dict) -> bool:
@@ -1822,16 +1898,40 @@ class MeteocatQuotesCoordinator(DataUpdateCoordinator):
             _LOGGER.error("Error al obtener cuotas de la API de Meteocat: %s", err)
             raise
         except Exception as err:
-            _LOGGER.exception("Error inesperado al obtener cuotas de la API de Meteocat: %s", err)
-        
-        # Intentar cargar datos en caché si hay un error
+            _LOGGER.exception("Error al obtener cuotas: %s", err)
+           
+        # === FALLBACK SEGURO ===
         cached_data = await load_json_from_file(self.quotes_file)
-        if cached_data:
-            _LOGGER.warning("Usando datos en caché para las cuotas de la API de Meteocat.")
-            return {"actualizado": cached_data['actualitzat']['dataUpdate']}
-
-        _LOGGER.error("No se pudo obtener datos actualizados ni cargar datos en caché.")
-        return None
+        if cached_data and "actualitzat" in cached_data and "dataUpdate" in cached_data["actualitzat"]:
+            update_str = cached_data["actualitzat"]["dataUpdate"]
+            try:
+                update_dt = datetime.fromisoformat(update_str)
+                local_dt = update_dt.astimezone(TIMEZONE)
+                display_time = local_dt.strftime("%d/%m/%Y %H:%M")
+            except (ValueError, TypeError):
+                display_time = update_str.split("T")[0]
+            
+            # Contar planes activos
+            plans_count = len(cached_data.get("plans", []))
+            
+            _LOGGER.warning(
+                "CUOTAS: API falló → usando caché local:\n"
+                "   • Archivo: %s\n"
+                "   • Última actualización: %s\n"
+                "   • Planes registrados: %d",
+                self.quotes_file.name,
+                display_time,
+                plans_count
+            )
+            
+            self.async_set_updated_data({
+                "actualizado": cached_data["actualitzat"]["dataUpdate"]
+            })
+            return {"actualizado": cached_data["actualitzat"]["dataUpdate"]}
+        
+        _LOGGER.error("CUOTAS: No hay caché disponible. Sin información de consumo.")
+        self.async_set_updated_data({})
+        return {}
     
 class MeteocatQuotesFileCoordinator(BaseFileCoordinator):
     """Coordinator para manejar la actualización de las cuotas desde quotes.json."""
@@ -1993,16 +2093,36 @@ class MeteocatLightningCoordinator(DataUpdateCoordinator):
             _LOGGER.warning("Tiempo de espera agotado al obtener los datos de rayos de la API de Meteocat.")
             raise ConfigEntryNotReady from err
         except Exception as err:
-            _LOGGER.exception("Error inesperado al obtener los datos de rayos de la API de Meteocat: %s", err)
-
-        # Intentar cargar datos en caché si la API falla
+            _LOGGER.exception("Error al obtener datos de rayos: %s", err)
+            
+        # === FALLBACK SEGURO ===
         cached_data = await load_json_from_file(self.lightning_file)
-        if cached_data:
-            _LOGGER.warning("Usando datos en caché para los datos de rayos de la API de Meteocat.")
-            return {"actualizado": cached_data['actualitzat']['dataUpdate']}
+        if cached_data and "actualitzat" in cached_data:
+            update_str = cached_data["actualitzat"]["dataUpdate"]
+            try:
+                update_dt = datetime.fromisoformat(update_str)
+                # Convertir a hora local para mostrar
+                local_dt = update_dt.astimezone(TIMEZONE)
+                display_time = local_dt.strftime("%d/%m/%Y %H:%M")
+            except (ValueError, TypeError):
+                display_time = update_str
+            
+            _LOGGER.warning(
+                "API rayos falló → usando caché local:\n"
+                "   • Archivo: %s\n"
+                "   • Última actualización: %s",
+                self.lightning_file.name,
+                display_time
+            )
 
-        _LOGGER.error("No se pudo obtener datos actualizados ni cargar datos en caché.")
-        return None
+            self.async_set_updated_data({
+                "actualizado": cached_data["actualitzat"]["dataUpdate"]
+            })
+            return {"actualizado": cached_data["actualitzat"]["dataUpdate"]}
+        
+        _LOGGER.error("No hay caché de rayos disponible.")
+        self.async_set_updated_data({})
+        return {}
 
 class MeteocatLightningFileCoordinator(BaseFileCoordinator):
     """Coordinator para manejar la actualización de los datos de rayos desde lightning_{region_id}.json."""
@@ -2440,11 +2560,39 @@ class MeteocatSunCoordinator(DataUpdateCoordinator):
 
         except Exception as err:
             _LOGGER.exception("Error al calcular/guardar los datos solares: %s", err)
+            
+            # === FALLBACK SEGURO ===
             cached = await load_json_from_file(self.sun_file)
-            if cached:
-                _LOGGER.warning("Usando datos solares en caché por error.")
+            if cached and "actualitzat" in cached and "dades" in cached and cached["dades"]:
+                update_str = cached["actualitzat"]["dataUpdate"]
+                try:
+                    update_dt = datetime.fromisoformat(update_str)
+                    local_dt = update_dt.astimezone(ZoneInfo(self.timezone_str))
+                    display_time = local_dt.strftime("%d/%m/%Y %H:%M")
+                except (ValueError, TypeError):
+                    display_time = update_str.split("T")[0]
+                
+                sunrise = cached["dades"][0].get("sunrise", "unknown")
+                sunset = cached["dades"][0].get("sunset", "unknown")
+                
+                _LOGGER.warning(
+                    "SOL: Cálculo falló → usando caché local:\n"
+                    "   • Archivo: %s\n"
+                    "   • Última actualización: %s\n"
+                    "   • Amanecer: %s\n"
+                    "   • Atardecer: %s",
+                    self.sun_file.name,
+                    display_time,
+                    sunrise.split("T")[1][:5] if "T" in sunrise else sunrise,
+                    sunset.split("T")[1][:5] if "T" in sunset else sunset
+                )
+                
+                self.async_set_updated_data(cached)
                 return cached
-            return None
+            
+            _LOGGER.error("SOL: No hay caché disponible. Sin datos solares.")
+            self.async_set_updated_data({})
+            return {}
 
 class MeteocatSunFileCoordinator(BaseFileCoordinator):
     """Coordinator para manejar la actualización de los datos de sol desde sun_{town_id}.json."""
@@ -2868,13 +3016,45 @@ class MeteocatMoonCoordinator(DataUpdateCoordinator):
             return {"actualizado": data_with_timestamp["actualitzat"]["dataUpdate"]}
 
         except Exception as err:
-            _LOGGER.exception("🌙 Error al calcular datos de la luna: %s", err)
+            _LOGGER.exception("Error al calcular datos de la luna: %s", err)
+            
+            # === FALLBACK SEGURO ===
             cached_data = await load_json_from_file(self.moon_file)
-            if cached_data:
-                _LOGGER.warning("🌙 Se usaron datos en caché por error de cálculo.")
+            if cached_data and "actualitzat" in cached_data and "dades" in cached_data:
+                update_str = cached_data["actualitzat"]["dataUpdate"]
+                try:
+                    update_dt = datetime.fromisoformat(update_str)
+                    local_dt = update_dt.astimezone(ZoneInfo(self.timezone_str))
+                    display_time = local_dt.strftime("%d/%m/%Y %H:%M")
+                except (ValueError, TypeError):
+                    display_time = update_str.split("T")[0]
+                
+                moonrise = cached_data["dades"][0].get("moonrise", "unknown")
+                moonset = cached_data["dades"][0].get("moonset", "unkwnown")
+                phase = cached_data["dades"][0].get("moon_phase_name", "unknown")
+                
+                _LOGGER.warning(
+                    "LUNA: Cálculo falló → usando caché local:\n"
+                    "   • Archivo: %s\n"
+                    "   • Última actualización: %s\n"
+                    "   • Fase: %s\n"
+                    "   • Salida: %s\n"
+                    "   • Atardecer: %s",
+                    self.moon_file.name,
+                    display_time,
+                    phase.title().replace("_", " "),
+                    moonrise.split("T")[1][:5] if "T" in moonrise else "—",
+                    moonset.split("T")[1][:5] if "T" in moonset else "—"
+                )
+                
+                self.async_set_updated_data({
+                    "actualizado": cached_data["actualitzat"]["dataUpdate"]
+                })
                 return {"actualizado": cached_data["actualitzat"]["dataUpdate"]}
-            _LOGGER.error("🌙 No se pudo calcular ni cargar datos en caché de luna.")
-            return None
+            
+            _LOGGER.error("LUNA: No hay caché disponible. Sin datos lunares.")
+            self.async_set_updated_data({})
+            return {}
 
 class MeteocatMoonFileCoordinator(BaseFileCoordinator):
     """Coordinator para manejar la actualización de los datos de la luna desde moon_{town_id}.json."""
