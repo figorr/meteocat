@@ -1477,7 +1477,7 @@ class MeteocatAlertMeteorSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
         ALERT_COLD: "Fred",
         ALERT_WARM: "Calor",
         ALERT_WARM_NIGHT: "Calor nocturna",
-        ALERT_SNOW: "Neu acumulada en 24 hores",
+        ALERT_SNOW: "Neu",
     }
     STATE_MAPPING = {
         "Obert": "opened",
@@ -1515,6 +1515,8 @@ class MeteocatAlertMeteorSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
         "gruix > 5 cm a cotes superiors a 600 metres fins a 800 metres": "thickness_5_at_600",
         "gruix > 2 cm a cotes superiors a 300 metres fins a 600 metres": "thickness_2_at_300",
         "gruix ≥ 0 cm a cotes inferiors a 300 metres": "thickness_0_at_300",
+        "gruix >= 0 cm a cotes > 200 metres": "thickness_0_at_200",
+        "gruix > 2 cm a cotes > 400 metres": "thickness_2_at_400",
     }
     _attr_has_entity_name = True
 
