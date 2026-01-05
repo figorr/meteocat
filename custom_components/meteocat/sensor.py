@@ -1412,7 +1412,7 @@ class MeteocatAlertRegionSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
         "Temps violent": "violent_weather",
         "Intensitat de pluja": "rain_intensity",
         "Acumulació de pluja": "rain_amount",
-        "Neu acumulada en 24 hores": "snow_amount_24",
+        "Neu": "snow",
         "Vent": "wind",
         "Estat de la mar": "sea_state",
         "Fred": "cold",
