@@ -1,3 +1,11 @@
+## [4.0.2](https://github.com/figorr/meteocat/compare/v4.0.1...v4.0.2) (2026-01-05)
+
+
+### Bug Fixes
+
+* fix snow mapping name ([f7fe89c](https://github.com/figorr/meteocat/commit/f7fe89cb574b7a3cf426ddc6af3d03d82b4f56ce))
+* fix snow mapping translation ([86f9ec1](https://github.com/figorr/meteocat/commit/86f9ec1a8541717f504d5b278e4556e5159b5d04))
+
 ## [4.0.1](https://github.com/figorr/meteocat/compare/v4.0.0...v4.0.1) (2026-01-04)
 
 
