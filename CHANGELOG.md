@@ -1,3 +1,10 @@
+## [4.0.3](https://github.com/figorr/meteocat/compare/v4.0.2...v4.0.3) (2026-01-10)
+
+
+### Bug Fixes
+
+* bump meteocatpy to 1.0.5 for HA 2026.1 compatibility ([91ed9d1](https://github.com/figorr/meteocat/commit/91ed9d13b4b1daaad86c1fd16fbe90f576fd1128))
+
 ## [4.0.2](https://github.com/figorr/meteocat/compare/v4.0.1...v4.0.2) (2026-01-05)
 
 
