@@ -16,7 +16,7 @@
     "meteocatpy"
   ],
   "requirements": [
-    "meteocatpy==1.0.2",
+    "meteocatpy==1.0.5",
     "solarmoonpy==1.0.8",
     "packaging>=20.3",
     "wrapt>=1.14.0"
