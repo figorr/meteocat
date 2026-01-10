@@ -32,13 +32,13 @@ jobs:
         id: ha-version
         run: |
           # ──────────────────────────────────────────────────────────────
-          #  Comportamiento normal: usar siempre la última versión
-          # latest=$(curl -s https://api.github.com/repos/home-assistant/core/releases/latest | jq -r .tag_name)
-          # latest_clean=${latest#v}
-          # echo "ha_version=$latest_clean" >> $GITHUB_OUTPUT
+          # Comportamiento normal: usar siempre la última versión
+          latest=$(curl -s https://api.github.com/repos/home-assistant/core/releases/latest | jq -r .tag_name)
+          latest_clean=${latest#v}
+          echo "ha_version=$latest_clean" >> $GITHUB_OUTPUT
 
           # Temporal: forzado a 2025.12.5 (enero 2026) por posible incompatibilidad con 2026.1.0
-          echo "ha_version=2025.12.5" >> $GITHUB_OUTPUT
+          # echo "ha_version=2025.12.5" >> $GITHUB_OUTPUT
 
       - name: Update hacs.json
         run: |
