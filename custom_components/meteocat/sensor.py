@@ -1296,37 +1296,79 @@ class MeteocatUviStatusSensor(CoordinatorEntity[MeteocatUviCoordinator], SensorE
         self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_uvi_status"
         self._attr_entity_category = getattr(description, "entity_category", None)
 
+    def _get_uvi_data_dict(self):
+        """Devuelve el diccionario completo de datos UVI (incluyendo 'actualitzat') o None."""
+        if self.coordinator.data and isinstance(self.coordinator.data, dict):
+            return self.coordinator.data
+        return None
+    
     def _get_first_date(self):
-        if self.coordinator.data:
-            return datetime.strptime(self.coordinator.data[0].get("date"), "%Y-%m-%d").date()
+        data_dict = self._get_uvi_data_dict()
+        if data_dict and "uvi" in data_dict and data_dict["uvi"]:
+            try:
+                return datetime.strptime(data_dict["uvi"][0].get("date"), "%Y-%m-%d").date()
+            except (ValueError, TypeError, KeyError):
+                return None
+        return None
+    
+    def _get_last_api_update(self):
+        """Devuelve el datetime de la última llamada exitosa a la API o None."""
+        data_dict = self._get_uvi_data_dict()
+        if data_dict and "actualitzat" in data_dict and "dataUpdate" in data_dict["actualitzat"]:
+            try:
+                return datetime.fromisoformat(data_dict["actualitzat"]["dataUpdate"])
+            except ValueError:
+                _LOGGER.warning("Formato inválido en dataUpdate del sensor UVI status")
+                return None
         return None
 
     @property
-    def native_value(self):
+    def native_value(self) -> str:
+        data_dict = self._get_uvi_data_dict()
+        if not data_dict:
+            _LOGGER.debug("UVI Status: no hay data_dict disponible aún")
+            return "unknown"
+
         first_date = self._get_first_date()
-        if first_date:
-            today = datetime.now(timezone.utc).date()
-            current_time = datetime.now(timezone.utc).time()
-            days_difference = (today - first_date).days
-            _LOGGER.debug(
-                f"Diferencia de días para datos UVI: {days_difference}."
-                f"Hora actual de validación: {current_time}."
-                f"Para la validación: "
-                f"número de días= {DEFAULT_VALIDITY_DAYS}, "
-                f"hora de contacto a la API >= {DEFAULT_VALIDITY_HOURS}, "
-                f"minutos de contacto a la API >= {DEFAULT_VALIDITY_MINUTES}."
-            )
-            if days_difference > DEFAULT_VALIDITY_DAYS and current_time >= time(DEFAULT_VALIDITY_HOURS, DEFAULT_VALIDITY_MINUTES):
-                return "obsolete"
-            return "updated"
-        return "unknown"
+        if not first_date:
+            _LOGGER.debug("UVI Status: no se pudo obtener first_date")
+            return "unknown"
+
+        now_local = datetime.now(TIMEZONE)
+        today = now_local.date()
+        current_time = now_local.time()
+        days_difference = (today - first_date).days
+
+        _LOGGER.debug(
+            "UVI Status → días diff: %d | hora actual: %s | umbral días: %d | umbral hora: %02d:%02d",
+            days_difference,
+            current_time.strftime("%H:%M"),
+            DEFAULT_VALIDITY_DAYS,
+            DEFAULT_VALIDITY_HOURS,
+            DEFAULT_VALIDITY_MINUTES,
+        )
+
+        if days_difference > DEFAULT_VALIDITY_DAYS and current_time >= time(DEFAULT_VALIDITY_HOURS, DEFAULT_VALIDITY_MINUTES):
+            return "obsolete"
+        return "updated"
 
     @property
-    def extra_state_attributes(self):
-        attributes = super().extra_state_attributes or {}
+    def extra_state_attributes(self) -> dict:
+        attributes = {}
+        data_dict = self._get_uvi_data_dict()
+
+        if not data_dict:
+            attributes["debug_info"] = "Aún no hay datos en el coordinador"
+            return attributes
+        # Primera fecha de los datos UVI
         first_date = self._get_first_date()
         if first_date:
             attributes["update_date"] = first_date.isoformat()
+        # Última actualizaciónde la API
+        last_update = self._get_last_api_update()
+        if last_update:
+            attributes["data_updatetime"] = last_update.isoformat()
+
         return attributes
     
     @property

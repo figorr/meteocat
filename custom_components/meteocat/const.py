@@ -65,6 +65,7 @@ DEFAULT_UVI_LOW_VALIDITY_HOURS = 5  # Hora a partir de la cual la API tiene la i
 DEFAULT_UVI_LOW_VALIDITY_MINUTES = 0  # Minutos a partir de los cuales la API tiene la información actualizada de datos UVI disponible para descarga con límite bajo de cuota
 DEFAULT_UVI_HIGH_VALIDITY_HOURS = 9  # Hora a partir de la cual la API tiene la información actualizada de datos UVI disponible para descarga con límite alto de cuota
 DEFAULT_UVI_HIGH_VALIDITY_MINUTES = 0  # Minutos a partir de los cuales la API tiene la información actualizada de datos UVI disponible para descarga con límite alto de cuota
+DEFAULT_UVI_MIN_HOURS_SINCE_LAST_UPDATE = 15 # Horas mínimas desde la última actualización de datos UVI para proceder a una nueva llamada a la API
 DEFAULT_ALERT_VALIDITY_TIME = 120  # Minutos a partir de los cuales las alertas están obsoletas y se se debe proceder a una nueva llamada a la API
 DEFAULT_QUOTES_VALIDITY_TIME = 240 # Minutos a partir de los cuales los datos de cuotas están obsoletos y se se debe proceder a una nueva llamada a la API
 DEFAULT_LIGHTNING_VALIDITY_TIME = 240 # Minutos a partir de los cuales los datos de rayos están obsoletos y se se debe proceder a una nueva llamada a la API

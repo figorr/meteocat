@@ -56,6 +56,7 @@ from .const import (
     DEFAULT_UVI_LOW_VALIDITY_MINUTES,
     DEFAULT_UVI_HIGH_VALIDITY_HOURS,
     DEFAULT_UVI_HIGH_VALIDITY_MINUTES,
+    DEFAULT_UVI_MIN_HOURS_SINCE_LAST_UPDATE,
     DEFAULT_ALERT_VALIDITY_TIME,
     DEFAULT_QUOTES_VALIDITY_TIME,
     ALERT_VALIDITY_MULTIPLIER_100,
@@ -406,26 +407,24 @@ class MeteocatUviCoordinator(DataUpdateCoordinator):
         )
 
     async def is_uvi_data_valid(self) -> Optional[dict]:
-        """Valida datos UVI: misma lógica que predicción, basada en limit_prediccio.
-
-        - Si `limit_prediccio >= 550` → actualiza **el día siguiente** después de las DEFAULT_VALIDITY_HOURS:DEFAULT_VALIDITY_MINUTES.
-        - Si `limit_prediccio < 550`  → actualiza **dos días después** después de las DEFAULT_VALIDITY_HOURS:DEFAULT_VALIDITY_MINUTES.
+        """Valida si los datos UVI en caché son aún válidos, considerando:
+           1. Antigüedad de la fecha del primer día (lógica existente según cuota)
+           2. Hora mínima del día (según cuota)
+           3. Han pasado más de DEFAULT_UVI_MIN_HOURS_SINCE_LAST_UPDATE horas desde la última actualización exitosa
         """
         if not self.uvi_file.exists():
             _LOGGER.debug("Archivo UVI no existe: %s", self.uvi_file)
             return None
 
         try:
-            async with aiofiles.open(self.uvi_file, "r", encoding="utf-8") as f:
-                content = await f.read()
-                data = json.loads(content)
+            data = await load_json_from_file(self.uvi_file)
 
             # Validar estructura básica
             if not isinstance(data, dict) or "uvi" not in data or not isinstance(data["uvi"], list) or not data["uvi"]:
                 _LOGGER.warning("Estructura UVI inválida en %s", self.uvi_file)
                 return None
 
-            # Fecha del primer día
+            # ── Condición 1: Antigüedad de la fecha del primer día ──
             try:
                 first_date_str = data["uvi"][0].get("date")
                 first_date = datetime.strptime(first_date_str, "%Y-%m-%d").date()
@@ -433,39 +432,64 @@ class MeteocatUviCoordinator(DataUpdateCoordinator):
                 _LOGGER.warning("Fecha UVI inválida en %s: %s", self.uvi_file, exc)
                 return None
 
-            # Fecha y hora actual en zona local (Europe/Madrid)
             now_local = datetime.now(TIMEZONE)
             today = now_local.date()
             current_time_local = now_local.time()
-            # Horas para actualización según límite de cuota
-            min_update_time_high = time(DEFAULT_UVI_HIGH_VALIDITY_HOURS, DEFAULT_UVI_HIGH_VALIDITY_MINUTES)  # Hora para cuota alta
-            min_update_time_low = time(DEFAULT_UVI_LOW_VALIDITY_HOURS, DEFAULT_UVI_LOW_VALIDITY_MINUTES)  # Hora para cuota baja
-            # Diferencia en días
             days_diff = (today - first_date).days
 
-            # === LÓGICA DINÁMICA SEGÚN CUOTA ===
+            # Determinar umbrales según cuota
             if self.limit_prediccio >= PREDICCIO_HIGH_QUOTA_LIMIT:
-                should_update = days_diff >= DEFAULT_VALIDITY_DAYS and current_time_local >= min_update_time_high
+                min_days = DEFAULT_VALIDITY_DAYS           # ej: 1 día
+                min_update_time = time(DEFAULT_UVI_HIGH_VALIDITY_HOURS, DEFAULT_UVI_HIGH_VALIDITY_MINUTES)
+                quota_level = "ALTA"
             else:
-                should_update = days_diff > DEFAULT_VALIDITY_DAYS and current_time_local >= min_update_time_low
+                min_days = DEFAULT_VALIDITY_DAYS + 1       # ej: 2 días
+                min_update_time = time(DEFAULT_UVI_LOW_VALIDITY_HOURS, DEFAULT_UVI_LOW_VALIDITY_MINUTES)
+                quota_level = "BAJA"
+
+            cond1 = days_diff >= min_days
+            cond2 = current_time_local >= min_update_time
+
+            # ── Condición 3: Más de X horas desde última actualización ──
+            cond3 = True  # por defecto (si no hay dataUpdate → permite actualizar)
+            last_update_str = None
+            if "actualitzat" in data and "dataUpdate" in data["actualitzat"]:
+                try:
+                    last_update = datetime.fromisoformat(data["actualitzat"]["dataUpdate"])
+                    time_since = now_local - last_update
+                    cond3 = time_since > timedelta(hours=DEFAULT_UVI_MIN_HOURS_SINCE_LAST_UPDATE)
+                    last_update_str = last_update.strftime("%Y-%m-%d %H:%M:%S %z")
+                    _LOGGER.debug(
+                        "Tiempo desde última actualización: %s (%s %dh)",
+                        time_since,
+                        "supera" if cond3 else "NO supera",
+                        DEFAULT_UVI_MIN_HOURS_SINCE_LAST_UPDATE
+                    )
+                except ValueError:
+                    _LOGGER.warning("Formato inválido en dataUpdate: %s", data["actualitzat"]["dataUpdate"])
+                    cond3 = True  # si corrupto → permite actualizar
+
+            should_update = cond1 and cond2 and cond3
 
             _LOGGER.debug(
-                "[UVI %s] Validación: primer_día=%s, hoy=%s → días=%d, "
-                "cuota=%d (%s), hora=%s ≥ %s → actualizar=%s",
+                "[UVI %s] Validación → cond1(días >=%d)=%s | cond2(hora >=%s)=%s | "
+                "cond3(>%dh desde %s)=%s | cuota=%d (%s) | actualizar=%s",
                 self.town_id,
-                first_date,
-                today,
-                days_diff,
+                min_days,
+                cond1,
+                min_update_time.strftime("%H:%M"),
+                cond2,
+                DEFAULT_UVI_MIN_HOURS_SINCE_LAST_UPDATE,
+                last_update_str or "nunca",
+                cond3,
                 self.limit_prediccio,
-                "ALTA" if self.limit_prediccio >= 550 else "BAJA",
-                current_time_local.strftime("%H:%M"),
-                min_update_time_high.strftime("%H:%M") if self.limit_prediccio >= 550 else min_update_time_low.strftime("%H:%M"),
+                quota_level,
                 should_update,
             )
 
             if should_update:
                 _LOGGER.info(
-                    "Datos UVI obsoletos → llamando API (town=%s, cuota=%d)",
+                    "Datos UVI obsoletos o antiguos → llamando API (town=%s, cuota=%d)",
                     self.town_id, self.limit_prediccio
                 )
                 return None
@@ -480,14 +504,15 @@ class MeteocatUviCoordinator(DataUpdateCoordinator):
             _LOGGER.error("Error validando UVI: %s", e)
             return None
 
-    async def _async_update_data(self) -> List[Dict]:
-        """Actualiza los datos de UVI desde la API de Meteocat o caché."""
+    async def _async_update_data(self) -> Optional[dict]:
+        """Actualiza los datos de UVI desde la API o caché."""
         try:
             valid_data = await self.is_uvi_data_valid()
             if valid_data:
                 _LOGGER.debug("Los datos del índice UV están actualizados. No se realiza llamada a la API.")
-                return valid_data["uvi"]
+                return valid_data
 
+            # ── Llamada a la API ──
             data = await asyncio.wait_for(
                 self.meteocat_uvi_data.get_uvi_index(self.town_id),
                 timeout=30,
@@ -500,8 +525,19 @@ class MeteocatUviCoordinator(DataUpdateCoordinator):
                 _LOGGER.error("Formato inválido: se esperaba un dict con 'uvi' -> %s", data)
                 raise ValueError("Formato de datos inválido")
 
-            await save_json_to_file(data, self.uvi_file)
-            return data["uvi"]
+            # Añadir timestamp de actualización exitosa
+            now_iso = datetime.now(TIMEZONE).isoformat()
+            enhanced_data = {
+                "actualitzat": {
+                    "dataUpdate": now_iso
+                },
+                **data  # conserva ine, nom, comarca, capital, uvi, ...
+            }
+
+            await save_json_to_file(enhanced_data, self.uvi_file)
+            _LOGGER.debug("Datos UVI guardados con dataUpdate: %s", now_iso)
+
+            return enhanced_data   # ← en lugar de return data["uvi"]
 
         except asyncio.TimeoutError as err:
             _LOGGER.warning("Tiempo de espera agotado al obtener datos UVI.")
@@ -517,17 +553,16 @@ class MeteocatUviCoordinator(DataUpdateCoordinator):
             raise
         except Exception as err:
             _LOGGER.exception("Error inesperado al obtener datos del índice UV para %s: %s", self.town_id, err)
-            
-        # === FALLBACK SEGURO ===
+
+        # ── FALLBACK SEGURO ──
         cached_data = await load_json_from_file(self.uvi_file)
         if cached_data and "uvi" in cached_data and cached_data["uvi"]:
             raw_date = cached_data["uvi"][0].get("date", "unknown")
-            # Formatear fecha para log
             try:
                 first_date = datetime.strptime(raw_date, "%Y-%m-%d").strftime("%d/%m/%Y")
             except (ValueError, TypeError):
                 first_date = raw_date
-                
+
             _LOGGER.warning(
                 "API UVI falló → usando caché local:\n"
                 " • Archivo: %s\n"
@@ -535,13 +570,13 @@ class MeteocatUviCoordinator(DataUpdateCoordinator):
                 self.uvi_file.name,
                 first_date
             )
-            
-            self.async_set_updated_data(cached_data["uvi"])
-            return cached_data["uvi"]
-        
+
+            self.async_set_updated_data(cached_data)
+            return cached_data
+
         _LOGGER.error("No hay datos UVI ni en caché para %s", self.town_id)
-        self.async_set_updated_data([])
-        return []
+        self.async_set_updated_data(None)
+        return None
 
 class MeteocatUviFileCoordinator(BaseFileCoordinator):
     """Coordinator to read and process UV data from a file."""

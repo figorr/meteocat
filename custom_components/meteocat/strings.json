@@ -236,6 +236,9 @@
         "state_attributes": {
           "update_date": {
             "name": "Date"
+          },
+          "data_updatetime": {
+            "name": "Updated"
           }
         }
       },
