@@ -52,6 +52,8 @@ from .const import (
     DEFAULT_VALIDITY_DAYS,
     DEFAULT_VALIDITY_HOURS,
     DEFAULT_VALIDITY_MINUTES,
+    DEFAULT_HOURLY_FORECAST_MIN_HOURS_SINCE_LAST_UPDATE,
+    DEFAULT_DAILY_FORECAST_MIN_HOURS_SINCE_LAST_UPDATE,
     DEFAULT_UVI_LOW_VALIDITY_HOURS,
     DEFAULT_UVI_LOW_VALIDITY_MINUTES,
     DEFAULT_UVI_HIGH_VALIDITY_HOURS,
@@ -681,81 +683,100 @@ class MeteocatEntityCoordinator(DataUpdateCoordinator):
             name=f"{DOMAIN} Entity Coordinator",
             update_interval=DEFAULT_ENTITY_UPDATE_INTERVAL,
         )
-    
+
     # --------------------------------------------------------------------- #
     #  VALIDACIÓN DINÁMICA DE DATOS DE PREDICCIÓN
     # --------------------------------------------------------------------- #
-    async def validate_forecast_data(self, file_path: Path) -> dict:
-        """Valida y retorna datos de predicción si son válidos.
-        
-        - Si `limit_prediccio >= 550` → actualiza **el día siguiente** después de las DEFAULT_VALIDITY_HOURS:DEFAULT_VALIDITY_MINUTES.
-        - Si `limit_prediccio < 550`  → actualiza **dos días después** después de las DEFAULT_VALIDITY_HOURS:DEFAULT_VALIDITY_MINUTES.
-        """
+    async def validate_forecast_data(self, file_path: Path) -> Optional[dict]:
+        """Valida si los datos de predicción son válidos considerando 3 condiciones."""
         if not file_path.exists():
-            _LOGGER.warning("El archivo %s no existe. Se considerará inválido.", file_path)
+            _LOGGER.warning("Archivo no existe: %s", file_path)
             return None
+
         try:
-            async with aiofiles.open(file_path, "r", encoding="utf-8") as f:
-                content = await f.read()
-                data = json.loads(content)
+            data = await load_json_from_file(file_path)
 
-            # Fecha del primer día de predicción (solo fecha)
+            if not isinstance(data, dict) or "dies" not in data or not data["dies"]:
+                _LOGGER.warning("Estructura inválida en %s", file_path)
+                return None
+
+            # ── Condición 1: Antigüedad del primer día de predicción ──
             first_date_str = data["dies"][0]["data"].rstrip("Z")
-            first_date = datetime.fromisoformat(first_date_str).date()
-            today = datetime.now(timezone.utc).date()
+            try:
+                first_date = datetime.fromisoformat(first_date_str).date()
+            except Exception as exc:
+                _LOGGER.warning("Fecha inválida en %s: %s", file_path, exc)
+                return None
 
-            # Hora actual en zona local (Europe/Madrid)
-            current_time_local = datetime.now(TIMEZONE).time()
-            min_update_time = time(DEFAULT_VALIDITY_HOURS, DEFAULT_VALIDITY_MINUTES)
-
+            now_local = datetime.now(TIMEZONE)
+            today = now_local.date()  # Si queremos respetar que los datos del json son UTC quizás mejor usar today = datetime.now(timezone.utc).date()
+            current_time_local = now_local.time()
             days_diff = (today - first_date).days
 
-            # -----------------------------------------------------------------
-            #  Lógica según cuota
-            # -----------------------------------------------------------------
+            #  ── Condición 2: Lógica de umbrales según cuota para determinar días y horas válidos de actualización ──
             if self.limit_prediccio >= PREDICCIO_HIGH_QUOTA_LIMIT:
-                # Cuota alta → actualiza cuando los datos son de ayer (o antes) + hora OK
-                should_update = days_diff >= DEFAULT_VALIDITY_DAYS and current_time_local >= min_update_time
+                min_days = DEFAULT_VALIDITY_DAYS
+                min_update_time = time(DEFAULT_VALIDITY_HOURS, DEFAULT_VALIDITY_MINUTES)
+                quota_level = "ALTA"
             else:
-                # Cuota baja → actualiza solo cuando los datos son de anteayer + hora OK
-                should_update = days_diff > DEFAULT_VALIDITY_DAYS and current_time_local >= min_update_time
+                min_days = DEFAULT_VALIDITY_DAYS + 1
+                min_update_time = time(DEFAULT_VALIDITY_HOURS, DEFAULT_VALIDITY_MINUTES)
+                quota_level = "BAJA"
 
-            # -----------------------------------------------------------------
-            #  Logs detallados
-            # -----------------------------------------------------------------
+            cond1 = days_diff >= min_days
+            cond2 = current_time_local >= min_update_time
+
+            # ── Condición 3: Más de X horas desde última actualización ──
+            cond3 = True  # por defecto permite actualizar si no hay timestamp
+            last_update_str = None
+            hours_threshold = (
+                DEFAULT_HOURLY_FORECAST_MIN_HOURS_SINCE_LAST_UPDATE
+                if "hourly" in file_path.name.lower()
+                else DEFAULT_DAILY_FORECAST_MIN_HOURS_SINCE_LAST_UPDATE
+            )
+
+            if "actualitzat" in data and "dataUpdate" in data["actualitzat"]:
+                try:
+                    last_update = datetime.fromisoformat(data["actualitzat"]["dataUpdate"])
+                    time_since = now_local - last_update
+                    cond3 = time_since > timedelta(hours=hours_threshold)
+                    last_update_str = last_update.strftime("%Y-%m-%d %H:%M:%S %z")
+                    _LOGGER.debug(
+                        "%s → tiempo desde última act.: %s (%s %dh)",
+                        file_path.name, time_since,
+                        "supera" if cond3 else "NO supera", hours_threshold
+                    )
+                except ValueError:
+                    _LOGGER.warning("dataUpdate inválido en %s: %s", file_path, data["actualitzat"]["dataUpdate"])
+                    cond3 = True
+
+            should_update = cond1 and cond2 and cond3
+
             _LOGGER.debug(
-                "[%s] Validación: primer_día=%s, hoy=%s → días=%d, "
-                "cuota=%d (%s), hora_local=%s ≥ %s → actualizar=%s",
-                file_path.name,
-                first_date,
-                today,
-                days_diff,
-                self.limit_prediccio,
-                "ALTA" if self.limit_prediccio >= 550 else "BAJA",
-                current_time_local.strftime("%H:%M"),
-                min_update_time.strftime("%H:%M"),
-                should_update,
+                "[%s] Validación → cond1(días >=%d)=%s | cond2(hora >=%s)=%s | "
+                "cond3(>%dh desde %s)=%s | cuota=%d (%s) | actualizar=%s",
+                file_path.name, min_days, cond1,
+                min_update_time.strftime("%H:%M"), cond2,
+                hours_threshold, last_update_str or "nunca", cond3,
+                self.limit_prediccio, quota_level, should_update
             )
 
             if should_update:
-                _LOGGER.debug(
-                    "Datos obsoletos o actualizables → llamando API (%s, cuota=%d)",
-                    file_path.name, self.limit_prediccio
-                )
-                return None  # → forzar actualización
+                _LOGGER.info("Datos obsoletos → llamando API para %s", file_path.name)
+                return None
 
-            _LOGGER.debug("Datos válidos en %s → usando caché", file_path.name)
+            _LOGGER.debug("Datos válidos → usando caché %s", file_path.name)
             return data
 
+        except json.JSONDecodeError:
+            _LOGGER.error("JSON corrupto en %s", file_path)
+            return None
         except Exception as e:
-            _LOGGER.warning("Error validando %s: %s", file_path, e)
+            _LOGGER.error("Error validando %s: %s", file_path, e)
             return None
 
-    # --------------------------------------------------------------------- #
-    #  OBTENCIÓN Y GUARDADO DE DATOS DESDE LA API
-    # --------------------------------------------------------------------- #
     async def _fetch_and_save_data(self, api_method, file_path: Path) -> dict:
-        """Obtiene datos de la API y los guarda en un archivo JSON."""
+        """Obtiene datos de la API, los procesa y guarda con timestamp."""
         try:
             data = await asyncio.wait_for(api_method(self.town_id), timeout=30)
 
@@ -769,16 +790,24 @@ class MeteocatEntityCoordinator(DataUpdateCoordinator):
                     ):
                         details["valor"] = "0.0"
 
-            await save_json_to_file(data, file_path)
+            # Añadir timestamp de actualización exitosa
+            now_iso = datetime.now(TIMEZONE).isoformat()
+            enhanced_data = {
+                "actualitzat": {"dataUpdate": now_iso},
+                **data
+            }
 
-            # Actualizar cuotas (dependiendo del tipo de predicción horaria/diaria)
+            await save_json_to_file(enhanced_data, file_path)
+            _LOGGER.debug("Guardado %s con dataUpdate: %s", file_path.name, now_iso)
+
+            # Actualizar cuotas
             if api_method.__name__ in ("get_prediccion_horaria", "get_prediccion_diaria"):
                 await _update_quotes(self.hass, "Prediccio")
 
-            return data
+            return enhanced_data
 
         except Exception as err:
-            _LOGGER.error(f"Error al obtener datos de la API para {file_path}: {err}")
+            _LOGGER.error("Error al obtener/guardar %s: %s", file_path, err)
             raise
 
     # --------------------------------------------------------------------- #
@@ -836,7 +865,7 @@ class MeteocatEntityCoordinator(DataUpdateCoordinator):
         # === FALLBACK SEGURO ===
         hourly_cache = await load_json_from_file(self.hourly_file) or {}
         daily_cache = await load_json_from_file(self.daily_file) or {}
-        
+
         # --- Fecha horaria ---
         h_raw = hourly_cache.get("dies", [{}])[0].get("data", "")
         try:
@@ -860,7 +889,7 @@ class MeteocatEntityCoordinator(DataUpdateCoordinator):
             self.hourly_file.name, h_display,
             self.daily_file.name, d_display
         )
-        
+
         self.async_set_updated_data({"hourly": hourly_cache, "daily": daily_cache})
         return {"hourly": hourly_cache, "daily": daily_cache}
 

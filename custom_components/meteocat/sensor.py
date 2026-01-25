@@ -1184,43 +1184,74 @@ class MeteocatHourlyForecastStatusSensor(CoordinatorEntity[MeteocatEntityCoordin
         self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_hourly_status"
         self._attr_entity_category = getattr(description, "entity_category", None)
 
+    def _get_forecast_data(self, forecast_type: str) -> Optional[dict]:
+        """Devuelve los datos del tipo de forecast (hourly o daily) o None."""
+        if not self.coordinator.data:
+            return None
+        return self.coordinator.data.get(forecast_type)
+
     def _get_first_date(self):
-        hourly_data = self.coordinator.data.get("hourly")
-        if hourly_data and "dies" in hourly_data:
-            return datetime.fromisoformat(hourly_data["dies"][0]["data"].rstrip("Z")).date()
+        hourly_data = self._get_forecast_data("hourly")
+        if hourly_data and "dies" in hourly_data and hourly_data["dies"]:
+            try:
+                first_date_str = hourly_data["dies"][0]["data"].rstrip("Z")
+                return datetime.fromisoformat(first_date_str).date()
+            except (ValueError, TypeError, KeyError, IndexError):
+                _LOGGER.warning("No se pudo parsear primera fecha del forecast horario")
+                return None
+        return None
+
+    def _get_last_api_update(self):
+        hourly_data = self._get_forecast_data("hourly")
+        if hourly_data and "actualitzat" in hourly_data and "dataUpdate" in hourly_data["actualitzat"]:
+            try:
+                return datetime.fromisoformat(hourly_data["actualitzat"]["dataUpdate"])
+            except ValueError:
+                _LOGGER.warning("Formato inválido en dataUpdate del forecast horario")
+                return None
         return None
 
     @property
-    def native_value(self):
+    def native_value(self) -> str:
         first_date = self._get_first_date()
-        if first_date:
-            today = datetime.now(timezone.utc).date()
-            current_time = datetime.now(timezone.utc).time()
-            days_difference = (today - first_date).days
-            _LOGGER.debug(
-                f"Diferencia de días para predicciones horarias: {days_difference}."
-                f"Hora actual de validación: {current_time}."
-                f"Para la validación: "
-                f"número de días= {DEFAULT_VALIDITY_DAYS}, "
-                f"hora de contacto a la API >= {DEFAULT_VALIDITY_HOURS}, "
-                f"minutos de contacto a la API >= {DEFAULT_VALIDITY_MINUTES}."
-            )
-            if days_difference > DEFAULT_VALIDITY_DAYS and current_time >= time(DEFAULT_VALIDITY_HOURS, DEFAULT_VALIDITY_MINUTES):
-                return "obsolete"
-            return "updated"
-        return "unknown"
+        if not first_date:
+            _LOGGER.debug("Hourly status: no hay datos disponibles aún")
+            return "unknown"
+
+        now_local = datetime.now(TIMEZONE)
+        today = now_local.date()
+        current_time = now_local.time()
+        days_difference = (today - first_date).days
+
+        _LOGGER.debug(
+            "Hourly status → días diff: %d | hora actual: %s | umbral días: %d | umbral hora: %02d:%02d",
+            days_difference,
+            current_time.strftime("%H:%M"),
+            DEFAULT_VALIDITY_DAYS,
+            DEFAULT_VALIDITY_HOURS,
+            DEFAULT_VALIDITY_MINUTES,
+        )
+
+        if days_difference > DEFAULT_VALIDITY_DAYS and current_time >= time(DEFAULT_VALIDITY_HOURS, DEFAULT_VALIDITY_MINUTES):
+            return "obsolete"
+        return "updated"
 
     @property
-    def extra_state_attributes(self):
-        attributes = super().extra_state_attributes or {}
+    def extra_state_attributes(self) -> dict:
+        attributes: dict = {}
+
         first_date = self._get_first_date()
         if first_date:
             attributes["update_date"] = first_date.isoformat()
+
+        last_update = self._get_last_api_update()
+        if last_update:
+            attributes["data_updatetime"] = last_update.isoformat()
+
         return attributes
-    
+
     @property
     def device_info(self) -> DeviceInfo:
-        """Return the device info."""
         return DeviceInfo(
             identifiers={(DOMAIN, self._town_id)},
             name=f"Meteocat {self._station_id} {self._town_name}",
@@ -1240,43 +1271,74 @@ class MeteocatDailyForecastStatusSensor(CoordinatorEntity[MeteocatEntityCoordina
         self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_daily_status"
         self._attr_entity_category = getattr(description, "entity_category", None)
 
+    def _get_forecast_data(self, forecast_type: str) -> Optional[dict]:
+        """Devuelve los datos del tipo de forecast (hourly o daily) o None."""
+        if not self.coordinator.data:
+            return None
+        return self.coordinator.data.get(forecast_type)
+
     def _get_first_date(self):
-        daily_data = self.coordinator.data.get("daily")
-        if daily_data and "dies" in daily_data:
-            return datetime.fromisoformat(daily_data["dies"][0]["data"].rstrip("Z")).date()
+        daily_data = self._get_forecast_data("daily")
+        if daily_data and "dies" in daily_data and daily_data["dies"]:
+            try:
+                first_date_str = daily_data["dies"][0]["data"].rstrip("Z")
+                return datetime.fromisoformat(first_date_str).date()
+            except (ValueError, TypeError, KeyError, IndexError):
+                _LOGGER.warning("No se pudo parsear primera fecha del forecast diario")
+                return None
+        return None
+
+    def _get_last_api_update(self):
+        daily_data = self._get_forecast_data("daily")
+        if daily_data and "actualitzat" in daily_data and "dataUpdate" in daily_data["actualitzat"]:
+            try:
+                return datetime.fromisoformat(daily_data["actualitzat"]["dataUpdate"])
+            except ValueError:
+                _LOGGER.warning("Formato inválido en dataUpdate del forecast diario")
+                return None
         return None
 
     @property
-    def native_value(self):
+    def native_value(self) -> str:
         first_date = self._get_first_date()
-        if first_date:
-            today = datetime.now(timezone.utc).date()
-            current_time = datetime.now(timezone.utc).time()
-            days_difference = (today - first_date).days
-            _LOGGER.debug(
-                f"Diferencia de días para predicciones diarias: {days_difference}."
-                f"Hora actual de validación: {current_time}."
-                f"Para la validación: "
-                f"número de días= {DEFAULT_VALIDITY_DAYS}, "
-                f"hora de contacto a la API >= {DEFAULT_VALIDITY_HOURS}, "
-                f"minutos de contacto a la API >= {DEFAULT_VALIDITY_MINUTES}."
-            )
-            if days_difference > DEFAULT_VALIDITY_DAYS and current_time >= time(DEFAULT_VALIDITY_HOURS, DEFAULT_VALIDITY_MINUTES):
-                return "obsolete"
-            return "updated"
-        return "unknown"
+        if not first_date:
+            _LOGGER.debug("Daily status: no hay datos disponibles aún")
+            return "unknown"
+
+        now_local = datetime.now(TIMEZONE)
+        today = now_local.date()
+        current_time = now_local.time()
+        days_difference = (today - first_date).days
+
+        _LOGGER.debug(
+            "Daily status → días diff: %d | hora actual: %s | umbral días: %d | umbral hora: %02d:%02d",
+            days_difference,
+            current_time.strftime("%H:%M"),
+            DEFAULT_VALIDITY_DAYS,
+            DEFAULT_VALIDITY_HOURS,
+            DEFAULT_VALIDITY_MINUTES,
+        )
+
+        if days_difference > DEFAULT_VALIDITY_DAYS and current_time >= time(DEFAULT_VALIDITY_HOURS, DEFAULT_VALIDITY_MINUTES):
+            return "obsolete"
+        return "updated"
 
     @property
-    def extra_state_attributes(self):
-        attributes = super().extra_state_attributes or {}
+    def extra_state_attributes(self) -> dict:
+        attributes: dict = {}
+
         first_date = self._get_first_date()
         if first_date:
             attributes["update_date"] = first_date.isoformat()
+
+        last_update = self._get_last_api_update()
+        if last_update:
+            attributes["data_updatetime"] = last_update.isoformat()
+
         return attributes
-    
+
     @property
     def device_info(self) -> DeviceInfo:
-        """Return the device info."""
         return DeviceInfo(
             identifiers={(DOMAIN, self._town_id)},
             name=f"Meteocat {self._station_id} {self._town_name}",

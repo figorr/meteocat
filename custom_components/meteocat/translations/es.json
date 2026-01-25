@@ -212,6 +212,9 @@
         "state_attributes": {
           "update_date": {
             "name": "Fecha"
+          },
+          "data_updatetime": {
+            "name": "Actualizado"
           }
         }
       },
@@ -224,6 +227,9 @@
         "state_attributes": {
           "update_date": {
             "name": "Fecha"
+          },
+          "data_updatetime": {
+            "name": "Actualizado"
           }
         }
       },
