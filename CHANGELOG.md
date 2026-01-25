@@ -1,3 +1,10 @@
+## [4.0.4](https://github.com/figorr/meteocat/compare/v4.0.3...v4.0.4) (2026-01-25)
+
+
+### Bug Fixes
+
+* include last update check to avoid continuous API calls when API returns outdated data ([32760e8](https://github.com/figorr/meteocat/commit/32760e854e3dd2a6af07c48373995df4f78106cb))
+
 ## [4.0.3](https://github.com/figorr/meteocat/compare/v4.0.2...v4.0.3) (2026-01-10)
 
 
