@@ -97,6 +97,10 @@ from .const import (
     DEFAULT_VALIDITY_DAYS,
     DEFAULT_VALIDITY_HOURS,
     DEFAULT_VALIDITY_MINUTES,
+    DEFAULT_UVI_LOW_VALIDITY_HOURS,
+    DEFAULT_UVI_LOW_VALIDITY_MINUTES,
+    DEFAULT_UVI_HIGH_VALIDITY_HOURS,
+    DEFAULT_UVI_HIGH_VALIDITY_MINUTES,
     DEFAULT_ALERT_VALIDITY_TIME,
     DEFAULT_QUOTES_VALIDITY_TIME,
     ALERT_VALIDITY_MULTIPLIER_100,
@@ -114,6 +118,10 @@ from .const import (
     MOON_FILE_STATUS,
     MOONRISE,
     MOONSET,
+    PREDICCIO_HIGH_QUOTA_LIMIT,
+    DEFAULT_HOURLY_FORECAST_MIN_HOURS_SINCE_LAST_UPDATE,
+    DEFAULT_DAILY_FORECAST_MIN_HOURS_SINCE_LAST_UPDATE,
+    DEFAULT_UVI_MIN_HOURS_SINCE_LAST_UPDATE,
 )
 
 from .coordinator import (
@@ -1181,6 +1189,7 @@ class MeteocatHourlyForecastStatusSensor(CoordinatorEntity[MeteocatEntityCoordin
         self._town_name = entry_data["town_name"]
         self._town_id = entry_data["town_id"]
         self._station_id = entry_data["station_id"]
+        self._limit_prediccio = entry_data["limit_prediccio"]
         self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_hourly_status"
         self._attr_entity_category = getattr(description, "entity_category", None)
 
@@ -1223,16 +1232,21 @@ class MeteocatHourlyForecastStatusSensor(CoordinatorEntity[MeteocatEntityCoordin
         current_time = now_local.time()
         days_difference = (today - first_date).days
 
+        # Replicar lógica del coordinador
+        min_days = DEFAULT_VALIDITY_DAYS if self._limit_prediccio >= PREDICCIO_HIGH_QUOTA_LIMIT else DEFAULT_VALIDITY_DAYS + 1
+        min_time = time(DEFAULT_VALIDITY_HOURS + 1, DEFAULT_VALIDITY_MINUTES)  # Margen adicional de +1 hora sobre la hora mínima configurada.
+
+        cond1 = days_difference >= min_days
+        cond2 = current_time >= min_time
+
         _LOGGER.debug(
-            "Hourly status → días diff: %d | hora actual: %s | umbral días: %d | umbral hora: %02d:%02d",
-            days_difference,
-            current_time.strftime("%H:%M"),
-            DEFAULT_VALIDITY_DAYS,
-            DEFAULT_VALIDITY_HOURS,
-            DEFAULT_VALIDITY_MINUTES,
+            "Hourly status → días: %d (≥%d)=%s | hora: %s (≥%s)=%s → %s",
+            days_difference, min_days, cond1,
+            current_time.strftime("%H:%M"), min_time.strftime("%H:%M"), cond2,
+            "obsolete" if cond1 and cond2 else "updated"
         )
 
-        if days_difference > DEFAULT_VALIDITY_DAYS and current_time >= time(DEFAULT_VALIDITY_HOURS, DEFAULT_VALIDITY_MINUTES):
+        if cond1 and cond2:
             return "obsolete"
         return "updated"
 
@@ -1268,6 +1282,7 @@ class MeteocatDailyForecastStatusSensor(CoordinatorEntity[MeteocatEntityCoordina
         self._town_name = entry_data["town_name"]
         self._town_id = entry_data["town_id"]
         self._station_id = entry_data["station_id"]
+        self._limit_prediccio = entry_data["limit_prediccio"]
         self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_daily_status"
         self._attr_entity_category = getattr(description, "entity_category", None)
 
@@ -1310,16 +1325,21 @@ class MeteocatDailyForecastStatusSensor(CoordinatorEntity[MeteocatEntityCoordina
         current_time = now_local.time()
         days_difference = (today - first_date).days
 
+        # Replicar lógica del coordinador
+        min_days = DEFAULT_VALIDITY_DAYS if self._limit_prediccio >= PREDICCIO_HIGH_QUOTA_LIMIT else DEFAULT_VALIDITY_DAYS + 1
+        min_time = time(DEFAULT_VALIDITY_HOURS + 1, DEFAULT_VALIDITY_MINUTES)  # Margen adicional de +1 hora sobre la hora mínima configurada.
+
+        cond1 = days_difference >= min_days
+        cond2 = current_time >= min_time
+
         _LOGGER.debug(
-            "Daily status → días diff: %d | hora actual: %s | umbral días: %d | umbral hora: %02d:%02d",
-            days_difference,
-            current_time.strftime("%H:%M"),
-            DEFAULT_VALIDITY_DAYS,
-            DEFAULT_VALIDITY_HOURS,
-            DEFAULT_VALIDITY_MINUTES,
+            "Daily status → días: %d (≥%d)=%s | hora: %s (≥%s)=%s → %s",
+            days_difference, min_days, cond1,
+            current_time.strftime("%H:%M"), min_time.strftime("%H:%M"), cond2,
+            "obsolete" if cond1 and cond2 else "updated"
         )
 
-        if days_difference > DEFAULT_VALIDITY_DAYS and current_time >= time(DEFAULT_VALIDITY_HOURS, DEFAULT_VALIDITY_MINUTES):
+        if cond1 and cond2:
             return "obsolete"
         return "updated"
 
@@ -1355,6 +1375,7 @@ class MeteocatUviStatusSensor(CoordinatorEntity[MeteocatUviCoordinator], SensorE
         self._town_name = entry_data["town_name"]
         self._town_id = entry_data["town_id"]
         self._station_id = entry_data["station_id"]
+        self._limit_prediccio = entry_data["limit_prediccio"]
         self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_uvi_status"
         self._attr_entity_category = getattr(description, "entity_category", None)
 
@@ -1388,7 +1409,7 @@ class MeteocatUviStatusSensor(CoordinatorEntity[MeteocatUviCoordinator], SensorE
     def native_value(self) -> str:
         data_dict = self._get_uvi_data_dict()
         if not data_dict:
-            _LOGGER.debug("UVI Status: no hay data_dict disponible aún")
+            _LOGGER.debug("UVI Status: no hay datos disponibles aún")
             return "unknown"
 
         first_date = self._get_first_date()
@@ -1401,27 +1422,35 @@ class MeteocatUviStatusSensor(CoordinatorEntity[MeteocatUviCoordinator], SensorE
         current_time = now_local.time()
         days_difference = (today - first_date).days
 
+        # ── Replicar lógica exacta del coordinador ──
+        if self._limit_prediccio >= PREDICCIO_HIGH_QUOTA_LIMIT:
+            min_days = DEFAULT_VALIDITY_DAYS
+            min_time = time(DEFAULT_UVI_HIGH_VALIDITY_HOURS + 1, DEFAULT_UVI_HIGH_VALIDITY_MINUTES)  # Margen adicional de +1 hora sobre la hora mínima configurada.
+            quota_level = "ALTA"
+        else:
+            min_days = DEFAULT_VALIDITY_DAYS + 1
+            min_time = time(DEFAULT_UVI_LOW_VALIDITY_HOURS + 1, DEFAULT_UVI_LOW_VALIDITY_MINUTES)  # Margen adicional de +1 hora sobre la hora mínima configurada.
+            quota_level = "BAJA"
+
+        cond1 = days_difference >= min_days
+        cond2 = current_time >= min_time
+
         _LOGGER.debug(
-            "UVI Status → días diff: %d | hora actual: %s | umbral días: %d | umbral hora: %02d:%02d",
-            days_difference,
-            current_time.strftime("%H:%M"),
-            DEFAULT_VALIDITY_DAYS,
-            DEFAULT_VALIDITY_HOURS,
-            DEFAULT_VALIDITY_MINUTES,
+            "UVI Status → días: %d (≥%d)=%s | hora: %s (≥%s)=%s → %s",
+            days_difference, min_days, cond1,
+            current_time.strftime("%H:%M"), min_time.strftime("%H:%M"), cond2,
+            self._limit_prediccio, quota_level,
+            "obsolete" if cond1 and cond2 else "updated"
         )
 
-        if days_difference > DEFAULT_VALIDITY_DAYS and current_time >= time(DEFAULT_VALIDITY_HOURS, DEFAULT_VALIDITY_MINUTES):
+        if cond1 and cond2:
             return "obsolete"
         return "updated"
 
     @property
     def extra_state_attributes(self) -> dict:
-        attributes = {}
-        data_dict = self._get_uvi_data_dict()
+        attributes: dict = {}
 
-        if not data_dict:
-            attributes["debug_info"] = "Aún no hay datos en el coordinador"
-            return attributes
         # Primera fecha de los datos UVI
         first_date = self._get_first_date()
         if first_date:
