@@ -65,6 +65,20 @@
         "data": {
           "confirm": "Confirm"
         }
+      },
+      "confirm_force_data_update": {
+        "description": "Force data update will consume API calls. Please be aware of your API limits.",
+        "title": "Force data update",
+        "data": {
+          "confirm": "Confirm"
+        }
+      },
+      "select_data_to_force": {
+        "description": "Choose data to force the update.",
+        "title": "Data to update",
+        "data": {
+          "data_types": "Data"
+        }
       }
     },
     "error": {
@@ -72,7 +86,10 @@
       "unknown": "Unknown error when checking the new API Key.",
       "invalid_limit": "Invalid limit. The limit must be a positive number.",
       "invalid_coordinates": "Coordinates must be within Catalonia's range (latitude: 40.5 to 42.5, longitude: 0.1 to 3.3).",
-      "invalid_altitude": "Altitude must be a non-negative number."
+      "invalid_altitude": "Altitude must be a non-negative number.",
+      "invalid_config": "Setup failure (town_id not found or another problem).",
+      "force_update_failed": "The update could not be forced. Please check the logs.",
+      "no_selection": "You must select at least one data type."
     }
   },
   "selector": {
@@ -81,7 +98,21 @@
         "update_api_and_limits": "Update API Key and limits.",
         "update_limits_only": "Update API limits.",
         "regenerate_assets": "Regenerate 'assets' files.",
-        "update_coordinates": "Update coordinates (latitude and longitude) and altitude (meters)."
+        "update_coordinates": "Update coordinates (latitude and longitude) and altitude (meters).",
+        "force_data_update": "Force data update."
+      }
+    },
+    "data_types": {
+      "options": {
+        "force_uvi_update": "UVI",
+        "force_hourly_forecast_update": "Hourly forecast",
+        "force_daily_forecast_update": "Daily forecast",
+        "force_alerts_update": "Alerts",
+        "force_station_update": "XEMA Station data",
+        "force_lightning_update": "Lightning",
+        "force_quotes_update": "Quotas",
+        "force_sun_update": "Sun data",
+        "force_moon_update": "Moon data"
       }
     }
   },

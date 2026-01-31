@@ -229,6 +229,7 @@ class MeteocatSensorCoordinator(DataUpdateCoordinator):
         self.station_id = entry_data["station_id"]
         self.variable_name = entry_data["variable_name"]
         self.variable_id = entry_data["variable_id"]
+        self._force_update = False  # Flag para forzar actualización
         self.meteocat_station_data = MeteocatStationData(self.api_key)
 
         # Ruta persistente en /config/meteocat_files/files
@@ -241,9 +242,51 @@ class MeteocatSensorCoordinator(DataUpdateCoordinator):
             name=f"{DOMAIN} Sensor Coordinator",
             update_interval=DEFAULT_SENSOR_UPDATE_INTERVAL,
         )
+    
+    def force_next_update(self) -> None:
+        """Marca que el siguiente refresh debe forzar llamada a API."""
+        self._force_update = True
 
     async def _async_update_data(self) -> Dict:
         """Actualiza los datos de los sensores desde la API de Meteocat."""
+        # === MODO FORZADO ===
+        if self._force_update:
+            _LOGGER.info("Forzando actualización de sensores via flag para station=%s", self.station_id)
+            try:
+                data = await asyncio.wait_for(
+                    self.meteocat_station_data.get_station_data(self.station_id),
+                    timeout=30
+                )
+                _LOGGER.debug("Datos de sensores obtenidos desde API (forzado): %s", data)
+
+                await _update_quotes(self.hass, "XEMA")
+
+                if not isinstance(data, list) or not all(isinstance(item, dict) for item in data):
+                    _LOGGER.error(
+                        "Formato inválido: Se esperaba lista de dicts, obtenido %s. Datos: %s",
+                        type(data).__name__,
+                        data,
+                    )
+                    raise ValueError("Formato de datos inválido")
+
+                await save_json_to_file(data, self.station_file)
+
+                self._force_update = False
+                _LOGGER.debug("Flag de force resetado para sensores (éxito)")
+                return data
+
+            except Exception as err:
+                _LOGGER.exception("Error durante force update de sensores (station=%s)", self.station_id)
+                self._force_update = False
+                _LOGGER.debug("Flag de force resetado para sensores (fallo en force)")
+
+                # En force → fallback a caché si existe
+                cached = await load_json_from_file(self.station_file)
+                if cached and isinstance(cached, list) and cached:
+                    return cached
+                return []
+
+        # === MODO NORMAL ===
         try:
             data = await asyncio.wait_for(
                 self.meteocat_station_data.get_station_data(self.station_id),
@@ -265,6 +308,8 @@ class MeteocatSensorCoordinator(DataUpdateCoordinator):
             # Guardar datos en JSON persistente
             await save_json_to_file(data, self.station_file)
 
+            self._force_update = False
+            _LOGGER.debug("Flag de force resetado para sensores (éxito normal)")
             return data
 
         except asyncio.TimeoutError as err:
@@ -292,11 +337,9 @@ class MeteocatSensorCoordinator(DataUpdateCoordinator):
             )
             raise
         except Exception as err:
-            if isinstance(err, ConfigEntryNotReady):
-                _LOGGER.exception("No se pudo inicializar el dispositivo (Station ID: %s): %s", self.station_id, err)
-                raise
-            else:
-                _LOGGER.exception("Error inesperado al obtener datos de sensores (Station ID: %s): %s", self.station_id, err)
+            _LOGGER.exception("Error inesperado al obtener datos de sensores (station %s): %s", self.station_id, err)
+            self._force_update = False
+            _LOGGER.debug("Flag de force resetado para sensores (fallo global)")
            
         # === FALLBACK SEGURO ===
         cached_data = await load_json_from_file(self.station_file)
@@ -336,10 +379,12 @@ class MeteocatSensorCoordinator(DataUpdateCoordinator):
             )
             
             self.async_set_updated_data(cached_data)
+            self._force_update = False  # Reset también en fallback
             return cached_data
         
         _LOGGER.error("SENSOR: No hay caché disponible para los datos de la estación %s.", self.station_id)
         self.async_set_updated_data([])
+        self._force_update = False
         return []
 
 class MeteocatStaticSensorCoordinator(DataUpdateCoordinator):
@@ -396,6 +441,7 @@ class MeteocatUviCoordinator(DataUpdateCoordinator):
         self.town_id = entry_data["town_id"]
         self.limit_prediccio = entry_data["limit_prediccio"]
         self.meteocat_uvi_data = MeteocatUviData(self.api_key)
+        self._force_update = False  # Nuevo flag para forzar actualización
 
         # Ruta persistente en /config/meteocat_files/files
         files_folder = get_storage_dir(hass, "files")
@@ -407,6 +453,10 @@ class MeteocatUviCoordinator(DataUpdateCoordinator):
             name=f"{DOMAIN} Uvi Coordinator",
             update_interval=DEFAULT_UVI_UPDATE_INTERVAL,
         )
+    
+    def force_next_update(self) -> None:
+        """Marca que el siguiente refresh debe forzar llamada a API."""
+        self._force_update = True
 
     async def is_uvi_data_valid(self) -> Optional[dict]:
         """Valida si los datos UVI en caché son aún válidos, considerando:
@@ -414,6 +464,7 @@ class MeteocatUviCoordinator(DataUpdateCoordinator):
            2. Hora mínima del día (según cuota)
            3. Han pasado más de DEFAULT_UVI_MIN_HOURS_SINCE_LAST_UPDATE horas desde la última actualización exitosa
         """
+
         if not self.uvi_file.exists():
             _LOGGER.debug("Archivo UVI no existe: %s", self.uvi_file)
             return None
@@ -508,13 +559,49 @@ class MeteocatUviCoordinator(DataUpdateCoordinator):
 
     async def _async_update_data(self) -> Optional[dict]:
         """Actualiza los datos de UVI desde la API o caché."""
+        # === MODO FORZADO ===
+        if self._force_update:
+            _LOGGER.info("Forzando actualización UVI via flag para town=%s", self.town_id)
+            try:
+                data = await asyncio.wait_for(
+                    self.meteocat_uvi_data.get_uvi_index(self.town_id),
+                    timeout=30,
+                )
+                _LOGGER.debug("Datos UVI obtenidos desde API (forzado): %s", data)
+
+                await _update_quotes(self.hass, "Prediccio")
+
+                now_iso = datetime.now(TIMEZONE).isoformat()
+                enhanced_data = {
+                    "actualitzat": {"dataUpdate": now_iso},
+                    **data
+                }
+
+                await save_json_to_file(enhanced_data, self.uvi_file)
+                _LOGGER.debug("Datos UVI guardados con dataUpdate: %s", now_iso)
+
+                self._force_update = False
+                _LOGGER.debug("Flag de force resetado para UVI (éxito)")
+                return enhanced_data
+
+            except Exception as err:
+                _LOGGER.exception("Error durante force update UVI")
+                self._force_update = False
+                _LOGGER.debug("Flag de force resetado para UVI (fallo en force)")
+                # En force → fallback a caché si existe
+                cached = await load_json_from_file(self.uvi_file)
+                if cached and "uvi" in cached and cached["uvi"]:
+                    return cached
+                return None
+        # === MODO NORMAL ===
         try:
             valid_data = await self.is_uvi_data_valid()
             if valid_data:
                 _LOGGER.debug("Los datos del índice UV están actualizados. No se realiza llamada a la API.")
+                self._force_update = False  # seguridad extra
                 return valid_data
 
-            # ── Llamada a la API ──
+            # ── Llamada normal a la API ──
             data = await asyncio.wait_for(
                 self.meteocat_uvi_data.get_uvi_index(self.town_id),
                 timeout=30,
@@ -539,7 +626,10 @@ class MeteocatUviCoordinator(DataUpdateCoordinator):
             await save_json_to_file(enhanced_data, self.uvi_file)
             _LOGGER.debug("Datos UVI guardados con dataUpdate: %s", now_iso)
 
-            return enhanced_data   # ← en lugar de return data["uvi"]
+            # Si llegamos aquí, éxito → reset flag
+            self._force_update = False
+            _LOGGER.debug("Flag de force resetado para UVI (éxito)")
+            return enhanced_data
 
         except asyncio.TimeoutError as err:
             _LOGGER.warning("Tiempo de espera agotado al obtener datos UVI.")
@@ -555,6 +645,9 @@ class MeteocatUviCoordinator(DataUpdateCoordinator):
             raise
         except Exception as err:
             _LOGGER.exception("Error inesperado al obtener datos del índice UV para %s: %s", self.town_id, err)
+            # En caso de fallo, reset flag también (para no quedar stuck)
+            self._force_update = False
+            _LOGGER.debug("Flag de force resetado para UVI (fallo)")
 
         # ── FALLBACK SEGURO ──
         cached_data = await load_json_from_file(self.uvi_file)
@@ -574,10 +667,12 @@ class MeteocatUviCoordinator(DataUpdateCoordinator):
             )
 
             self.async_set_updated_data(cached_data)
+            self._force_update = False  # Reset del flag también aquí
             return cached_data
 
         _LOGGER.error("No hay datos UVI ni en caché para %s", self.town_id)
         self.async_set_updated_data(None)
+        self._force_update = False
         return None
 
 class MeteocatUviFileCoordinator(BaseFileCoordinator):
@@ -670,6 +765,8 @@ class MeteocatEntityCoordinator(DataUpdateCoordinator):
         self.variable_name = entry_data["variable_name"]
         self.variable_id = entry_data["variable_id"]
         self.limit_prediccio = entry_data["limit_prediccio"]  # Límite de llamada a la API para PREDICCIONES
+        self._force_hourly = False  # Flag específico para hourly
+        self._force_daily = False   # Flag específico para daily (permite forzar solo uno)
         self.meteocat_forecast = MeteocatForecast(self.api_key)
 
         # Ruta persistente en /config/meteocat_files/files
@@ -683,12 +780,21 @@ class MeteocatEntityCoordinator(DataUpdateCoordinator):
             name=f"{DOMAIN} Entity Coordinator",
             update_interval=DEFAULT_ENTITY_UPDATE_INTERVAL,
         )
+    
+    def force_next_update(self, hourly: bool = True, daily: bool = True) -> None:
+        """Marca que el siguiente refresh debe forzar actualización de hourly y/o daily."""
+        if hourly:
+            self._force_hourly = True
+        if daily:
+            self._force_daily = True
 
     # --------------------------------------------------------------------- #
     #  VALIDACIÓN DINÁMICA DE DATOS DE PREDICCIÓN
     # --------------------------------------------------------------------- #
     async def validate_forecast_data(self, file_path: Path) -> Optional[dict]:
         """Valida si los datos de predicción son válidos considerando 3 condiciones."""
+        is_hourly = "hourly" in file_path.name.lower()
+
         if not file_path.exists():
             _LOGGER.warning("Archivo no existe: %s", file_path)
             return None
@@ -815,6 +921,50 @@ class MeteocatEntityCoordinator(DataUpdateCoordinator):
     # --------------------------------------------------------------------- #
     async def _async_update_data(self) -> Dict[str, Any]:
         """Actualiza los datos de predicción horaria y diaria."""
+        # === MODO FORZADO (hourly y/o daily) ===
+        if self._force_hourly or self._force_daily:
+            _LOGGER.info(
+                "Forzando actualización de predicciones (%s%s) via flag para town=%s",
+                "horaria " if self._force_hourly else "",
+                "diaria " if self._force_daily else "",
+                self.town_id
+            )
+
+            hourly_data = None
+            daily_data = None
+
+            try:
+                if self._force_hourly:
+                    hourly_data = await self._fetch_and_save_data(
+                        self.meteocat_forecast.get_prediccion_horaria, self.hourly_file
+                    )
+                if self._force_daily:
+                    daily_data = await self._fetch_and_save_data(
+                        self.meteocat_forecast.get_prediccion_diaria, self.daily_file
+                    )
+
+                self._force_hourly = False
+                self._force_daily = False
+                _LOGGER.debug("Flag(s) de force resetados para predicciones (éxito)")
+
+                return {
+                    "hourly": hourly_data or (await load_json_from_file(self.hourly_file) or {}),
+                    "daily": daily_data or (await load_json_from_file(self.daily_file) or {})
+                }
+
+            except Exception as err:
+                _LOGGER.exception("Error durante force update de predicciones")
+                self._force_hourly = False
+                self._force_daily = False
+                _LOGGER.debug("Flag(s) de force resetados para predicciones (fallo en force)")
+
+                # Fallback a caché en force
+                return {
+                    "hourly": await load_json_from_file(self.hourly_file) or {},
+                    "daily": await load_json_from_file(self.daily_file) or {}
+                }
+        
+        # === MODO NORMAL ===
         try:
             # ---  Validar o actualizar datos horarios ---
             hourly_data = await self.validate_forecast_data(self.hourly_file)
@@ -829,6 +979,10 @@ class MeteocatEntityCoordinator(DataUpdateCoordinator):
                 daily_data = await self._fetch_and_save_data(
                     self.meteocat_forecast.get_prediccion_diaria, self.daily_file
                 )
+
+            self._force_hourly = False
+            self._force_daily = False
+            _LOGGER.debug("Flag(s) de force resetados para predicciones (éxito normal)")
 
             return {"hourly": hourly_data, "daily": daily_data}
 
@@ -861,6 +1015,9 @@ class MeteocatEntityCoordinator(DataUpdateCoordinator):
             raise
         except Exception as err:
             _LOGGER.exception("Error inesperado al obtener datos de predicción: %s", err)
+            self._force_hourly = False
+            self._force_daily = False
+            _LOGGER.debug("Flag(s) de force resetados para predicciones (fallo global)")
            
         # === FALLBACK SEGURO ===
         hourly_cache = await load_json_from_file(self.hourly_file) or {}
@@ -891,6 +1048,8 @@ class MeteocatEntityCoordinator(DataUpdateCoordinator):
         )
 
         self.async_set_updated_data({"hourly": hourly_cache, "daily": daily_cache})
+        self._force_hourly = False
+        self._force_daily = False
         return {"hourly": hourly_cache, "daily": daily_cache}
 
 def get_condition_from_code(code: int) -> str:
@@ -1393,6 +1552,7 @@ class MeteocatAlertsCoordinator(DataUpdateCoordinator):
         self.api_key = entry_data["api_key"]
         self.region_id = entry_data["region_id"]  # ID de la región o comarca
         self.limit_prediccio = entry_data["limit_prediccio"]  # Límite de llamada a la API para PREDICCIONES
+        self._force_update = False  # Nuevo flag para forzar actualización
         self.alerts_data = MeteocatAlerts(self.api_key)
 
         # Ruta persistente en /config/meteocat_files/files
@@ -1406,53 +1566,117 @@ class MeteocatAlertsCoordinator(DataUpdateCoordinator):
             name=f"{DOMAIN} Alerts Coordinator",
             update_interval=DEFAULT_ALERTS_UPDATE_INTERVAL,
         )
+    
+    def force_next_update(self) -> None:
+        """Marca que el siguiente refresh debe forzar llamada a API."""
+        self._force_update = True
 
     async def _async_update_data(self) -> Dict:
         """Actualiza los datos de alertas desde la API de Meteocat o desde el archivo local según las condiciones especificadas."""
-        # Comprobar si existe el archivo 'alerts.json'
-        existing_data = await load_json_from_file(self.alerts_file)
+        # === MODO FORZADO ===
+        if self._force_update:
+            _LOGGER.info("Forzando actualización de alertas via flag para region=%s", self.region_id)
+            try:
+                result = await self._fetch_and_save_new_data()
+                self._force_update = False
+                _LOGGER.debug("Flag de force resetado para alertas (éxito)")
+                return result
+            except Exception as err:
+                _LOGGER.exception("Error durante force update de alertas (region=%s)", self.region_id)
+                self._force_update = False
+                _LOGGER.debug("Flag de force resetado para alertas (fallo en force)")
 
-        # Calcular el tiempo de validez basado en el límite de predicción
-        if self.limit_prediccio <= 100:
-            multiplier = ALERT_VALIDITY_MULTIPLIER_100
-        elif 100 < self.limit_prediccio <= 200:
-            multiplier = ALERT_VALIDITY_MULTIPLIER_200
-        elif 200 < self.limit_prediccio <= 500:
-            multiplier = ALERT_VALIDITY_MULTIPLIER_500
-        else:
-            multiplier = ALERT_VALIDITY_MULTIPLIER_DEFAULT
-
-        validity_duration = timedelta(minutes=DEFAULT_ALERT_VALIDITY_TIME * multiplier)
+                # En force → fallback a caché si existe
+                cached = await load_json_from_file(self.alerts_file)
+                if self._is_valid_alert_data(cached):
+                    return {"actualizado": cached["actualitzat"]["dataUpdate"]}
+                return {}
         
-        # Si no existe el archivo
-        if not existing_data:
-            return await self._fetch_and_save_new_data()
-        else:
-            # Comprobar la antigüedad de los datos
+        # === MODO NORMAL ===
+        try:
+            existing_data = await load_json_from_file(self.alerts_file)
+
+            # Calcular validez según cuota
+            if self.limit_prediccio <= 100:
+                multiplier = ALERT_VALIDITY_MULTIPLIER_100
+            elif 100 < self.limit_prediccio <= 200:
+                multiplier = ALERT_VALIDITY_MULTIPLIER_200
+            elif 200 < self.limit_prediccio <= 500:
+                multiplier = ALERT_VALIDITY_MULTIPLIER_500
+            else:
+                multiplier = ALERT_VALIDITY_MULTIPLIER_DEFAULT
+
+            validity_duration = timedelta(minutes=DEFAULT_ALERT_VALIDITY_TIME * multiplier)
+
+            if not existing_data:
+                return await self._fetch_and_save_new_data()
+
             last_update = datetime.fromisoformat(existing_data['actualitzat']['dataUpdate'])
             now = datetime.now(timezone.utc).astimezone(TIMEZONE)
 
-            # Comparar la antigüedad de los datos
             if now - last_update > validity_duration:
                 return await self._fetch_and_save_new_data()
             else:
-                # Comprobar si el archivo regional sigue con INITIAL_TEMPLATE o sin datos válidos
+                # Comprobar archivo regional
                 region_data = await load_json_from_file(self.alerts_region_file)
                 if (
                     not region_data
                     or region_data.get("actualitzat", {}).get("dataUpdate") in [None, "1970-01-01T00:00:00+00:00"]
                 ):
                     _LOGGER.info(
-                        "El archivo regional %s sigue con plantilla inicial. Regenerando a partir de alerts.json",
+                        "Archivo regional %s con plantilla inicial. Regenerando...",
                         self.alerts_region_file,
                     )
                     await self._filter_alerts_by_region()
 
-                # Devolver los datos del archivo existente
-                _LOGGER.debug("Usando datos existentes de alertas: %s", existing_data)
-                return {
-                "actualizado": existing_data['actualitzat']['dataUpdate']
-                }
+                _LOGGER.debug("Usando datos existentes de alertas")
+                self._force_update = False  # Seguridad extra
+                return {"actualizado": existing_data['actualitzat']['dataUpdate']}
+
+        except asyncio.TimeoutError as err:
+            _LOGGER.warning("Timeout al obtener alertas.")
+            raise ConfigEntryNotReady from err
+        except ForbiddenError as err:
+            _LOGGER.error("Acceso denegado a alertas: %s", err)
+            raise ConfigEntryNotReady from err
+        except TooManyRequestsError as err:
+            _LOGGER.warning("Límite alcanzado en alertas: %s", err)
+            raise ConfigEntryNotReady from err
+        except Exception as err:
+            _LOGGER.exception("Error inesperado en alertas (region=%s)", self.region_id)
+            self._force_update = False
+            _LOGGER.debug("Flag de force resetado para alertas (fallo global)")
+
+        # === FALLBACK SEGURO ===
+        cached_data = await load_json_from_file(self.alerts_file)
+        if self._is_valid_alert_data(cached_data):
+            update_str = cached_data["actualitzat"]["dataUpdate"]
+            try:
+                update_dt = datetime.fromisoformat(update_str)
+                local_dt = update_dt.astimezone(TIMEZONE)
+                display_time = local_dt.strftime("%d/%m/%Y %H:%M")
+            except (ValueError, TypeError):
+                display_time = update_str.split("T")[0]
+
+            _LOGGER.warning(
+                "ALERTAS: API falló → usando caché local (region=%s):\n"
+                "   • Archivo: %s\n"
+                "   • Última actualización: %s\n"
+                "   • Alertas activas: %d",
+                self.region_id,
+                self.alerts_file.name,
+                display_time,
+                len(cached_data.get("dades", []))
+            )
+
+            self.async_set_updated_data({"actualizado": cached_data["actualitzat"]["dataUpdate"]})
+            self._force_update = False
+            return {"actualizado": cached_data["actualitzat"]["dataUpdate"]}
+
+        _LOGGER.error("ALERTAS: No hay caché disponible (region=%s).", self.region_id)
+        self.async_set_updated_data({})
+        self._force_update = False
+        return {}
 
     async def _fetch_and_save_new_data(self):
         """Obtiene nuevos datos de la API y los guarda en el archivo JSON."""
@@ -1506,6 +1730,8 @@ class MeteocatAlertsCoordinator(DataUpdateCoordinator):
             raise
         except Exception as err:
             _LOGGER.exception("Error al obtener alertas: %s", err)
+            self._force_update = False  # Reset en fallo
+            _LOGGER.debug("Flag de force resetado para alertas (fallo)")
             
         # === FALLBACK SEGURO ===
         cached_data = await load_json_from_file(self.alerts_file)
@@ -1530,10 +1756,12 @@ class MeteocatAlertsCoordinator(DataUpdateCoordinator):
             self.async_set_updated_data({
                 "actualizado": cached_data["actualitzat"]["dataUpdate"]
             })
+            self._force_update = False
             return {"actualizado": cached_data["actualitzat"]["dataUpdate"]}
         
         _LOGGER.error("ALERTAS: No hay caché disponible. Sin datos de alertas.")
         self.async_set_updated_data({})
+        self._force_update = False
         return {}
 
     @staticmethod
@@ -1853,6 +2081,7 @@ class MeteocatQuotesCoordinator(DataUpdateCoordinator):
             entry_data (dict): Datos de configuración obtenidos de core.config_entries.
         """
         self.api_key = entry_data["api_key"]  # Usamos la API key de la configuración
+        self._force_update = False  # Flag para forzar actualización
         self.meteocat_quotes = MeteocatQuotes(self.api_key)
 
         # Ruta persistente en /config/meteocat_files/files
@@ -1865,31 +2094,96 @@ class MeteocatQuotesCoordinator(DataUpdateCoordinator):
             name=f"{DOMAIN} Quotes Coordinator",
             update_interval=DEFAULT_QUOTES_UPDATE_INTERVAL,
         )
+    
+    def force_next_update(self) -> None:
+        """Marca que el siguiente refresh debe forzar llamada a API."""
+        self._force_update = True
 
     async def _async_update_data(self) -> Dict:
         """Actualiza los datos de las cuotas desde la API de Meteocat o usa datos en caché según la antigüedad."""
-        existing_data = await load_json_from_file(self.quotes_file) or {}
+        # === MODO FORZADO ===
+        if self._force_update:
+            _LOGGER.info("Forzando actualización de cuotas via flag")
+            try:
+                result = await self._fetch_and_save_new_data()
+                self._force_update = False
+                _LOGGER.debug("Flag de force resetado para cuotas (éxito)")
+                return result
+            except Exception as err:
+                _LOGGER.exception("Error durante force update de cuotas")
+                self._force_update = False
+                _LOGGER.debug("Flag de force resetado para cuotas (fallo en force)")
 
-        # Definir la duración de validez de los datos
-        validity_duration = timedelta(minutes=DEFAULT_QUOTES_VALIDITY_TIME)
+                # En force → fallback a caché si existe
+                cached = await load_json_from_file(self.quotes_file)
+                if cached and "actualitzat" in cached and "dataUpdate" in cached["actualitzat"]:
+                    return {"actualizado": cached["actualitzat"]["dataUpdate"]}
+                return {}
 
-        # Si no existe el archivo
-        if not existing_data:
-            return await self._fetch_and_save_new_data()
-        else:
-            # Comprobar la antigüedad de los datos
+        # === MODO NORMAL ===
+        try:
+            existing_data = await load_json_from_file(self.quotes_file) or {}
+
+            validity_duration = timedelta(minutes=DEFAULT_QUOTES_VALIDITY_TIME)
+
+            if not existing_data:
+                return await self._fetch_and_save_new_data()
+
             last_update = datetime.fromisoformat(existing_data['actualitzat']['dataUpdate'])
             now = datetime.now(timezone.utc).astimezone(TIMEZONE)
 
-            # Comparar la antigüedad de los datos
             if now - last_update >= validity_duration:
                 return await self._fetch_and_save_new_data()
             else:
-                # Devolver los datos del archivo existente
-                _LOGGER.debug("Usando datos existentes de cuotas: %s", existing_data)
-                return {
-                "actualizado": existing_data['actualitzat']['dataUpdate']
-                }
+                _LOGGER.debug("Usando datos existentes de cuotas")
+                self._force_update = False  # Seguridad extra en éxito normal
+                return {"actualizado": existing_data['actualitzat']['dataUpdate']}
+
+        except asyncio.TimeoutError as err:
+            _LOGGER.warning("Timeout al obtener cuotas.")
+            raise ConfigEntryNotReady from err
+        except ForbiddenError as err:
+            _LOGGER.error("Acceso denegado a cuotas: %s", err)
+            raise ConfigEntryNotReady from err
+        except TooManyRequestsError as err:
+            _LOGGER.warning("Límite alcanzado en cuotas: %s", err)
+            raise ConfigEntryNotReady from err
+        except Exception as err:
+            _LOGGER.exception("Error inesperado al obtener cuotas")
+            self._force_update = False
+            _LOGGER.debug("Flag de force resetado para cuotas (fallo global)")
+
+        # === FALLBACK SEGURO ===
+        cached_data = await load_json_from_file(self.quotes_file)
+        if cached_data and "actualitzat" in cached_data and "dataUpdate" in cached_data["actualitzat"]:
+            update_str = cached_data["actualitzat"]["dataUpdate"]
+            try:
+                update_dt = datetime.fromisoformat(update_str)
+                local_dt = update_dt.astimezone(TIMEZONE)
+                display_time = local_dt.strftime("%d/%m/%Y %H:%M")
+            except (ValueError, TypeError):
+                display_time = update_str.split("T")[0]
+
+            plans_count = len(cached_data.get("plans", []))
+
+            _LOGGER.warning(
+                "CUOTAS: API falló → usando caché local:\n"
+                "   • Archivo: %s\n"
+                "   • Última actualización: %s\n"
+                "   • Planes registrados: %d",
+                self.quotes_file.name,
+                display_time,
+                plans_count
+            )
+
+            self.async_set_updated_data({"actualizado": cached_data["actualitzat"]["dataUpdate"]})
+            self._force_update = False
+            return {"actualizado": cached_data["actualitzat"]["dataUpdate"]}
+
+        _LOGGER.error("CUOTAS: No hay caché disponible. Sin información de consumo.")
+        self.async_set_updated_data({})
+        self._force_update = False
+        return {}
 
     async def _fetch_and_save_new_data(self):
         """Obtiene nuevos datos de la API y los guarda en el archivo JSON."""
@@ -1963,6 +2257,8 @@ class MeteocatQuotesCoordinator(DataUpdateCoordinator):
             raise
         except Exception as err:
             _LOGGER.exception("Error al obtener cuotas: %s", err)
+            self._force_update = False
+            _LOGGER.debug("Flag de force resetado para cuotas (fallo)")
            
         # === FALLBACK SEGURO ===
         cached_data = await load_json_from_file(self.quotes_file)
@@ -1991,10 +2287,12 @@ class MeteocatQuotesCoordinator(DataUpdateCoordinator):
             self.async_set_updated_data({
                 "actualizado": cached_data["actualitzat"]["dataUpdate"]
             })
+            self._force_update = False
             return {"actualizado": cached_data["actualitzat"]["dataUpdate"]}
         
         _LOGGER.error("CUOTAS: No hay caché disponible. Sin información de consumo.")
         self.async_set_updated_data({})
+        self._force_update = False
         return {}
     
 class MeteocatQuotesFileCoordinator(BaseFileCoordinator):
@@ -2084,6 +2382,7 @@ class MeteocatLightningCoordinator(DataUpdateCoordinator):
         """
         self.api_key = entry_data["api_key"]  # API Key de la configuración
         self.region_id = entry_data["region_id"]  # Región de la configuración
+        self._force_update = False  # Flag para forzar actualización de datos
         self.meteocat_lightning = MeteocatLightning(self.api_key)
 
         # Ruta persistente en /config/meteocat_files/files
@@ -2096,31 +2395,100 @@ class MeteocatLightningCoordinator(DataUpdateCoordinator):
             name=f"{DOMAIN} Lightning Coordinator",
             update_interval=DEFAULT_LIGHTNING_UPDATE_INTERVAL,
         )
+    
+    def force_next_update(self) -> None:
+        """Marca que el siguiente refresh debe forzar llamada a API."""
+        self._force_update = True
 
     async def _async_update_data(self) -> Dict:
         """Actualiza los datos de rayos desde la API de Meteocat o usa datos en caché según la antigüedad."""
-        existing_data = await load_json_from_file(self.lightning_file) or {}
+        # === MODO FORZADO ===
+        if self._force_update:
+            _LOGGER.info("Forzando actualización de rayos via flag para region=%s", self.region_id)
+            try:
+                result = await self._fetch_and_save_new_data()
+                self._force_update = False
+                _LOGGER.debug("Flag de force resetado para rayos (éxito)")
+                return result
+            except Exception as err:
+                _LOGGER.exception("Error durante force update de rayos (region=%s)", self.region_id)
+                self._force_update = False
+                _LOGGER.debug("Flag de force resetado para rayos (fallo en force)")
 
-        # Definir la duración de validez de los datos
-        now = datetime.now(timezone.utc).astimezone(TIMEZONE)
-        current_time = now.time()  # Extraer solo la parte de la hora
-        offset = now.utcoffset().total_seconds() / 3600  # Obtener el offset en horas
-        
-        # Determinar la hora de validez considerando el offset horario, el horario de verano (+02:00) o invierno (+01:00)
-        validity_start_time = time(int(DEFAULT_LIGHTNING_VALIDITY_HOURS + offset), DEFAULT_LIGHTNING_VALIDITY_MINUTES)
-        
-        validity_duration = timedelta(minutes=DEFAULT_LIGHTNING_VALIDITY_TIME)
+                # En force → fallback a caché si existe
+                cached = await load_json_from_file(self.lightning_file)
+                if cached and "actualitzat" in cached:
+                    return {"actualizado": cached["actualitzat"]["dataUpdate"]}
+                return {}
 
-        if not existing_data:
-            return await self._fetch_and_save_new_data()
-        else:
-            last_update = datetime.fromisoformat(existing_data['actualitzat']['dataUpdate'])
-            
-            if now - last_update >= validity_duration and current_time >= validity_start_time:
+        # === MODO NORMAL ===
+        try:
+            existing_data = await load_json_from_file(self.lightning_file) or {}
+
+            now = datetime.now(timezone.utc).astimezone(TIMEZONE)
+            current_time = now.time()
+            offset = now.utcoffset().total_seconds() / 3600
+
+            validity_start_time = time(int(DEFAULT_LIGHTNING_VALIDITY_HOURS + offset), DEFAULT_LIGHTNING_VALIDITY_MINUTES)
+            validity_duration = timedelta(minutes=DEFAULT_LIGHTNING_VALIDITY_TIME)
+
+            if not existing_data:
                 return await self._fetch_and_save_new_data()
             else:
-                _LOGGER.debug("Usando datos existentes de rayos: %s", existing_data)
-                return {"actualizado": existing_data['actualitzat']['dataUpdate']}
+                last_update = datetime.fromisoformat(existing_data['actualitzat']['dataUpdate'])
+
+                if now - last_update >= validity_duration and current_time >= validity_start_time:
+                    return await self._fetch_and_save_new_data()
+                else:
+                    _LOGGER.debug("Usando datos existentes de rayos")
+                    self._force_update = False  # Seguridad extra
+                    return {"actualizado": existing_data['actualitzat']['dataUpdate']}
+
+        except asyncio.TimeoutError as err:
+            _LOGGER.warning("Timeout al obtener rayos.")
+            raise ConfigEntryNotReady from err
+        except ForbiddenError as err:
+            _LOGGER.error("Acceso denegado al obtener cuotas de la API de Meteocat: %s", err)
+            raise ConfigEntryNotReady from err
+        except TooManyRequestsError as err:
+            _LOGGER.warning("Límite de solicitudes alcanzado al obtener cuotas de la API de Meteocat: %s", err)
+            raise ConfigEntryNotReady from err
+        except (BadRequestError, InternalServerError, UnknownAPIError) as err:
+            _LOGGER.error("Error al obtener cuotas de la API de Meteocat: %s", err)
+            raise
+        except Exception as err:
+            _LOGGER.exception("Error inesperado al obtener rayos (region=%s)", self.region_id)
+            self._force_update = False
+            _LOGGER.debug("Flag de force resetado para rayos (fallo global)")
+
+        # === FALLBACK SEGURO ===
+        cached_data = await load_json_from_file(self.lightning_file)
+        if cached_data and "actualitzat" in cached_data:
+            update_str = cached_data["actualitzat"]["dataUpdate"]
+            try:
+                update_dt = datetime.fromisoformat(update_str)
+                local_dt = update_dt.astimezone(TIMEZONE)
+                display_time = local_dt.strftime("%d/%m/%Y %H:%M")
+            except (ValueError, TypeError):
+                display_time = update_str
+
+            _LOGGER.warning(
+                "API rayos falló → usando caché local (region=%s):\n"
+                "   • Archivo: %s\n"
+                "   • Última actualización: %s",
+                self.region_id,
+                self.lightning_file.name,
+                display_time
+            )
+
+            self.async_set_updated_data({"actualizado": cached_data["actualitzat"]["dataUpdate"]})
+            self._force_update = False
+            return {"actualizado": cached_data["actualitzat"]["dataUpdate"]}
+
+        _LOGGER.error("No hay caché de rayos disponible (region=%s).", self.region_id)
+        self.async_set_updated_data({})
+        self._force_update = False
+        return {}
 
     async def _fetch_and_save_new_data(self):
         """Obtiene nuevos datos de la API y los guarda en el archivo JSON."""
@@ -2156,10 +2524,21 @@ class MeteocatLightningCoordinator(DataUpdateCoordinator):
         except asyncio.TimeoutError as err:
             _LOGGER.warning("Tiempo de espera agotado al obtener los datos de rayos de la API de Meteocat.")
             raise ConfigEntryNotReady from err
+        except ForbiddenError as err:
+            _LOGGER.error("Acceso denegado al obtener cuotas de la API de Meteocat: %s", err)
+            raise ConfigEntryNotReady from err
+        except TooManyRequestsError as err:
+            _LOGGER.warning("Límite de solicitudes alcanzado al obtener cuotas de la API de Meteocat: %s", err)
+            raise ConfigEntryNotReady from err
+        except (BadRequestError, InternalServerError, UnknownAPIError) as err:
+            _LOGGER.error("Error al obtener cuotas de la API de Meteocat: %s", err)
+            raise
         except Exception as err:
             _LOGGER.exception("Error al obtener datos de rayos: %s", err)
+            self._force_update = False
+            _LOGGER.debug("Flag de force resetado para rayos (fallo)")
             
-        # === FALLBACK SEGURO ===
+        # === FALLBACK SEGURO - SOLO en modo normal ===
         cached_data = await load_json_from_file(self.lightning_file)
         if cached_data and "actualitzat" in cached_data:
             update_str = cached_data["actualitzat"]["dataUpdate"]
@@ -2182,10 +2561,12 @@ class MeteocatLightningCoordinator(DataUpdateCoordinator):
             self.async_set_updated_data({
                 "actualizado": cached_data["actualitzat"]["dataUpdate"]
             })
+            self._force_update = False
             return {"actualizado": cached_data["actualitzat"]["dataUpdate"]}
         
         _LOGGER.error("No hay caché de rayos disponible.")
         self.async_set_updated_data({})
+        self._force_update = False
         return {}
 
 class MeteocatLightningFileCoordinator(BaseFileCoordinator):
@@ -2330,6 +2711,7 @@ class MeteocatSunCoordinator(DataUpdateCoordinator):
         self.elevation = entry_data.get("altitude", 0.0)
         self.timezone_str = hass.config.time_zone or "Europe/Madrid"
         self.town_id = entry_data.get("town_id")
+        self._force_update = False  # Flag para forzar actualización
 
         # Crear ubicación para cálculos solares
         self.location = Location(LocationInfo(
@@ -2350,9 +2732,33 @@ class MeteocatSunCoordinator(DataUpdateCoordinator):
             name=f"{DOMAIN} Sun Coordinator",
             update_interval=DEFAULT_SUN_UPDATE_INTERVAL,
         )
+    
+    def force_next_update(self) -> None:
+        """Marca que el siguiente refresh debe forzar el cálculo completo de datos solares."""
+        self._force_update = True
 
     async def _async_update_data(self) -> dict:
         """Comprueba si es necesario actualizar los datos solares (evitando escrituras innecesarias)."""
+        # === MODO FORZADO ===
+        if self._force_update:
+            _LOGGER.info("Forzando actualización de datos solares via flag para town=%s", self.town_id)
+            try:
+                result = await self._calculate_and_save_new_data()
+                self._force_update = False
+                _LOGGER.debug("Flag de force resetado para sun (éxito)")
+                return result
+            except Exception as err:
+                _LOGGER.exception("Error durante force update de datos solares (town=%s)", self.town_id)
+                self._force_update = False
+                _LOGGER.debug("Flag de force resetado para sun (fallo en force)")
+
+                # En force → fallback a caché si existe
+                cached = await load_json_from_file(self.sun_file)
+                if cached and "actualitzat" in cached and "dades" in cached:
+                    return cached
+                return {}
+        
+        # === MODO NORMAL ===
         _LOGGER.debug("☀️ Comprobando si es necesario actualizar los datos solares...")
         now = datetime.now(tz=ZoneInfo(self.timezone_str))
         today = now.date()
@@ -2392,7 +2798,9 @@ class MeteocatSunCoordinator(DataUpdateCoordinator):
         existing_data = await load_json_from_file(self.sun_file) or {}
         if not existing_data or "dades" not in existing_data or not existing_data["dades"]:
             _LOGGER.debug("☀️ No hay datos solares previos. Generando nuevos datos.")
-            return await self._calculate_and_save_new_data(**expected)
+            result = await self._calculate_and_save_new_data(**expected)
+            self._force_update = False
+            return result
 
         dades = existing_data["dades"][0]
 
@@ -2401,7 +2809,9 @@ class MeteocatSunCoordinator(DataUpdateCoordinator):
                     for k, v in dades.items() if k in expected}
         except Exception as e:
             _LOGGER.warning("☀️ Error al leer el archivo solar: %s", e)
-            return await self._calculate_and_save_new_data(**expected)
+            result = await self._calculate_and_save_new_data(**expected)
+            self._force_update = False
+            return result
 
         # === 3️⃣ Detectar cambios en eventos solares ===
         changed_events = {
@@ -2484,6 +2894,7 @@ class MeteocatSunCoordinator(DataUpdateCoordinator):
         # === 8️⃣ Si nada cambió, no se actualiza ===
         if not changed_events and not position_needs_update:
             _LOGGER.debug("☀️ Datos solares actuales coinciden con lo esperado. No se actualiza.")
+            self._force_update = False
             return existing_data
 
         # === 9️⃣ Actualizar si es necesario ===
@@ -2503,11 +2914,13 @@ class MeteocatSunCoordinator(DataUpdateCoordinator):
                         sun_pos["elevation"], sun_pos["azimuth"], sun_pos["rising"])
 
         _LOGGER.debug("☀️ Datos solares han cambiado. Actualizando: %s", changed_events)
-        return await self._calculate_and_save_new_data(
+        result = await self._calculate_and_save_new_data(
             **updated_data,
             sun_pos=sun_pos,
             now=now
         )
+        self._force_update = False
+        return result
    
     async def _calculate_and_save_new_data(
         self,
@@ -2623,7 +3036,9 @@ class MeteocatSunCoordinator(DataUpdateCoordinator):
             return data_with_timestamp
 
         except Exception as err:
-            _LOGGER.exception("Error al calcular/guardar los datos solares: %s", err)
+            _LOGGER.exception("Error al calcular/guardar los datos solares (town=%s): %s", self.town_id, err)
+            self._force_update = False
+            _LOGGER.debug("Flag de force resetado para sun (fallo)")
             
             # === FALLBACK SEGURO ===
             cached = await load_json_from_file(self.sun_file)
@@ -2652,10 +3067,12 @@ class MeteocatSunCoordinator(DataUpdateCoordinator):
                 )
                 
                 self.async_set_updated_data(cached)
+                self._force_update = False
                 return cached
             
             _LOGGER.error("SOL: No hay caché disponible. Sin datos solares.")
             self.async_set_updated_data({})
+            self._force_update = False
             return {}
 
 class MeteocatSunFileCoordinator(BaseFileCoordinator):
@@ -2792,6 +3209,7 @@ class MeteocatMoonCoordinator(DataUpdateCoordinator):
         self.longitude = entry_data.get("longitude")
         self.timezone_str = hass.config.time_zone or "Europe/Madrid"
         self.town_id = entry_data.get("town_id")
+        self._force_update = False  # Flag para forzar actualización
 
         self.location = LocationInfo(
             name=entry_data.get("town_name", "Municipio"),
@@ -2810,9 +3228,33 @@ class MeteocatMoonCoordinator(DataUpdateCoordinator):
             name=f"{DOMAIN} Moon Coordinator",
             update_interval=DEFAULT_MOON_UPDATE_INTERVAL,
         )
+    
+    def force_next_update(self) -> None:
+        """Marca que el siguiente refresh debe forzar el cálculo completo de datos lunares."""
+        self._force_update = True
 
     async def _async_update_data(self) -> dict:
         """Determina si los datos de la luna son válidos o requieren actualización."""
+        # === MODO FORZADO ===
+        if self._force_update:
+            _LOGGER.info("Forzando actualización de datos lunares via flag para town=%s", self.town_id)
+            try:
+                result = await self._calculate_and_save_new_data()
+                self._force_update = False
+                _LOGGER.debug("Flag de force resetado para moon (éxito)")
+                return result
+            except Exception as err:
+                _LOGGER.exception("Error durante force update de datos lunares (town=%s)", self.town_id)
+                self._force_update = False
+                _LOGGER.debug("Flag de force resetado para moon (fallo en force)")
+
+                # En force → fallback a caché si existe
+                cached = await load_json_from_file(self.moon_file)
+                if cached and "actualitzat" in cached and "dades" in cached:
+                    return {"actualizado": cached["actualitzat"]["dataUpdate"]}
+                return {}
+
+        # === MODO NORMAL ===
         _LOGGER.debug("🌙 Iniciando actualización de datos de la luna...")
         now = datetime.now(tz=ZoneInfo(self.timezone_str))
         existing_data = await load_json_from_file(self.moon_file) or {}
@@ -2826,7 +3268,9 @@ class MeteocatMoonCoordinator(DataUpdateCoordinator):
             or "dataUpdate" not in existing_data["actualitzat"]
         ):
             _LOGGER.warning("🌙 Datos previos incompletos o ausentes: calculando todos los datos para hoy.")
-            return await self._calculate_and_save_new_data(today_only=True, existing_data=existing_data)
+            result = await self._calculate_and_save_new_data(today_only=True, existing_data=existing_data)
+            self._force_update = False
+            return result
 
         dades = existing_data["dades"][0]
         last_lunar_update_date_str = existing_data["actualitzat"].get("last_lunar_update_date")
@@ -2853,18 +3297,24 @@ class MeteocatMoonCoordinator(DataUpdateCoordinator):
                     "🌙 Datos obsoletos: last_lunar_update_date=%s, moonrise=%s, moonset=%s. Calculando para hoy.",
                     last_lunar_update_date, moonrise, moonset
                 )
-                return await self._calculate_and_save_new_data(today_only=True, existing_data=existing_data)
+                result = await self._calculate_and_save_new_data(today_only=True, existing_data=existing_data)
+                self._force_update = False
+                return result
         except Exception as e:
             _LOGGER.warning("🌙 Error interpretando fechas previas: %s", e)
-            return await self._calculate_and_save_new_data(today_only=True, existing_data=existing_data)
+            result = await self._calculate_and_save_new_data(today_only=True, existing_data=existing_data)
+            self._force_update = False
+            return result
 
         # 🟢 Comprobar si los datos lunares necesitan actualización
         if now.date() > last_lunar_update_date:
             _LOGGER.debug("🌙 Fecha actual superior a last_lunar_update_date: actualizando datos lunares.")
-            return await self._calculate_and_save_new_data(
+            result = await self._calculate_and_save_new_data(
                 update_type="update_lunar_data",
                 existing_data=existing_data
             )
+            self._force_update = False
+            return result
 
         _LOGGER.debug(
             "🌙 Estado actual → now=%s | moonrise=%s | moonset=%s",
@@ -2876,26 +3326,35 @@ class MeteocatMoonCoordinator(DataUpdateCoordinator):
             _LOGGER.debug("🌙 Ambos eventos None: verificando si datos son actuales.")
             if last_lunar_update_date == now.date():
                 _LOGGER.debug("🌙 Datos de hoy sin eventos: no se actualiza.")
+                self._force_update = False
                 return {"actualizado": existing_data["actualitzat"]["dataUpdate"]}
-            return await self._calculate_and_save_new_data(today_only=True, existing_data=existing_data)
+            result = await self._calculate_and_save_new_data(today_only=True, existing_data=existing_data)
+            self._force_update = False
+            return result
 
         elif moonrise is None:
             _LOGGER.debug("🌙 No moonrise: tratando moonset como único evento.")
             if now < moonset:
                 _LOGGER.debug("🌙 Antes del moonset: no se actualiza.")
+                self._force_update = False
                 return {"actualizado": existing_data["actualitzat"]["dataUpdate"]}
             else:
                 _LOGGER.debug("🌙 Después del moonset: actualizar moonset para mañana.")
-                return await self._calculate_and_save_new_data(update_type="update_set_tomorrow", existing_data=existing_data)
+                result = await self._calculate_and_save_new_data(update_type="update_set_tomorrow", existing_data=existing_data)
+                self._force_update = False
+                return result
 
         elif moonset is None:
             _LOGGER.debug("🌙 No moonset: tratando moonrise como único evento.")
             if now < moonrise:
                 _LOGGER.debug("🌙 Antes del moonrise: no se actualiza.")
+                self._force_update = False
                 return {"actualizado": existing_data["actualitzat"]["dataUpdate"]}
             else:
                 _LOGGER.debug("🌙 Después del moonrise: actualizar moonrise para mañana.")
-                return await self._calculate_and_save_new_data(update_type="update_rise_tomorrow", existing_data=existing_data)
+                result = await self._calculate_and_save_new_data(update_type="update_rise_tomorrow", existing_data=existing_data)
+                self._force_update = False
+                return result
 
         else:
             min_event = min(moonrise, moonset)
@@ -2904,19 +3363,24 @@ class MeteocatMoonCoordinator(DataUpdateCoordinator):
 
             if now < min_event:
                 _LOGGER.debug("🌙 Momento actual antes del primer evento → no se actualiza nada.")
+                self._force_update = False
                 return {"actualizado": existing_data["actualitzat"]["dataUpdate"]}
 
             elif now < max_event:
                 if first_is_rise:
                     _LOGGER.debug("🌙 Después del moonrise pero antes del moonset → actualizar solo moonrise para mañana.")
-                    return await self._calculate_and_save_new_data(update_type="update_rise_tomorrow", existing_data=existing_data)
+                    result = await self._calculate_and_save_new_data(update_type="update_rise_tomorrow", existing_data=existing_data)
                 else:
                     _LOGGER.debug("🌙 Después del moonset pero antes del moonrise → actualizar solo moonset para mañana.")
-                    return await self._calculate_and_save_new_data(update_type="update_set_tomorrow", existing_data=existing_data)
+                    result = await self._calculate_and_save_new_data(update_type="update_set_tomorrow", existing_data=existing_data)
+                self._force_update = False
+                return result
 
             else:
                 _LOGGER.debug("🌙 Después de ambos eventos → actualizar moonrise y moonset para mañana.")
-                return await self._calculate_and_save_new_data(update_type="update_both_tomorrow", existing_data=existing_data)
+                result = await self._calculate_and_save_new_data(update_type="update_both_tomorrow", existing_data=existing_data)
+                self._force_update = False
+                return result
 
     async def _calculate_and_save_new_data(self, today_only: bool = False, update_type: str = None, existing_data: dict = None):
         """Calcula y guarda nuevos datos de la luna según el tipo de actualización."""
@@ -3081,6 +3545,8 @@ class MeteocatMoonCoordinator(DataUpdateCoordinator):
 
         except Exception as err:
             _LOGGER.exception("Error al calcular datos de la luna: %s", err)
+            self._force_update = False  # Reset en fallo
+            _LOGGER.debug("Flag de force resetado para moon (fallo)")
             
             # === FALLBACK SEGURO ===
             cached_data = await load_json_from_file(self.moon_file)
@@ -3114,10 +3580,12 @@ class MeteocatMoonCoordinator(DataUpdateCoordinator):
                 self.async_set_updated_data({
                     "actualizado": cached_data["actualitzat"]["dataUpdate"]
                 })
+                self._force_update = False
                 return {"actualizado": cached_data["actualitzat"]["dataUpdate"]}
             
-            _LOGGER.error("LUNA: No hay caché disponible. Sin datos lunares.")
+            _LOGGER.error("LUNA: No hay caché disponible. Sin datos lunares (town=%s).", self.town_id)
             self.async_set_updated_data({})
+            self._force_update = False
             return {}
 
 class MeteocatMoonFileCoordinator(BaseFileCoordinator):

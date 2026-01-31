@@ -65,6 +65,20 @@
         "data": {
           "confirm": "Confirmar"
         }
+      },
+      "confirm_force_data_update": {
+        "description": "Forçar una actualització consumirà crides a l'API. Si us plau, tingueu en compte els vostres límits a l'API.",
+        "title": "Forçar actualització de dades",
+        "data": {
+          "confirm": "Confirmar"
+        }
+      },
+      "select_data_to_force": {
+        "description": "Tria les dades a actualitzar.",
+        "title": "Dades a actualitzar",
+        "data": {
+          "data_types": "Dades"
+        }
       }
     },
     "error": {
@@ -72,7 +86,10 @@
       "unknown": "Error desconegut al comprovar la nova API Key.",
       "invalid_limit": "Límit no vàlid. El límit ha de ser un nombre positiu.",
       "invalid_coordinates": "Les coordenades han d'estar dins del rang de Catalunya (latitud: 40.5 a 42.5, longitud: 0.1 a 3.3).",
-      "invalid_altitude": "Altitud no pot ser negativa."
+      "invalid_altitude": "Altitud no pot ser negativa.",
+      "invalid_config": "Error a la configuració (town_id no trobat o un altre problema).",
+      "force_update_failed": "No s'ha pogut forçar l'actualització. Revisa els logs.",
+      "no_selection": "Has de seleccionar almenys un tipus de dades."
     }
   },
   "selector": {
@@ -81,7 +98,21 @@
         "update_api_and_limits": "Actualitzar API Key i límits.",
         "update_limits_only": "Actualitzar API límits.",
         "regenerate_assets": "Regenera arxius a 'assets'.",
-        "update_coordinates": "Actualitzar coordenades (latitud i longitud) i altitud (metres)."
+        "update_coordinates": "Actualitzar coordenades (latitud i longitud) i altitud (metres).",
+        "force_data_update": "Forçar actualització de dades."
+      }
+    },
+    "data_types": {
+      "options": {
+        "force_uvi_update": "UVI",
+        "force_hourly_forecast_update": "Predicció horària",
+        "force_daily_forecast_update": "Predicció diària",
+        "force_alerts_update": "Alertes",
+        "force_station_update": "Dades estació XEMA",
+        "force_lightning_update": "Llamps",
+        "force_quotes_update": "Quotes",
+        "force_sun_update": "Sol",
+        "force_moon_update": "Lluna"
       }
     }
   },

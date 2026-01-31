@@ -65,6 +65,20 @@
         "data": {
           "confirm": "Confirmar"
         }
+      },
+      "confirm_force_data_update": {
+        "description": "Forzar una actualización consumirá llamadas a la API. Por favor, tenga en cuenta sus límites en la API.",
+        "title": "Forzar actualización de datos",
+        "data": {
+          "confirm": "Confirmar"
+        }
+      },
+      "select_data_to_force": {
+        "description": "Elige los datos a actualizar.",
+        "title": "Datos a actualizar",
+        "data": {
+          "data_types": "Datos"
+        }
       }
     },
     "error": {
@@ -72,7 +86,10 @@
       "unknown": "Error desconocido al comprobar la nueva API Key.",
       "invalid_limit": "Límite no válido. El límite debe ser un número positivo.",
       "invalid_coordinates": "Las coordenadas deben estar dentro del rango de Cataluña (latitud: 40.5 a 42.5, longitud: 0.1 a 3.3).",
-      "invalid_altitude": "Altitud no puede ser negativa."
+      "invalid_altitude": "Altitud no puede ser negativa.",
+      "invalid_config": "Fallo en la configuración (town_id no encontrado u otro problema).",
+      "force_update_failed": "No se pudo forzar la actualización. Revisa los logs.",
+      "no_selection": "Debes seleccionar al menos un tipo de datos."
     }
   },
   "selector": {
@@ -81,7 +98,21 @@
         "update_api_and_limits": "Actualizar API Key y límites.",
         "update_limits_only": "Actualizar API límites.",
         "regenerate_assets": "Regenerar archivos de 'assets'.",
-        "update_coordinates": "Actualizar coordenadas (latitud y longitud) y altitud (metros)."
+        "update_coordinates": "Actualizar coordenadas (latitud y longitud) y altitud (metros).",
+        "force_data_update": "Forzar actualización de datos."
+      }
+    },
+    "data_types": {
+      "options": {
+        "force_uvi_update": "UVI",
+        "force_hourly_forecast_update": "Predicción horaria",
+        "force_daily_forecast_update": "Predicción diaria",
+        "force_alerts_update": "Alertas",
+        "force_station_update": "Datos estación XEMA",
+        "force_lightning_update": "Rayos",
+        "force_quotes_update": "Cuotas",
+        "force_sun_update": "Sol",
+        "force_moon_update": "Luna"
       }
     }
   },

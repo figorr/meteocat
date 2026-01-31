@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import asyncio
 from homeassistant.config_entries import ConfigEntry, OptionsFlow
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
@@ -8,6 +9,7 @@ from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
 import voluptuous as vol
 
 from .const import (
+    DOMAIN,
     CONF_API_KEY,
     LIMIT_XEMA,
     LIMIT_PREDICCIO,
@@ -18,7 +20,7 @@ from .const import (
     LONGITUDE,
     ALTITUDE,
 )
-
+from .helpers import get_storage_dir
 from meteocatpy.town import MeteocatTown
 from meteocatpy.exceptions import (
     BadRequestError,
@@ -57,6 +59,8 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
                 return await self.async_step_confirm_regenerate_assets()
             elif user_input["option"] == "update_coordinates":
                 return await self.async_step_update_coordinates()
+            elif user_input["option"] == "force_data_update":
+                return await self.async_step_confirm_force_data_update()
         
         return self.async_show_form(
             step_id="init",
@@ -67,7 +71,8 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
                             "update_api_and_limits",
                             "update_limits_only",
                             "regenerate_assets",
-                            "update_coordinates"
+                            "update_coordinates",
+                            "force_data_update"
                         ],
                         translation_key="option"
                     )
@@ -286,3 +291,260 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
             errors["base"] = "regenerate_failed"
 
         return self.async_show_form(step_id="regenerate_assets", errors=errors)
+    
+    async def async_step_confirm_force_data_update(self, user_input: dict | None = None):
+        """Confirma si el usuario quiere proceder a forzar actualizaciones de datos."""
+        if user_input is not None:
+            if user_input.get("confirm") is True:
+                return await self.async_step_select_data_to_force()
+            else:
+                # Volver al menú inicial si cancela
+                return await self.async_step_init()
+
+        schema = vol.Schema({
+            vol.Required("confirm", default=False): bool
+        })
+        return self.async_show_form(
+            step_id="confirm_force_data_update",
+            data_schema=schema,
+            description_placeholders={
+                "warning": "Esto forzará llamadas a la API de Meteocat para actualizar los datos seleccionados, ignorando las comprobaciones de validez temporal. Puede consumir cuota de API. ¿Desea continuar?"
+            }
+        )
+
+    async def async_step_select_data_to_force(self, user_input: dict | None = None):
+        """Permite seleccionar qué datos forzar la actualización (multi-select)."""
+        errors = {}
+
+        if user_input is not None:
+            selected = user_input.get("data_types", [])
+            if not selected:
+                errors["base"] = "no_selection"
+            else:
+                try:
+                    town_id = self._config_entry.data.get("town_id")
+                    if not town_id:
+                        raise HomeAssistantError("No se encontró town_id en la configuración.")
+
+                    # No borramos archivos: seteamos flags en coordinadores
+                    domain_data = self.hass.data.get(DOMAIN, {}).get(self._config_entry.entry_id, {})
+
+                    # UVI
+                    if "force_uvi_update" in selected:
+                        uvi_coord = domain_data.get("uvi_coordinator")
+                        if uvi_coord:
+                            uvi_coord.force_next_update()
+                            await uvi_coord.async_request_refresh()
+                            _LOGGER.info("Forzando actualización UVI via flag para town=%s", town_id)
+
+                            # Pequeño delay para asegurar que el JSON se haya escrito
+                            await asyncio.sleep(1)  # 1 segundo; ajusta si es necesario
+
+                            # Refrescar dependiente: uvi_file_coordinator
+                            uvi_file_coord = domain_data.get("uvi_file_coordinator")
+                            if uvi_file_coord:
+                                await uvi_file_coord.async_request_refresh()
+                                _LOGGER.debug("Refrescado uvi_file_coordinator dependiente")
+                            else:
+                                _LOGGER.warning("Coordinador uvi_file no encontrado; se actualizará en su próximo ciclo.")
+                        else:
+                            _LOGGER.warning("Coordinador UVI no encontrado; no se pudo forzar.")
+
+                    # Predicciones horarias y diarias
+                    if "force_hourly_forecast_update" in selected or "force_daily_forecast_update" in selected:
+                        entity_coord = domain_data.get("entity_coordinator")
+                        if entity_coord:
+                            if "force_hourly_forecast_update" in selected:
+                                entity_coord.force_next_update()
+                            if "force_daily_forecast_update" in selected:
+                                entity_coord.force_next_update()
+                            await entity_coord.async_request_refresh()
+                            _LOGGER.info("Forzando actualización de predicciones via flags para town=%s", town_id)
+
+                            # Pequeño delay para asegurar que el JSON se haya escrito
+                            await asyncio.sleep(1)  # 1 segundo; ajusta si es necesario
+
+                            # Refrescar dependientes selectivos
+                            if "force_hourly_forecast_update" in selected:
+                                # Hourly
+                                hourly_coord = domain_data.get("hourly_forecast_coordinator")
+                                if hourly_coord:
+                                    await hourly_coord.async_request_refresh()
+                                    _LOGGER.debug("Refrescado hourly_forecast_coordinator dependiente")
+                                else:
+                                    _LOGGER.warning("Coordinador hourly_forecast no encontrado; se actualizará en su próximo ciclo.")
+
+                                # Condition (basado en hourly)
+                                condition_coord = domain_data.get("condition_coordinator")
+                                if condition_coord:
+                                    await condition_coord.async_request_refresh()
+                                    _LOGGER.debug("Refrescado condition_coordinator dependiente")
+                                else:
+                                    _LOGGER.warning("Coordinador condition no encontrado; se actualizará en su próximo ciclo.")
+
+                            if "force_daily_forecast_update" in selected:
+                                # Daily
+                                daily_coord = domain_data.get("daily_forecast_coordinator")
+                                if daily_coord:
+                                    await daily_coord.async_request_refresh()
+                                    _LOGGER.debug("Refrescado daily_forecast_coordinator dependiente")
+                                else:
+                                    _LOGGER.warning("Coordinador daily_forecast no encontrado; se actualizará en su próximo ciclo.")
+
+                                # Temp Forecast (basado en daily)
+                                temp_coord = domain_data.get("temp_forecast_coordinator")
+                                if temp_coord:
+                                    await temp_coord.async_request_refresh()
+                                    _LOGGER.debug("Refrescado temp_forecast_coordinator dependiente")
+                                else:
+                                    _LOGGER.warning("Coordinador temp_forecast no encontrado; se actualizará en su próximo ciclo.")
+                        else:
+                            _LOGGER.warning("Coordinador de entidades no encontrado; no se pudo forzar.")
+                    
+                    # Alertas
+                    if "force_alerts_update" in selected:
+                        alerts_coord = domain_data.get("alerts_coordinator")
+                        if alerts_coord:
+                            alerts_coord.force_next_update()
+                            await alerts_coord.async_request_refresh()
+                            _LOGGER.info("Forzando actualización de alertas via flag para town=%s", town_id)
+
+                            # Pequeño delay para asegurar que los JSONs se hayan escrito
+                            await asyncio.sleep(1)  # 1 segundo; ajusta si es necesario
+
+                            # Refrescar dependiente: alerts_region_coordinator
+                            alerts_region_coord = domain_data.get("alerts_region_coordinator")
+                            if alerts_region_coord:
+                                await alerts_region_coord.async_request_refresh()
+                                _LOGGER.debug("Refrescado alerts_region_coordinator dependiente")
+                            else:
+                                _LOGGER.warning("Coordinador alerts_region no encontrado; se actualizará en su próximo ciclo.")
+                        else:
+                            _LOGGER.warning("Coordinador de alertas no encontrado; no se pudo forzar.")
+                    
+                    # Datos de la estación (sensores XEMA)
+                    if "force_station_update" in selected:
+                        sensor_coord = domain_data.get("sensor_coordinator")
+                        if sensor_coord:
+                            sensor_coord.force_next_update()
+                            await sensor_coord.async_request_refresh()
+                            _LOGGER.info("Forzando actualización de datos de estación via flag para station=%s", town_id)
+
+                        else:
+                            _LOGGER.warning("Coordinador sensor no encontrado; no se pudo forzar.")
+                    
+                    # Rayos
+                    if "force_lightning_update" in selected:
+                        lightning_coord = domain_data.get("lightning_coordinator")
+                        if lightning_coord:
+                            lightning_coord.force_next_update()
+                            await lightning_coord.async_request_refresh()
+                            _LOGGER.info("Forzando actualización de datos de rayos via flag para region=%s", town_id)
+
+                            # Pequeño delay para asegurar que lightning_{region_id}.json se haya escrito
+                            await asyncio.sleep(1)
+
+                            # Refrescar el coordinador dependiente
+                            lightning_file_coord = domain_data.get("lightning_file_coordinator")
+                            if lightning_file_coord:
+                                await lightning_file_coord.async_request_refresh()
+                                _LOGGER.debug("Refrescado lightning_file_coordinator dependiente")
+                            else:
+                                _LOGGER.warning("Coordinador lightning_file no encontrado; se actualizará en su próximo ciclo.")
+                        else:
+                            _LOGGER.warning("Coordinador lightning no encontrado; no se pudo forzar.")
+                    
+                    # Cuotas
+                    if "force_quotes_update" in selected:
+                        quotes_coord = domain_data.get("quotes_coordinator")
+                        if quotes_coord:
+                            quotes_coord.force_next_update()
+                            await quotes_coord.async_request_refresh()
+                            _LOGGER.info("Forzando actualización de datos de cuotas")
+
+                            # Pequeño delay para asegurar que quotes.json se haya escrito
+                            await asyncio.sleep(1)
+
+                            # Refrescar el coordinador dependiente: quotes_file_coordinator
+                            quotes_file_coord = domain_data.get("quotes_file_coordinator")
+                            if quotes_file_coord:
+                                await quotes_file_coord.async_request_refresh()
+                                _LOGGER.debug("Refrescado quotes_file_coordinator dependiente")
+                            else:
+                                _LOGGER.warning("Coordinador quotes_file no encontrado; se actualizará en su próximo ciclo.")
+                        else:
+                            _LOGGER.warning("Coordinador quotes no encontrado; no se pudo forzar.")
+                    
+                    # Sol
+                    if "force_sun_update" in selected:
+                        sun_coord = domain_data.get("sun_coordinator")
+                        if sun_coord:
+                            sun_coord.force_next_update()
+                            await sun_coord.async_request_refresh()
+                            _LOGGER.info("Forzando actualización datos de sol via flag para town=%s", town_id)
+
+                            # Pequeño delay para asegurar que el JSON se haya escrito
+                            await asyncio.sleep(1)  # 1 segundo; ajusta si es necesario
+
+                            # Refrescar dependiente: sun_file_coordinator
+                            sun_file_coord = domain_data.get("sun_file_coordinator")
+                            if sun_file_coord:
+                                await sun_file_coord.async_request_refresh()
+                                _LOGGER.debug("Refrescado sun_file_coordinator dependiente")
+                            else:
+                                _LOGGER.warning("Coordinador sun_file no encontrado; se actualizará en su próximo ciclo.")
+                        else:
+                            _LOGGER.warning("Coordinador sun no encontrado; no se pudo forzar.")
+                    
+                    # Luna
+                    if "force_moon_update" in selected:
+                        moon_coord = domain_data.get("moon_coordinator")
+                        if moon_coord:
+                            moon_coord.force_next_update()
+                            await moon_coord.async_request_refresh()
+                            _LOGGER.info("Forzando actualización datos de la luna via flag para town=%s", town_id)
+
+                            # Pequeño delay para asegurar que el JSON se haya escrito
+                            await asyncio.sleep(1)  # 1 segundo; ajusta si es necesario
+
+                            # Refrescar dependiente: moon_file_coordinator
+                            moon_file_coord = domain_data.get("moon_file_coordinator")
+                            if moon_file_coord:
+                                await moon_file_coord.async_request_refresh()
+                                _LOGGER.debug("Refrescado moon_file_coordinator dependiente")
+                            else:
+                                _LOGGER.warning("Coordinador moon_file no encontrado; se actualizará en su próximo ciclo.")
+                        else:
+                            _LOGGER.warning("Coordinador moon no encontrado; no se pudo forzar.")
+
+                    return self.async_create_entry(title="", data={})
+
+                except Exception as ex:
+                    _LOGGER.error("Error al forzar actualización de datos: %s", ex)
+                    errors["base"] = "force_update_failed"
+
+        schema = vol.Schema({
+            vol.Optional("data_types"): SelectSelector(
+                SelectSelectorConfig(
+                    options=[
+                        "force_uvi_update",
+                        "force_hourly_forecast_update",
+                        "force_daily_forecast_update",
+                        "force_alerts_update",
+                        "force_station_update",
+                        "force_lightning_update",
+                        "force_quotes_update",
+                        "force_sun_update",
+                        "force_moon_update"
+                    ],
+                    multiple=True,
+                    translation_key="data_types"
+                )
+            )
+        })
+
+        return self.async_show_form(
+            step_id="select_data_to_force",
+            data_schema=schema,
+            errors=errors
+        )
