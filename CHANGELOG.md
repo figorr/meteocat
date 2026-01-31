@@ -1,3 +1,11 @@
+## [4.0.5](https://github.com/figorr/meteocat/compare/v4.0.4...v4.0.5) (2026-01-31)
+
+
+### Bug Fixes
+
+* fix state for UVI, Hourly and Daily File sensors ([af645a6](https://github.com/figorr/meteocat/commit/af645a6a99189b1d0dac3b9b1019a400ae4e92f5))
+* include last update check to avoid continuous API calls when API returns outdated hourly and daily forecast data ([939a8ac](https://github.com/figorr/meteocat/commit/939a8ac66bfb3c3d750fda0cd719f310493f06c0))
+
 ## [4.0.4](https://github.com/figorr/meteocat/compare/v4.0.3...v4.0.4) (2026-01-25)
 
 
