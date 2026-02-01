@@ -278,7 +278,14 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
         errors = {}
         try:
             # Llamar a la función que garantiza que los assets existan
-            await ensure_assets_exist(self.hass, self._config_entry.data)
+            entry_data = self._config_entry.data
+
+            await ensure_assets_exist(
+                self.hass,
+                api_key=entry_data["api_key"],
+                town_id=entry_data.get("town_id"),
+                variable_id=entry_data.get("variable_id"),
+            )
 
             _LOGGER.info("Archivos de assets regenerados correctamente.")
             # Forzar recarga de la integración
