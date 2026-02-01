@@ -279,6 +279,21 @@
           }
         }
       },
+      "station_data_file_status": {
+        "name": "Archivo Estación",
+        "state": {
+          "updated": "Actualizado",
+          "obsolete": "Obsoleto"      
+        },
+        "state_attributes": {
+          "update_date": {
+            "name": "Fecha"
+          },
+          "data_updatetime": {
+            "name": "Actualizado"
+          }
+        }
+      },
       "alert_file_status": {
         "name": "Archivo Alerta",
         "state": {

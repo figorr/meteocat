@@ -119,6 +119,8 @@ from .const import (
     MOONRISE,
     MOONSET,
     PREDICCIO_HIGH_QUOTA_LIMIT,
+    STATION_DATA_FILE_STATUS,
+    DEFAULT_STATION_DATA_VALIDITY_TIME,
     DEFAULT_HOURLY_FORECAST_MIN_HOURS_SINCE_LAST_UPDATE,
     DEFAULT_DAILY_FORECAST_MIN_HOURS_SINCE_LAST_UPDATE,
     DEFAULT_UVI_MIN_HOURS_SINCE_LAST_UPDATE,
@@ -126,6 +128,7 @@ from .const import (
 
 from .coordinator import (
     MeteocatSensorCoordinator,
+    MeteocatSensorFileCoordinator,
     MeteocatStaticSensorCoordinator,
     MeteocatUviFileCoordinator,
     MeteocatConditionCoordinator,
@@ -513,6 +516,12 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         icon="mdi:weather-moonset-down",
         device_class=SensorDeviceClass.TIMESTAMP,
     ),
+    MeteocatSensorEntityDescription(
+        key=STATION_DATA_FILE_STATUS,
+        translation_key="station_data_file_status",
+        icon="mdi:update",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
 )
 
 @callback
@@ -522,6 +531,7 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
 
     # Coordinadores para sensores
     sensor_coordinator = entry_data.get("sensor_coordinator")
+    sensor_file_coordinator = entry_data.get("sensor_file_coordinator")
     uvi_file_coordinator = entry_data.get("uvi_file_coordinator")
     static_sensor_coordinator = entry_data.get("static_sensor_coordinator")
     condition_coordinator = entry_data.get("condition_coordinator")
@@ -616,6 +626,13 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
         MeteocatUviStatusSensor(uvi_coordinator, description, entry_data)
         for description in SENSOR_TYPES
         if description.key == UVI_FILE_STATUS
+    )
+
+    # Sensores de estado de los archivos de datos de la estación
+    async_add_entities(
+        MeteocatStationDataStatusSensor(sensor_file_coordinator, description, entry_data)
+        for description in SENSOR_TYPES
+        if description.key == STATION_DATA_FILE_STATUS
     )
 
     # Sensores de alertas
@@ -1465,6 +1482,90 @@ class MeteocatUviStatusSensor(CoordinatorEntity[MeteocatUviCoordinator], SensorE
     @property
     def device_info(self) -> DeviceInfo:
         """Return the device info."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._town_id)},
+            name=f"Meteocat {self._station_id} {self._town_name}",
+            manufacturer="Meteocat",
+            model="Meteocat API",
+        )
+
+class MeteocatStationDataStatusSensor(CoordinatorEntity[MeteocatSensorFileCoordinator], SensorEntity):
+    _attr_has_entity_name = True
+
+    def __init__(self, sensor_file_coordinator, description, entry_data):
+        super().__init__(sensor_file_coordinator)
+        self.entity_description = description
+        self._town_name = entry_data["town_name"]
+        self._town_id = entry_data["town_id"]
+        self._station_id = entry_data["station_id"]
+        self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_station_data_status"
+        self._attr_entity_category = getattr(description, "entity_category", None)
+
+    def _get_last_observation(self) -> datetime | None:
+        """Obtiene last_observation (UTC) desde el coordinador."""
+        try:
+            last_obs = self.coordinator.data.get("last_observation")
+            if not last_obs:
+                return None
+
+            # Ejemplo: "2026-01-31T17:00Z"
+            dt_utc = datetime.fromisoformat(last_obs.replace("Z", "+00:00"))
+            return dt_utc
+        except Exception as err:
+            _LOGGER.debug("Error parseando last_observation: %s", err)
+            return None
+
+    def _get_data_update(self) -> datetime | None:
+        """Obtiene dataUpdate desde el coordinador (Europe/Madrid)."""
+        try:
+            data_update = self.coordinator.data.get("actualizado")
+            if not data_update:
+                return None
+
+            # Ejemplo: "2026-01-31T18:44:08.999784+01:00"
+            dt_local = datetime.fromisoformat(data_update)
+            return dt_local
+        except Exception as err:
+            _LOGGER.debug("Error parseando dataUpdate: %s", err)
+            return None
+
+    @property
+    def native_value(self):
+        """
+        Estado del sensor:
+          - obsolete: si now - last_observation >= DEFAULT_STATION_DATA_VALIDITY_TIME
+          - updated: en caso contrario
+        """
+        last_obs_dt = self._get_last_observation()
+        if not last_obs_dt:
+            return "unknown"
+
+        now_utc = datetime.now(timezone.utc)
+        age = now_utc - last_obs_dt
+
+        if age >= timedelta(minutes=DEFAULT_STATION_DATA_VALIDITY_TIME):
+            return "obsolete"
+
+        return "updated"
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        """Atributos: update_date (last_observation) y data_updatetime (dataUpdate)."""
+        attributes: dict[str, Any] = {}
+
+        last_obs_dt = self._get_last_observation()
+        if last_obs_dt:
+            attributes["update_date"] = last_obs_dt.isoformat()
+
+        data_update_dt = self._get_data_update()
+        if data_update_dt:
+            attributes["data_updatetime"] = data_update_dt.isoformat()
+
+        return attributes
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Devuelve la información del dispositivo."""
         return DeviceInfo(
             identifiers={(DOMAIN, self._town_id)},
             name=f"Meteocat {self._station_id} {self._town_name}",

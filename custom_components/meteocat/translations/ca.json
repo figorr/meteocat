@@ -279,6 +279,21 @@
           }
         }
       },
+      "station_data_file_status": {
+        "name": "Arxiu Estació",
+        "state": {
+          "updated": "Actualitzat",
+          "obsolete": "Obsolet"      
+        },
+        "state_attributes": {
+          "update_date": {
+            "name": "Data"
+          },
+          "data_updatetime": {
+            "name": "Actualitzat"
+          }
+        }
+      },
       "alert_file_status": {
         "name": "Arxiu Alerta",
         "state": {

@@ -163,6 +163,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Lista de coordinadores con sus clases
     coordinator_configs = [
         ("sensor_coordinator", "MeteocatSensorCoordinator"),
+        ("sensor_file_coordinator", "MeteocatSensorFileCoordinator"),
         ("static_sensor_coordinator", "MeteocatStaticSensorCoordinator"),
         ("entity_coordinator", "MeteocatEntityCoordinator"),
         ("uvi_coordinator", "MeteocatUviCoordinator"),

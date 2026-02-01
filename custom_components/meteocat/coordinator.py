@@ -75,6 +75,7 @@ _LOGGER = logging.getLogger(__name__)
 
 # Valores predeterminados para los intervalos de actualización
 DEFAULT_SENSOR_UPDATE_INTERVAL = timedelta(minutes=90)
+DEFAULT_SENSOR_FILE_UPDATE_INTERVAL = timedelta(minutes=5)
 DEFAULT_STATIC_SENSOR_UPDATE_INTERVAL = timedelta(hours=24)
 DEFAULT_ENTITY_UPDATE_INTERVAL = timedelta(minutes=60)
 DEFAULT_HOURLY_FORECAST_UPDATE_INTERVAL = timedelta(minutes=5)
@@ -247,7 +248,7 @@ class MeteocatSensorCoordinator(DataUpdateCoordinator):
         """Marca que el siguiente refresh debe forzar llamada a API."""
         self._force_update = True
 
-    async def _async_update_data(self) -> Dict:
+    async def _async_update_data(self) -> list:
         """Actualiza los datos de los sensores desde la API de Meteocat."""
         # === MODO FORZADO ===
         if self._force_update:
@@ -268,11 +269,20 @@ class MeteocatSensorCoordinator(DataUpdateCoordinator):
                         data,
                     )
                     raise ValueError("Formato de datos inválido")
+                
+                now_iso = datetime.now(TIMEZONE).isoformat()
+                
+                enhanced_data = {
+                    "actualitzat": {"dataUpdate": now_iso},
+                    "data": data,
+                }
 
-                await save_json_to_file(data, self.station_file)
+                await save_json_to_file(enhanced_data, self.station_file)
+                _LOGGER.debug("Datos sensores guardados con dataUpdate: %s", now_iso)
 
                 self._force_update = False
                 _LOGGER.debug("Flag de force resetado para sensores (éxito)")
+
                 return data
 
             except Exception as err:
@@ -282,8 +292,11 @@ class MeteocatSensorCoordinator(DataUpdateCoordinator):
 
                 # En force → fallback a caché si existe
                 cached = await load_json_from_file(self.station_file)
-                if cached and isinstance(cached, list) and cached:
-                    return cached
+                if cached and isinstance(cached, dict):
+                    cached_list = cached.get("data")
+                    if isinstance(cached_list, list) and cached_list:
+                        return cached_list
+
                 return []
 
         # === MODO NORMAL ===
@@ -304,12 +317,22 @@ class MeteocatSensorCoordinator(DataUpdateCoordinator):
                     data,
                 )
                 raise ValueError("Formato de datos inválido")
+            
+            # Añadir timestamp de actualización exitosa
+            now_iso = datetime.now(TIMEZONE).isoformat()
+
+            enhanced_data = {
+                "actualitzat": {"dataUpdate": now_iso},
+                "data": data,
+            }
 
             # Guardar datos en JSON persistente
-            await save_json_to_file(data, self.station_file)
+            await save_json_to_file(enhanced_data, self.station_file)
+            _LOGGER.debug("Datos sensores guardados con dataUpdate: %s", now_iso)
 
             self._force_update = False
             _LOGGER.debug("Flag de force resetado para sensores (éxito normal)")
+
             return data
 
         except asyncio.TimeoutError as err:
@@ -343,49 +366,190 @@ class MeteocatSensorCoordinator(DataUpdateCoordinator):
            
         # === FALLBACK SEGURO ===
         cached_data = await load_json_from_file(self.station_file)
-        if cached_data and isinstance(cached_data, list) and cached_data:
-            # Buscar la última lectura (cualquier variable)
-            last_reading = None
-            last_time_str = "unknown"
-            for var_block in cached_data:
-                for variable in var_block.get("variables", []):
-                    lectures = variable.get("lectures", [])
-                    if lectures:
-                        candidate = lectures[-1].get("data")
-                        if candidate and (last_reading is None or candidate > last_time_str):
-                            last_reading = candidate
-                            last_time_str = candidate
-            
-            # Formatear hora legible
-            try:
-                if last_time_str != "unknown":
-                    dt = datetime.fromisoformat(last_time_str.replace("Z", "+00:00"))
-                    local_dt = dt.astimezone(TIMEZONE)
-                    display_time = local_dt.strftime("%d/%m/%Y %H:%M")
-                else:
-                    display_time = "unknown"
-            except (ValueError, TypeError, AttributeError):
-                display_time = last_time_str.split("T")[0] if "T" in last_time_str else last_time_str
-            
-            _LOGGER.warning(
-                "SENSOR: API falló → usando caché local:\n"
-                "   • Estación: %s (%s)\n"
-                "   • Archivo: %s\n"
-                "   • Última lectura: %s",
-                self.station_name,
-                self.station_id,
-                self.station_file.name,
-                display_time
-            )
-            
-            self.async_set_updated_data(cached_data)
-            self._force_update = False  # Reset también en fallback
-            return cached_data
-        
-        _LOGGER.error("SENSOR: No hay caché disponible para los datos de la estación %s.", self.station_id)
+
+        if cached_data and isinstance(cached_data, dict):
+            cached_list = cached_data.get("data")
+
+            if isinstance(cached_list, list) and cached_list:
+                # Buscar la última lectura (cualquier variable)
+                last_reading = None
+                last_time_str = "unknown"
+
+                for var_block in cached_list:
+                    for variable in var_block.get("variables", []):
+                        lectures = variable.get("lectures", [])
+                        if lectures:
+                            candidate = lectures[-1].get("data")
+                            if candidate and (last_reading is None or candidate > last_time_str):
+                                last_reading = candidate
+                                last_time_str = candidate
+
+                try:
+                    if last_time_str != "unknown":
+                        dt = datetime.fromisoformat(last_time_str.replace("Z", "+00:00"))
+                        local_dt = dt.astimezone(TIMEZONE)
+                        display_time = local_dt.strftime("%d/%m/%Y %H:%M")
+                    else:
+                        display_time = "unknown"
+                except (ValueError, TypeError, AttributeError):
+                    display_time = last_time_str.split("T")[0] if "T" in last_time_str else last_time_str
+
+                _LOGGER.warning(
+                    "SENSOR: API falló → usando caché local:\n"
+                    "   • Estación: %s (%s)\n"
+                    "   • Archivo: %s\n"
+                    "   • Última lectura: %s",
+                    self.station_name,
+                    self.station_id,
+                    self.station_file.name,
+                    display_time
+                )
+
+                self.async_set_updated_data(cached_list)
+                self._force_update = False
+                return cached_list
+
+        _LOGGER.error(
+            "SENSOR: No hay caché disponible para los datos de la estación %s.",
+            self.station_id
+        )
         self.async_set_updated_data([])
         self._force_update = False
         return []
+
+class MeteocatSensorFileCoordinator(BaseFileCoordinator):
+    """Coordinator que lee el JSON de estación y expone dataUpdate + datos completos."""
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        entry_data: dict,
+    ):
+        self.station_id = entry_data["station_id"]
+
+        super().__init__(
+            hass,
+            name=f"{DOMAIN} Sensor File Coordinator",
+            update_interval=DEFAULT_SENSOR_FILE_UPDATE_INTERVAL,
+            min_delay=1.0,
+            max_delay=2.0,
+        )
+
+        # Ruta persistente en /config/meteocat_files/files
+        files_folder = get_storage_dir(hass, "files")
+        self._file_path = files_folder / f"station_{self.station_id.lower()}_data.json"
+    
+    def _extract_last_observation(self, raw_data: dict) -> str | None:
+        """
+        Busca la última fecha/hora de lectura en raw_data["data"].
+        Devuelve string ISO tipo "2026-01-31T17:00Z" o None.
+        """
+        try:
+            blocks = raw_data.get("data", [])
+            if not isinstance(blocks, list):
+                return None
+
+            last_ts: str | None = None
+
+            for block in blocks:
+                variables = block.get("variables", [])
+                if not isinstance(variables, list):
+                    continue
+
+                for variable in variables:
+                    lectures = variable.get("lectures", [])
+                    if not isinstance(lectures, list) or not lectures:
+                        continue
+
+                    for lec in lectures:
+                        ts = lec.get("data")
+                        if isinstance(ts, str):
+                            # Comparación lexicográfica funciona con ISO 8601 homogéneo
+                            if last_ts is None or ts > last_ts:
+                                last_ts = ts
+
+            return last_ts
+
+        except Exception as err:
+            _LOGGER.debug(
+                "Error extrayendo last_observation en station=%s: %s",
+                self.station_id,
+                err,
+            )
+            return None
+
+    async def _async_update_data(self) -> dict:
+        """Lee el archivo de estación y devuelve datos útiles para sensores."""
+        # 🔸 Desfase aleatorio (evita colisiones de lectura/escritura)
+        await self._apply_random_delay()
+
+        try:
+            async with aiofiles.open(self._file_path, "r", encoding="utf-8") as file:
+                raw = await file.read()
+                raw_data = json.loads(raw)
+
+        except FileNotFoundError:
+            _LOGGER.error(
+                "No se ha encontrado el archivo JSON de estación en %s.",
+                self._file_path
+            )
+            return {
+                "actualizado": None,
+                "last_observation": None,
+                "raw": {},
+            }
+
+        except json.JSONDecodeError:
+            _LOGGER.error(
+                "Error al decodificar el archivo JSON de estación en %s.",
+                self._file_path
+            )
+            return {
+                "actualizado": None,
+                "last_observation": None,
+                "raw": {},
+            }
+
+        except Exception as err:
+            _LOGGER.exception(
+                "Error inesperado leyendo station json (%s): %s",
+                self._file_path,
+                err
+            )
+            return {
+                "actualizado": None,
+                "last_observation": None,
+                "raw": {},
+            }
+
+        # Validación mínima
+        if not isinstance(raw_data, dict):
+            _LOGGER.warning(
+                "Formato inesperado en %s: se esperaba dict, recibido %s",
+                self._file_path,
+                type(raw_data).__name__,
+            )
+            return {
+                "actualizado": None,
+                "last_observation": None,
+                "raw": {},
+            }
+
+        data_update = raw_data.get("actualitzat", {}).get("dataUpdate")
+        last_obs = self._extract_last_observation(raw_data)
+
+        _LOGGER.debug(
+            "SensorFileCoordinator station=%s → actualizado=%s last_observation=%s",
+            self.station_id,
+            data_update,
+            last_obs,
+        )
+
+        return {
+            "actualizado": data_update,
+            "last_observation": last_obs,
+            "raw": raw_data,
+        }
 
 class MeteocatStaticSensorCoordinator(DataUpdateCoordinator):
     """Coordinator to manage and update static sensor data."""

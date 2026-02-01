@@ -50,6 +50,7 @@ MOON_PHASE = "moon_phase"
 MOON_FILE_STATUS = "moon_file_status"
 MOONRISE = "moonrise"
 MOONSET = "moonset"
+STATION_DATA_FILE_STATUS = "station_data_file_status"
 
 from homeassistant.const import Platform
 
@@ -73,6 +74,7 @@ DEFAULT_QUOTES_VALIDITY_TIME = 240 # Minutos a partir de los cuales los datos de
 DEFAULT_LIGHTNING_VALIDITY_TIME = 240 # Minutos a partir de los cuales los datos de rayos están obsoletos y se se debe proceder a una nueva llamada a la API
 DEFAULT_LIGHTNING_VALIDITY_HOURS = 1  # Hora a partir de la cual la API tiene la información actualizada de rayos disponible para descarga
 DEFAULT_LIGHTNING_VALIDITY_MINUTES = 0  # Minutos a partir de los cuales la API tiene la información actualizada de rayos disponible para descarga
+DEFAULT_STATION_DATA_VALIDITY_TIME = 180  # Minutos a partir de los cuales los datos de la estación están obsoletos
 
 # Multiplicadores para la duración de validez basada en limit_prediccio
 ALERT_VALIDITY_MULTIPLIER_100 = 12  # para limit_prediccio <= 100

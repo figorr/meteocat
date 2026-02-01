@@ -323,6 +323,9 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
             else:
                 try:
                     town_id = self._config_entry.data.get("town_id")
+                    region_id = self._config_entry.data.get("region_id")
+                    station_id = self._config_entry.data.get("station_id")
+
                     if not town_id:
                         raise HomeAssistantError("No se encontró town_id en la configuración.")
 
@@ -407,7 +410,7 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
                         if alerts_coord:
                             alerts_coord.force_next_update()
                             await alerts_coord.async_request_refresh()
-                            _LOGGER.info("Forzando actualización de alertas via flag para town=%s", town_id)
+                            _LOGGER.info("Forzando actualización de alertas via flag para region=%s", region_id)
 
                             # Pequeño delay para asegurar que los JSONs se hayan escrito
                             await asyncio.sleep(1)  # 1 segundo; ajusta si es necesario
@@ -428,7 +431,18 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
                         if sensor_coord:
                             sensor_coord.force_next_update()
                             await sensor_coord.async_request_refresh()
-                            _LOGGER.info("Forzando actualización de datos de estación via flag para station=%s", town_id)
+                            _LOGGER.info("Forzando actualización de datos de estación via flag para station=%s", station_id)
+
+                            # Pequeño delay para asegurar que station_{station_id}_data.json se haya escrito
+                            await asyncio.sleep(1)
+
+                            # Refrescar el coordinador dependiente
+                            sensor_file_coord = domain_data.get("sensor_file_coordinator")
+                            if sensor_file_coord:
+                                await sensor_file_coord.async_request_refresh()
+                                _LOGGER.debug("Refrescado sensor_file_coordinator dependiente")
+                            else:
+                                _LOGGER.warning("Coordinador sensor_file no encontrado; se actualizará en su próximo ciclo.")
 
                         else:
                             _LOGGER.warning("Coordinador sensor no encontrado; no se pudo forzar.")
@@ -439,7 +453,7 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
                         if lightning_coord:
                             lightning_coord.force_next_update()
                             await lightning_coord.async_request_refresh()
-                            _LOGGER.info("Forzando actualización de datos de rayos via flag para region=%s", town_id)
+                            _LOGGER.info("Forzando actualización de datos de rayos via flag para region=%s", region_id)
 
                             # Pequeño delay para asegurar que lightning_{region_id}.json se haya escrito
                             await asyncio.sleep(1)
