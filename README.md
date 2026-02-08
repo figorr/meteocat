@@ -138,6 +138,9 @@ You will see three available options:
 - **Update coordinates and elevation**  
   Change the default station coordinates and elevation that were set during the first setup. So you can use your location coordinates and elevation for more accurate sun and moon data.
 
+- **Force data update**  
+  Force the data update for just one or even for multiple options at a time. Please be aware of your quota limits, each data update will consume an API call. If you force the data update for example for hourly and daily data at the same time ... this means 2 API calls, not just one.
+
 ### Accessing the Options Menu
 
 You can access the Options Menu in two ways, both inside the integration:
