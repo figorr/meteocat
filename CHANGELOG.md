@@ -1,3 +1,17 @@
+# [4.1.0](https://github.com/figorr/meteocat/compare/v4.0.5...v4.1.0) (2026-02-08)
+
+
+### Bug Fixes
+
+* bump solarmoonpy to v1.0.9 ([2bf9ba1](https://github.com/figorr/meteocat/commit/2bf9ba1a6b64baeb227d38a940669216372914b8))
+* fix regenerate assets ([5ea5a70](https://github.com/figorr/meteocat/commit/5ea5a707c34cabcbeb76528e694502bb0a74c61b))
+
+
+### Features
+
+* new options to be able to force manual data update ignoring coordinator validation check ([6696073](https://github.com/figorr/meteocat/commit/6696073ff5950fe22ffa496e3606a7e8f06a823e))
+* new station data file status ([8ee77d8](https://github.com/figorr/meteocat/commit/8ee77d8ea9ce17744b93b29ac2e82c04293b35b3))
+
 ## [4.0.5](https://github.com/figorr/meteocat/compare/v4.0.4...v4.0.5) (2026-01-31)
 
 
