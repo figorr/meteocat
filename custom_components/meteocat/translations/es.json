@@ -501,6 +501,8 @@
             "state": {
               "violent_weather": "Tiempo violento",
               "rain_intensity": "Intensidad de lluvia",
+              "rain_intensity_30_min": "Intensidad de lluvia 30 min",
+              "rain_intensity_3_hours": "Intensidad de lluvia 3 horas",
               "rain_amount": "Acumulación de lluvia",
               "snow": "Nieve",
               "wind": "Viento",
@@ -515,6 +517,8 @@
             "state": {
               "violent_weather": "Tiempo violento",
               "rain_intensity": "Intensidad de lluvia",
+              "rain_intensity_30_min": "Intensidad de lluvia 30 min",
+              "rain_intensity_3_hours": "Intensidad de lluvia 3 horas",
               "rain_amount": "Acumulación de lluvia",
               "snow": "Nieve",
               "wind": "Viento",
@@ -529,6 +533,8 @@
             "state": {
               "violent_weather": "Tiempo violento",
               "rain_intensity": "Intensidad de lluvia",
+              "rain_intensity_30_min": "Intensidad de lluvia 30 min",
+              "rain_intensity_3_hours": "Intensidad de lluvia 3 horas",
               "rain_amount": "Acumulación de lluvia",
               "snow": "Nieve",
               "wind": "Viento",
@@ -543,6 +549,8 @@
             "state": {
               "violent_weather": "Tiempo violento",
               "rain_intensity": "Intensidad de lluvia",
+              "rain_intensity_30_min": "Intensidad de lluvia 30 min",
+              "rain_intensity_3_hours": "Intensidad de lluvia 3 horas",
               "rain_amount": "Acumulación de lluvia",
               "snow": "Nieve",
               "wind": "Viento",
@@ -557,6 +565,8 @@
             "state": {
               "violent_weather": "Tiempo violento",
               "rain_intensity": "Intensidad de lluvia",
+              "rain_intensity_30_min": "Intensidad de lluvia 30 min",
+              "rain_intensity_3_hours": "Intensidad de lluvia 3 horas",
               "rain_amount": "Acumulación de lluvia",
               "snow": "Nieve",
               "wind": "Viento",
@@ -601,6 +611,11 @@
               "wind_30": "Racha máxima > 30 m/s",
               "wind_25": "Racha máxima > 25 m/s",
               "wind_20": "Racha máxima > 20 m/s",
+              "wind_72": "Racha máxima > 72 km/h",
+              "wind_90": "Racha máxima > 90 km/h",
+              "wind_108": "Racha máxima > 108 km/h",
+              "wind_126": "Racha máxima > 126 km/h",
+              "wind_144": "Racha máxima > 144 km/h",
               "unknown": "Desconocido"
             }
           },
@@ -641,6 +656,92 @@
               "microburst": "Reventón",
               "intensity_40_30": "Intensidad > 40 mm / 30 minutos",
               "intensity_20_30": "Intensidad > 20 mm / 30 minutos",
+              "intensity_60_3": "Intensidad > 60 mm / 3 horas",
+              "intensity_90_3": "Intensidad > 90 mm / 3 horas",
+              "unknown": "Desconocido"
+            }
+          },
+          "peligro": {
+            "name": "Peligro"
+          },
+          "nivel": {
+            "name": "Nivel"
+          }
+        }
+      },
+      "alert_rain_intensity_30_min": {
+        "name": "Alerta Intensidad Lluvia 30 min",
+        "state": {
+          "opened": "Abierto",
+          "closed": "Cerrado"      
+        },
+        "state_attributes": {
+          "inicio": {
+            "name": "Inicio"
+          },
+          "fin": {
+            "name": "Final"
+          },
+          "fecha": {
+            "name": "Fecha"
+          },
+          "periodo": {
+            "name": "Periodo"
+          },
+          "comentario": {
+            "name": "Comentario"
+          },
+          "umbral": {
+            "name": "Umbral",
+            "state": {
+              "hail_2_cm": "Granizo de diámetro > 2 cm",
+              "microburst": "Reventón",
+              "intensity_40_30": "Intensidad > 40 mm / 30 minutos",
+              "intensity_20_30": "Intensidad > 20 mm / 30 minutos",
+              "intensity_60_3": "Intensidad > 60 mm / 3 horas",
+              "intensity_90_3": "Intensidad > 90 mm / 3 horas",
+              "unknown": "Desconocido"
+            }
+          },
+          "peligro": {
+            "name": "Peligro"
+          },
+          "nivel": {
+            "name": "Nivel"
+          }
+        }
+      },
+      "alert_rain_intensity_3_hours": {
+        "name": "Alerta Intensidad Lluvia 3 horas",
+        "state": {
+          "opened": "Abierto",
+          "closed": "Cerrado"      
+        },
+        "state_attributes": {
+          "inicio": {
+            "name": "Inicio"
+          },
+          "fin": {
+            "name": "Final"
+          },
+          "fecha": {
+            "name": "Fecha"
+          },
+          "periodo": {
+            "name": "Periodo"
+          },
+          "comentario": {
+            "name": "Comentario"
+          },
+          "umbral": {
+            "name": "Umbral",
+            "state": {
+              "hail_2_cm": "Granizo de diámetro > 2 cm",
+              "microburst": "Reventón",
+              "intensity_40_30": "Intensidad > 40 mm / 30 minutos",
+              "intensity_20_30": "Intensidad > 20 mm / 30 minutos",
+              "intensity_60_3": "Intensidad > 60 mm / 3 horas",
+              "intensity_90_3": "Intensidad > 90 mm / 3 horas",
               "unknown": "Desconocido"
             }
           },

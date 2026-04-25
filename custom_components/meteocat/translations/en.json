@@ -501,6 +501,8 @@
             "state": {
               "violent_weather": "Violent weather",
               "rain_intensity": "Rain intensity",
+              "rain_intensity_30_min": "Rain intensity 30 min",
+              "rain_intensity_3_hours": "Rain intensity 3 hours",
               "rain_amount": "Rain amount",
               "snow": "Snow",
               "wind": "Wind",
@@ -515,6 +517,8 @@
             "state": {
               "violent_weather": "Violent weather",
               "rain_intensity": "Rain intensity",
+              "rain_intensity_30_min": "Rain intensity 30 min",
+              "rain_intensity_3_hours": "Rain intensity 3 hours",
               "rain_amount": "Rain amount",
               "snow": "Snow",
               "wind": "Wind",
@@ -529,6 +533,8 @@
             "state": {
               "violent_weather": "Violent weather",
               "rain_intensity": "Rain intensity",
+              "rain_intensity_30_min": "Rain intensity 30 min",
+              "rain_intensity_3_hours": "Rain intensity 3 hours",
               "rain_amount": "Rain amount",
               "snow": "Snow",
               "wind": "Wind",
@@ -543,6 +549,8 @@
             "state": {
               "violent_weather": "Violent weather",
               "rain_intensity": "Rain intensity",
+              "rain_intensity_30_min": "Rain intensity 30 min",
+              "rain_intensity_3_hours": "Rain intensity 3 hours",
               "rain_amount": "Rain amount",
               "snow": "Snow",
               "wind": "Wind",
@@ -557,6 +565,8 @@
             "state": {
               "violent_weather": "Violent weather",
               "rain_intensity": "Rain intensity",
+              "rain_intensity_30_min": "Rain intensity 30 min",
+              "rain_intensity_3_hours": "Rain intensity 3 hours",
               "rain_amount": "Rain amount",
               "snow": "Snow",
               "wind": "Wind",
@@ -601,6 +611,11 @@
               "wind_30": "Max. wind speed > 30 m/s",
               "wind_25": "Max. wind speed > 25 m/s",
               "wind_20": "Max. wind speed > 20 m/s",
+              "wind_72": "Max. wind speed > 72 km/h",
+              "wind_90": "Max. wind speed > 90 km/h",
+              "wind_108": "Max. wind speed > 108 km/h",
+              "wind_126": "Max. wind speed > 126 km/h",
+              "wind_144": "Max. wind speed > 144 km/h",
               "unknown": "Unknown"
             }
           },
@@ -641,6 +656,92 @@
               "microburst": "Microburst",
               "intensity_40_30": "Intensity > 40 mm / 30 minutes",
               "intensity_20_30": "Intensity > 20 mm / 30 minutes",
+              "intensity_60_3": "Intensity > 60 mm / 3 hours",
+              "intensity_90_3": "Intensity > 90 mm / 3 hours",
+              "unknown": "Unknown"
+            }
+          },
+          "peligro": {
+            "name": "Danger"
+          },
+          "nivel": {
+            "name": "Level"
+          }
+        }
+      },
+      "alert_rain_intensity_30_min": {
+        "name": "Alert Rain Intensity 30 min",
+        "state": {
+          "opened": "Opened",
+          "closed": "Closed"      
+        },
+        "state_attributes": {
+          "inicio": {
+            "name": "Starts"
+          },
+          "fin": {
+            "name": "Ends"
+          },
+          "fecha": {
+            "name": "Date"
+          },
+          "periodo": {
+            "name": "Period"
+          },
+          "comentario": {
+            "name": "Comment"
+          },
+          "umbral": {
+            "name": "Threshold",
+            "state": {
+              "hail_2_cm": "Hail with diameter > 2 cm",
+              "microburst": "Microburst",
+              "intensity_40_30": "Intensity > 40 mm / 30 minutes",
+              "intensity_20_30": "Intensity > 20 mm / 30 minutes",
+              "intensity_60_3": "Intensity > 60 mm / 3 hours",
+              "intensity_90_3": "Intensity > 90 mm / 3 hours",
+              "unknown": "Unknown"
+            }
+          },
+          "peligro": {
+            "name": "Danger"
+          },
+          "nivel": {
+            "name": "Level"
+          }
+        }
+      },
+      "alert_rain_intensity_3_hours": {
+        "name": "Alert Rain Intensity 3 hours",
+        "state": {
+          "opened": "Opened",
+          "closed": "Closed"      
+        },
+        "state_attributes": {
+          "inicio": {
+            "name": "Starts"
+          },
+          "fin": {
+            "name": "Ends"
+          },
+          "fecha": {
+            "name": "Date"
+          },
+          "periodo": {
+            "name": "Period"
+          },
+          "comentario": {
+            "name": "Comment"
+          },
+          "umbral": {
+            "name": "Threshold",
+            "state": {
+              "hail_2_cm": "Hail with diameter > 2 cm",
+              "microburst": "Microburst",
+              "intensity_40_30": "Intensity > 40 mm / 30 minutes",
+              "intensity_20_30": "Intensity > 20 mm / 30 minutes",
+              "intensity_60_3": "Intensity > 60 mm / 3 hours",
+              "intensity_90_3": "Intensity > 90 mm / 3 hours",
               "unknown": "Unknown"
             }
           },
