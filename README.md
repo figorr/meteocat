@@ -18,6 +18,11 @@ Commercial use of this project or the data obtained from the API is not allowed 
 
 **NOTE:** Meteocat API requires to use an API_KEY, you should ask to (https://apidocs.meteocat.gencat.cat/documentacio/acces-ciutada-i-administracio/)
 
+You should include the following plans when you ask for the API KEY, otherwise the integration would fail during setup:
+- "Dades de la XEMA"
+- "Dades de la XDDE"
+- "Dades de Predicció"
+
 # Credits
 
 This is a personal project.
