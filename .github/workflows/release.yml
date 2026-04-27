@@ -13,13 +13,13 @@ jobs:
     steps:
       # Paso 1: Checkout completo (necesario para semantic-release y tags)
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       # Paso 2: Configurar Node.js
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
 
