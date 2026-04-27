@@ -1,3 +1,12 @@
+## [4.1.2](https://github.com/figorr/meteocat/compare/v4.1.1...v4.1.2) (2026-04-27)
+
+
+### Bug Fixes
+
+* new rain intensity meteors and wind thresholds ([566ec00](https://github.com/figorr/meteocat/commit/566ec001b808712ba757bc41d08510f583ab765b))
+* update README info ([99762fe](https://github.com/figorr/meteocat/commit/99762fef974c4789f23a95fcd7ce4bb2ec042b24))
+* update release workflow ([4cfbe76](https://github.com/figorr/meteocat/commit/4cfbe769b4ba027cf7e0b6940c4c7345df61755a))
+
 ## [4.1.1](https://github.com/figorr/meteocat/compare/v4.1.0...v4.1.1) (2026-04-01)
 
 
