@@ -21,7 +21,14 @@
       },
       "set_api_limits": {
         "description": "Set the API limits.",
-        "title": "API limits"
+        "title": "API limits",
+        "data": {
+          "limit_xema": "XEMA Limit (Automatic Meteorological Stations Network)",
+          "limit_prediccio": "Prediction Limit",
+          "limit_xdde": "XDDE Limit (Lightning Detection Network) (0 to disable)",
+          "limit_quota": "Quota Limit",
+          "limit_basic": "Basic Limit"
+        }
       }
     },
     "error": {
@@ -44,11 +51,25 @@
       },
       "update_api_and_limits": {
         "description": "Setup the API Key and the API limits.",
-        "title": "API Key and limits"
+        "title": "API Key and limits",
+        "data": {
+          "limit_xema": "XEMA Limit (Automatic Meteorological Stations Network)",
+          "limit_prediccio": "Prediction Limit",
+          "limit_xdde": "XDDE Limit (Lightning Detection Network) (0 to disable)",
+          "limit_quota": "Quota Limit",
+          "limit_basic": "Basic Limit"
+        }
       },
       "update_limits_only": {
         "description": "Setup the API limits.",
-        "title": "API limits"
+        "title": "API limits",
+        "data": {
+          "limit_xema": "XEMA Limit (Automatic Meteorological Stations Network)",
+          "limit_prediccio": "Prediction Limit",
+          "limit_xdde": "XDDE Limit (Lightning Detection Network) (0 to disable)",
+          "limit_quota": "Quota Limit",
+          "limit_basic": "Basic Limit"
+        }
       },
       "update_coordinates": {
         "description": "Enter new coordinates. Current coordinates: latitude {current_latitude}, longitude {current_longitude}. Current altitude: {current_altitude} meters.",

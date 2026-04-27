@@ -19,7 +19,7 @@ from meteocatpy.town import MeteocatTown
 from meteocatpy.symbols import MeteocatSymbols
 from meteocatpy.variables import MeteocatVariables
 from meteocatpy.townstations import MeteocatTownStations
-from .const import DOMAIN, PLATFORMS
+from .const import DOMAIN, PLATFORMS, LIMIT_XDDE
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -176,28 +176,40 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         ("alerts_region_coordinator", "MeteocatAlertsRegionCoordinator"),
         ("quotes_coordinator", "MeteocatQuotesCoordinator"),
         ("quotes_file_coordinator", "MeteocatQuotesFileCoordinator"),
-        ("lightning_coordinator", "MeteocatLightningCoordinator"),
-        ("lightning_file_coordinator", "MeteocatLightningFileCoordinator"),
         ("sun_coordinator", "MeteocatSunCoordinator"),
         ("sun_file_coordinator", "MeteocatSunFileCoordinator"),
         ("moon_coordinator", "MeteocatMoonCoordinator"),
         ("moon_file_coordinator", "MeteocatMoonFileCoordinator"),
     ]
 
+    # Add lightning coordinators only  if enabled
+    if entry_data.get(LIMIT_XDDE, 250) > 0:
+        coordinator_configs.extend([
+            ("lightning_coordinator", "MeteocatLightningCoordinator"),
+            ("lightning_file_coordinator", "MeteocatLightningFileCoordinator"),
+        ])
+    else:
+        _LOGGER.debug("Lightning data disabled in configuration (API plan has not XDDE enabled)")
+
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = {}
 
-    try:
-        for key, cls_name in coordinator_configs:
+    for key, cls_name in coordinator_configs:
+        try:
             # Importación lazy: importa la clase solo cuando sea necesario
             cls = await hass.async_add_executor_job(_get_coordinator_module, cls_name)
             coordinator = cls(hass=hass, entry_data=entry_data)
             await coordinator.async_config_entry_first_refresh()
             hass.data[DOMAIN][entry.entry_id][key] = coordinator
 
-    except Exception as err:
-        _LOGGER.exception("Error al inicializar los coordinadores: %s", err)
-        return False
+        except Exception as err:
+            _LOGGER.exception("Error initializing coordinator %s: %s", key, err)
+            if key in ["lightning_coordinator", "lightning_file_coordinator"]:
+                coordinator_configs.remove((key, cls_name))
+                _LOGGER.exception("Ignoring XDDE related coordinator %s: %s", key, err)
+                pass
+            else:
+                return False
 
     hass.data[DOMAIN][entry.entry_id].update(entry_data)
 

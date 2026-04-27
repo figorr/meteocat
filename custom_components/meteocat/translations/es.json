@@ -21,7 +21,14 @@
       },
       "set_api_limits": {
         "description": "Define los límites del plan de la API.",
-        "title": "API límites"
+        "title": "Límites de la API",
+        "data": {
+          "limit_xema": "Límite XEMA (Red de Estaciones Meteorológicas Automáticas)",
+          "limit_prediccio": "Límite Predicción",
+          "limit_xdde": "Límite XDDE (Red de Detección de Descargas Eléctricas) (0 para desactivar)",
+          "limit_quota": "Límite Quota",
+          "limit_basic": "Límite Básico"
+        }
       }
     },
     "error": {
@@ -44,11 +51,25 @@
       },
       "update_api_and_limits": {
         "description": "Configura el API Key y los límites de la API.",
-        "title": "API Key y límites"
+        "title": "API Key y límites",
+        "data": {
+          "limit_xema": "Límite XEMA (Red de Estaciones Meteorológicas Automáticas)",
+          "limit_prediccio": "Límite Predicción",
+          "limit_xdde": "Límite XDDE (Red de Detección de Descargas Eléctricas) (0 para desactivar)",
+          "limit_quota": "Límite Quota",
+          "limit_basic": "Límite Básico"
+        }
       },
       "update_limits_only": {
         "description": "Configura los límites de la API.",
-        "title": "Límites de la API"
+        "title": "Límites de la API",
+        "data": {
+          "limit_xema": "Límite XEMA (Red de Estaciones Meteorológicas Automáticas)",
+          "limit_prediccio": "Límite Predicción",
+          "limit_xdde": "Límite XDDE (Red de Detección de Descargas Eléctricas) (0 para desactivar)",
+          "limit_quota": "Límite Quota",
+          "limit_basic": "Límite Básico"
+        }
       },
       "update_coordinates": {
         "description": "Introduce nuevas coordenadas. Coordenadas actuales: latitud {current_latitude}, longitud {current_longitude}. Altitud actual: {current_altitude} metros.",

@@ -21,7 +21,14 @@
       },
       "set_api_limits": {
         "description": "Defineix els límits del pla de l'API.",
-        "title": "Límits de l'API"
+        "title": "Límits de l'API",
+        "data": {
+          "limit_xema": "Límit XEMA (Xarxa d'Estacions Meteorològiques Automàtiques)",
+          "limit_prediccio": "Límit Predicció",
+          "limit_xdde": "Límit XDDE (Xarxa de Detecció de Descàrregues Elèctriques) (0 per desactivar)",
+          "limit_quota": "Límit Quota",
+          "limit_basic": "Límit Basic"
+        }
       }
     },
     "error": {
@@ -34,7 +41,7 @@
     }
   },
   "options": {
-    "step":{
+    "step": {
       "init": {
         "description": "Configureu la clau API, els límits de l'API, regenereu els fitxers d'assets, actualitzeu coordenades o forceu l'actualització de dades.",
         "title": "Opcions de configuració",
@@ -44,11 +51,25 @@
       },
       "update_api_and_limits": {
         "description": "Configura l'API Key i els límits de l'API.",
-        "title": "API Key i límits"
+        "title": "API Key i límits",
+        "data": {
+          "limit_xema": "Límit XEMA (Xarxa d'Estacions Meteorològiques Automàtiques)",
+          "limit_prediccio": "Límit Predicció",
+          "limit_xdde": "Límit XDDE (Xarxa de Detecció de Descàrregues Elèctriques) (0 per desactivar)",
+          "limit_quota": "Límit Quota",
+          "limit_basic": "Límit Basic"
+        }
       },
       "update_limits_only": {
         "description": "Configura els límits de l'API.",
-        "title": "Límits de l'API"
+        "title": "Límits de l'API",
+        "data": {
+          "limit_xema": "Límit XEMA (Xarxa d'Estacions Meteorològiques Automàtiques)",
+          "limit_prediccio": "Límit Predicció",
+          "limit_xdde": "Límit XDDE (Xarxa de Detecció de Descàrregues Elèctriques) (0 per desactivar)",
+          "limit_quota": "Límit Quota",
+          "limit_basic": "Límit Basic"
+        }
       },
       "update_coordinates": {
         "description": "Introduïu noves coordenades. Coordenades actuals: latitud {current_latitude}, longitud {current_longitude}. Altitud actual: {current_altitude} metres.",
@@ -117,7 +138,7 @@
     }
   },
   "entity": {
-    "sensor": {      
+    "sensor": {
       "wind_speed": {
         "name": "Vent Velocitat"
       },
@@ -238,7 +259,7 @@
         "name": "Arxiu Horari",
         "state": {
           "updated": "Actualitzat",
-          "obsolete": "Obsolet"      
+          "obsolete": "Obsolet"
         },
         "state_attributes": {
           "update_date": {
@@ -253,7 +274,7 @@
         "name": "Arxiu Diari",
         "state": {
           "updated": "Actualitzat",
-          "obsolete": "Obsolet"      
+          "obsolete": "Obsolet"
         },
         "state_attributes": {
           "update_date": {
@@ -268,7 +289,7 @@
         "name": "Arxiu UVI",
         "state": {
           "updated": "Actualitzat",
-          "obsolete": "Obsolet"      
+          "obsolete": "Obsolet"
         },
         "state_attributes": {
           "update_date": {
@@ -283,7 +304,7 @@
         "name": "Arxiu Estació",
         "state": {
           "updated": "Actualitzat",
-          "obsolete": "Obsolet"      
+          "obsolete": "Obsolet"
         },
         "state_attributes": {
           "update_date": {
@@ -298,7 +319,7 @@
         "name": "Arxiu Alerta",
         "state": {
           "updated": "Actualitzat",
-          "obsolete": "Obsolet"      
+          "obsolete": "Obsolet"
         },
         "state_attributes": {
           "update_date": {
@@ -310,7 +331,7 @@
         "name": "Arxiu Quota",
         "state": {
           "updated": "Actualitzat",
-          "obsolete": "Obsolet"      
+          "obsolete": "Obsolet"
         },
         "state_attributes": {
           "update_date": {
@@ -322,7 +343,7 @@
         "name": "Arxiu Llamps",
         "state": {
           "updated": "Actualitzat",
-          "obsolete": "Obsolet"      
+          "obsolete": "Obsolet"
         },
         "state_attributes": {
           "update_date": {
@@ -336,7 +357,7 @@
           "cloud_cloud": {
             "name": "Núvol-Núvol"
           },
-          "cloud_ground_neg":{
+          "cloud_ground_neg": {
             "name": "Núvol-Terra Negatiu"
           },
           "cloud_ground_pos": {
@@ -350,7 +371,7 @@
           "cloud_cloud": {
             "name": "Núvol-Núvol"
           },
-          "cloud_ground_neg":{
+          "cloud_ground_neg": {
             "name": "Núvol-Terra Negatiu"
           },
           "cloud_ground_pos": {
@@ -363,7 +384,7 @@
         "state": {
           "ok": "Ok",
           "exceeded": "Superada",
-          "unknown": "Desconegut"      
+          "unknown": "Desconegut"
         },
         "state_attributes": {
           "period": {
@@ -390,7 +411,7 @@
         "state": {
           "ok": "Ok",
           "exceeded": "Superada",
-          "unknown": "Desconegut"      
+          "unknown": "Desconegut"
         },
         "state_attributes": {
           "period": {
@@ -417,7 +438,7 @@
         "state": {
           "ok": "Ok",
           "exceeded": "Superada",
-          "unknown": "Desconegut"      
+          "unknown": "Desconegut"
         },
         "state_attributes": {
           "period": {
@@ -444,7 +465,7 @@
         "state": {
           "ok": "Ok",
           "exceeded": "Superada",
-          "unknown": "Desconegut"      
+          "unknown": "Desconegut"
         },
         "state_attributes": {
           "period": {
@@ -471,7 +492,7 @@
         "state": {
           "ok": "Ok",
           "exceeded": "Superada",
-          "unknown": "Desconegut"      
+          "unknown": "Desconegut"
         },
         "state_attributes": {
           "period": {
@@ -582,7 +603,7 @@
         "name": "Alerta Vent",
         "state": {
           "opened": "Obert",
-          "closed": "Tancat"      
+          "closed": "Tancat"
         },
         "state_attributes": {
           "inicio": {
@@ -631,7 +652,7 @@
         "name": "Alerta Intensitat de Pluja",
         "state": {
           "opened": "Obert",
-          "closed": "Tancat"      
+          "closed": "Tancat"
         },
         "state_attributes": {
           "inicio": {
@@ -757,7 +778,7 @@
         "name": "Alerta Pluja",
         "state": {
           "opened": "Obert",
-          "closed": "Tancat"      
+          "closed": "Tancat"
         },
         "state_attributes": {
           "inicio": {
@@ -796,7 +817,7 @@
         "name": "Alerta Mar",
         "state": {
           "opened": "Obert",
-          "closed": "Tancat"      
+          "closed": "Tancat"
         },
         "state_attributes": {
           "inicio": {
@@ -836,7 +857,7 @@
         "name": "Alerta Fred",
         "state": {
           "opened": "Obert",
-          "closed": "Tancat"      
+          "closed": "Tancat"
         },
         "state_attributes": {
           "inicio": {
@@ -874,7 +895,7 @@
         "name": "Alerta Calor",
         "state": {
           "opened": "Obert",
-          "closed": "Tancat"      
+          "closed": "Tancat"
         },
         "state_attributes": {
           "inicio": {
@@ -912,7 +933,7 @@
         "name": "Alerta Calor Nocturna",
         "state": {
           "opened": "Obert",
-          "closed": "Tancat"      
+          "closed": "Tancat"
         },
         "state_attributes": {
           "inicio": {
@@ -950,7 +971,7 @@
         "name": "Alerta Neu",
         "state": {
           "opened": "Obert",
-          "closed": "Tancat"      
+          "closed": "Tancat"
         },
         "state_attributes": {
           "inicio": {
@@ -1106,7 +1127,7 @@
         "name": "Arxiu Sol",
         "state": {
           "updated": "Actualitzat",
-          "obsolete": "Obsolet"      
+          "obsolete": "Obsolet"
         },
         "state_attributes": {
           "update_date": {

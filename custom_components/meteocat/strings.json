@@ -117,7 +117,7 @@
     }
   },
   "entity": {
-    "sensor": {      
+    "sensor": {
       "wind_speed": {
         "name": "Wind Speed"
       },
@@ -238,7 +238,7 @@
         "name": "Hourly File",
         "state": {
           "updated": "Updated",
-          "obsolete": "Obsolete"      
+          "obsolete": "Obsolete"
         },
         "state_attributes": {
           "update_date": {
@@ -253,7 +253,7 @@
         "name": "Daily File",
         "state": {
           "updated": "Updated",
-          "obsolete": "Obsolete"      
+          "obsolete": "Obsolete"
         },
         "state_attributes": {
           "update_date": {
@@ -268,7 +268,7 @@
         "name": "Uvi File",
         "state": {
           "updated": "Updated",
-          "obsolete": "Obsolete"      
+          "obsolete": "Obsolete"
         },
         "state_attributes": {
           "update_date": {
@@ -283,7 +283,7 @@
         "name": "Station Data File",
         "state": {
           "updated": "Updated",
-          "obsolete": "Obsolete"      
+          "obsolete": "Obsolete"
         },
         "state_attributes": {
           "update_date": {
@@ -298,7 +298,7 @@
         "name": "Alert File",
         "state": {
           "updated": "Updated",
-          "obsolete": "Obsolete"      
+          "obsolete": "Obsolete"
         },
         "state_attributes": {
           "update_date": {
@@ -310,7 +310,7 @@
         "name": "Quota File",
         "state": {
           "updated": "Updated",
-          "obsolete": "Obsolete"      
+          "obsolete": "Obsolete"
         },
         "state_attributes": {
           "update_date": {
@@ -322,7 +322,7 @@
         "name": "Lightning File",
         "state": {
           "updated": "Updated",
-          "obsolete": "Obsolete"      
+          "obsolete": "Obsolete"
         },
         "state_attributes": {
           "update_date": {
@@ -363,7 +363,7 @@
         "state": {
           "ok": "Ok",
           "exceeded": "Exceeded",
-          "unknown": "Unknown"      
+          "unknown": "Unknown"
         },
         "state_attributes": {
           "period": {
@@ -390,7 +390,7 @@
         "state": {
           "ok": "Ok",
           "exceeded": "Exceeded",
-          "unknown": "Unknown"      
+          "unknown": "Unknown"
         },
         "state_attributes": {
           "period": {
@@ -417,7 +417,7 @@
         "state": {
           "ok": "Ok",
           "exceeded": "Exceeded",
-          "unknown": "Unknown"      
+          "unknown": "Unknown"
         },
         "state_attributes": {
           "period": {
@@ -444,7 +444,7 @@
         "state": {
           "ok": "Ok",
           "exceeded": "Exceeded",
-          "unknown": "Unknown"      
+          "unknown": "Unknown"
         },
         "state_attributes": {
           "period": {
@@ -471,7 +471,7 @@
         "state": {
           "ok": "Ok",
           "exceeded": "Exceeded",
-          "unknown": "Unknown"      
+          "unknown": "Unknown"
         },
         "state_attributes": {
           "period": {
@@ -582,7 +582,7 @@
         "name": "Alert Wind",
         "state": {
           "opened": "Opened",
-          "closed": "Closed"      
+          "closed": "Closed"
         },
         "state_attributes": {
           "inicio": {
@@ -631,7 +631,7 @@
         "name": "Alert Rain Intensity",
         "state": {
           "opened": "Opened",
-          "closed": "Closed"      
+          "closed": "Closed"
         },
         "state_attributes": {
           "inicio": {
@@ -757,7 +757,7 @@
         "name": "Alert Rain",
         "state": {
           "opened": "Opened",
-          "closed": "Closed"      
+          "closed": "Closed"
         },
         "state_attributes": {
           "inicio": {
@@ -796,7 +796,7 @@
         "name": "Alert Sea",
         "state": {
           "opened": "Opened",
-          "closed": "Closed"      
+          "closed": "Closed"
         },
         "state_attributes": {
           "inicio": {
@@ -836,7 +836,7 @@
         "name": "Alert Cold",
         "state": {
           "opened": "Opened",
-          "closed": "Closed"      
+          "closed": "Closed"
         },
         "state_attributes": {
           "inicio": {
@@ -874,7 +874,7 @@
         "name": "Alert Warm",
         "state": {
           "opened": "Opened",
-          "closed": "Closed"      
+          "closed": "Closed"
         },
         "state_attributes": {
           "inicio": {
@@ -912,7 +912,7 @@
         "name": "Alert Warm Night",
         "state": {
           "opened": "Opened",
-          "closed": "Closed"      
+          "closed": "Closed"
         },
         "state_attributes": {
           "inicio": {
@@ -950,7 +950,7 @@
         "name": "Alert Snow",
         "state": {
           "opened": "Opened",
-          "closed": "Closed"      
+          "closed": "Closed"
         },
         "state_attributes": {
           "inicio": {
@@ -1106,7 +1106,7 @@
         "name": "Sun File",
         "state": {
           "updated": "Updated",
-          "obsolete": "Obsolete"      
+          "obsolete": "Obsolete"
         },
         "state_attributes": {
           "update_date": {

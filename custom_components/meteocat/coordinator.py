@@ -2612,13 +2612,13 @@ class MeteocatLightningCoordinator(DataUpdateCoordinator):
             _LOGGER.warning("Timeout al obtener rayos.")
             raise ConfigEntryNotReady from err
         except ForbiddenError as err:
-            _LOGGER.error("Acceso denegado al obtener cuotas de la API de Meteocat: %s", err)
+            _LOGGER.error("Acceso denegado al obtener datos de rayos de la API de Meteocat: %s", err)
             raise ConfigEntryNotReady from err
         except TooManyRequestsError as err:
-            _LOGGER.warning("Límite de solicitudes alcanzado al obtener cuotas de la API de Meteocat: %s", err)
+            _LOGGER.warning("Límite de solicitudes alcanzado al obtener datos de rayos de la API de Meteocat: %s", err)
             raise ConfigEntryNotReady from err
         except (BadRequestError, InternalServerError, UnknownAPIError) as err:
-            _LOGGER.error("Error al obtener cuotas de la API de Meteocat: %s", err)
+            _LOGGER.error("Error al obtener datos de rayos de la API de Meteocat: %s", err)
             raise
         except Exception as err:
             _LOGGER.exception("Error inesperado al obtener rayos (region=%s)", self.region_id)
@@ -2689,13 +2689,13 @@ class MeteocatLightningCoordinator(DataUpdateCoordinator):
             _LOGGER.warning("Tiempo de espera agotado al obtener los datos de rayos de la API de Meteocat.")
             raise ConfigEntryNotReady from err
         except ForbiddenError as err:
-            _LOGGER.error("Acceso denegado al obtener cuotas de la API de Meteocat: %s", err)
+            _LOGGER.error("Acceso denegado al obtener datos de rayos de la API de Meteocat: %s", err)
             raise ConfigEntryNotReady from err
         except TooManyRequestsError as err:
-            _LOGGER.warning("Límite de solicitudes alcanzado al obtener cuotas de la API de Meteocat: %s", err)
+            _LOGGER.warning("Límite de solicitudes alcanzado al obtener datos de rayos de la API de Meteocat: %s", err)
             raise ConfigEntryNotReady from err
         except (BadRequestError, InternalServerError, UnknownAPIError) as err:
-            _LOGGER.error("Error al obtener cuotas de la API de Meteocat: %s", err)
+            _LOGGER.error("Error al obtener datos de rayos de la API de Meteocat: %s", err)
             raise
         except Exception as err:
             _LOGGER.exception("Error al obtener datos de rayos: %s", err)
