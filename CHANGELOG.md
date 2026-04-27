@@ -1,3 +1,10 @@
+## [4.1.3](https://github.com/figorr/meteocat/compare/v4.1.2...v4.1.3) (2026-04-27)
+
+
+### Bug Fixes
+
+* fix release workflow ([0cb1e01](https://github.com/figorr/meteocat/commit/0cb1e01682c3d3ee6d341c331fe6691b6e34cb7e))
+
 ## [4.1.2](https://github.com/figorr/meteocat/compare/v4.1.1...v4.1.2) (2026-04-27)
 
 
