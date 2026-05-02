@@ -1822,15 +1822,20 @@ class MeteocatAlertsCoordinator(DataUpdateCoordinator):
             except (ValueError, TypeError):
                 display_time = update_str.split("T")[0]
 
+            active_region_alerts = await self._get_active_region_alerts_for_log()
+            active_alerts_block = self._build_active_alerts_log_block(active_region_alerts)
+
             _LOGGER.warning(
                 "ALERTAS: API falló → usando caché local (region=%s):\n"
                 "   • Archivo: %s\n"
                 "   • Última actualización: %s\n"
-                "   • Alertas activas: %d",
+                "   • Alertas activas: %d\n"
+                "%s",
                 self.region_id,
                 self.alerts_file.name,
                 display_time,
-                len(cached_data.get("dades", []))
+                len(active_region_alerts),
+                active_alerts_block,
             )
 
             self.async_set_updated_data({"actualizado": cached_data["actualitzat"]["dataUpdate"]})
