@@ -46,12 +46,48 @@ _LOGGER = logging.getLogger(__name__)
 async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback) -> None:
     """Set up Meteocat weather entity from a config entry."""
     entry_data = hass.data[DOMAIN][entry.entry_id]
+    health = entry_data.get("_health", {})
 
     hourly_forecast_coordinator = entry_data.get("hourly_forecast_coordinator")
     daily_forecast_coordinator = entry_data.get("daily_forecast_coordinator")
     sensor_coordinator = entry_data.get("sensor_coordinator")
-    uvi_file_coordinator = entry_data.get("uvi_file_coordinator")
     condition_coordinator = entry_data.get("condition_coordinator")
+    uvi_file_coordinator = entry_data.get("uvi_file_coordinator")
+
+    critical_missing = []
+    if not hourly_forecast_coordinator:
+        critical_missing.append("hourly_forecast_coordinator")
+    if not daily_forecast_coordinator:
+        critical_missing.append("daily_forecast_coordinator")
+    if not sensor_coordinator:
+        critical_missing.append("sensor_coordinator")
+    if not condition_coordinator:
+        critical_missing.append("condition_coordinator")
+
+    info_degraded = []
+    if health.get("uvi_file_coordinator", {}).get("status") == "degraded":
+        info_degraded.append("uvi_file_coordinator")
+    if health.get("hourly_forecast_coordinator", {}).get("status") == "degraded":
+        info_degraded.append("hourly_forecast_coordinator")
+    if health.get("daily_forecast_coordinator", {}).get("status") == "degraded":
+        info_degraded.append("daily_forecast_coordinator")
+    if health.get("sensor_coordinator", {}).get("status") == "degraded":
+        info_degraded.append("sensor_coordinator")
+    if health.get("condition_coordinator", {}).get("status") == "degraded":
+        info_degraded.append("condition_coordinator")
+
+    if critical_missing:
+        _LOGGER.error(
+            "No se puede crear entidad weather: coordinadores críticos faltantes: %s",
+            critical_missing
+        )
+        return
+
+    if info_degraded:
+        _LOGGER.info(
+            "Entidad weather creada con coordinadores degradados (usará caché): %s",
+            info_degraded
+        )
 
     async_add_entities([
         MeteocatWeatherEntity(
@@ -84,7 +120,7 @@ class MeteocatWeatherEntity(CoordinatorEntity, WeatherEntity):
         hourly_forecast_coordinator: HourlyForecastCoordinator,
         daily_forecast_coordinator: DailyForecastCoordinator,
         sensor_coordinator: MeteocatSensorCoordinator,
-        uvi_file_coordinator: MeteocatUviFileCoordinator,
+        uvi_file_coordinator: Optional[MeteocatUviFileCoordinator],
         condition_coordinator: MeteocatConditionCoordinator,
         entry_data: dict,
     ) -> None:
@@ -161,6 +197,8 @@ class MeteocatWeatherEntity(CoordinatorEntity, WeatherEntity):
     @property
     def uv_index(self) -> Optional[float]:
         """Return the UV index."""
+        if not self._uvi_file_coordinator:
+            return None
         uvi_data = self._uvi_file_coordinator.data or {}
         return uvi_data.get("uvi")
 

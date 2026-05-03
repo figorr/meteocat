@@ -540,8 +540,13 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
 async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback) -> None:
     """Set up Meteocat sensors from a config entry."""
     entry_data = hass.data[DOMAIN][entry.entry_id]
+    health = entry_data.get("_health", {})
 
-    # Coordinadores para sensores
+    # Función helper para verificar si un coordinador está operativo
+    def is_coordinator_ok(key: str) -> bool:
+        return key in entry_data and health.get(key, {}).get("status") == "ok"
+
+    # Coordinadores para sensores (siempre obtenidos, incluso degradados)
     sensor_coordinator = entry_data.get("sensor_coordinator")
     sensor_file_coordinator = entry_data.get("sensor_file_coordinator")
     uvi_file_coordinator = entry_data.get("uvi_file_coordinator")
@@ -561,6 +566,11 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
     sun_file_coordinator = entry_data.get("sun_file_coordinator")
     moon_coordinator = entry_data.get("moon_coordinator")
     moon_file_coordinator = entry_data.get("moon_file_coordinator")
+
+    # Log de coordinadores degradados
+    degraded = [k for k, v in health.items() if v.get("status") == "degraded"]
+    if degraded:
+        _LOGGER.info("Sensores creados con coordinadores degradados (mostrarán unavailable): %s", degraded)
 
     # Sensores generales
     async_add_entities(
