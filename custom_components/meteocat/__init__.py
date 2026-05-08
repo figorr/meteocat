@@ -9,7 +9,7 @@ import importlib  # Para importaciones lazy
 
 from homeassistant import core
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import async_get_platforms
 from homeassistant.helpers import config_validation as cv
@@ -243,28 +243,39 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     def _setup_recovery_listener(key: str, coordinator):
         """Configura callback para recovery automático cuando update succeed."""
+
+        if hasattr(coordinator, f"_recovery_listener_{key}_registered"):
+            return
+
         async def _on_update_async():
-            health = hass.data[DOMAIN][entry.entry_id]["_health"].get(key, {})
-            if health.get("status") == "degraded":
-                data = coordinator.data
-                has_data = data and (
-                    (isinstance(data, dict) and any(v for v in data.values() if v))
-                    or (isinstance(data, list) and len(data) > 0)
-                )
-                if has_data:
-                    _LOGGER.info("Coordinador '%s' recuperado automáticamente", key)
-                    hass.data[DOMAIN][entry.entry_id]["_health"][key] = {
-                        "status": "ok",
-                        "reason": "",
-                        "last_error": "",
-                    }
-                else:
-                    _LOGGER.debug("Coordinador '%s' sigue sin datos, no recovery aún", key)
+            """Lógica asíncrona de recuperación."""
+            try:
+                health = hass.data[DOMAIN][entry.entry_id]["_health"].get(key, {})
+                if health.get("status") == "degraded":
+                    data = coordinator.data
+                    has_data = data and (
+                        (isinstance(data, dict) and any(v for v in data.values() if v is not None))
+                        or (isinstance(data, list) and len(data) > 0)
+                    )
+                    if has_data:
+                        _LOGGER.info("Coordinador '%s' recuperado automáticamente", key)
+                        hass.data[DOMAIN][entry.entry_id]["_health"][key] = {
+                            "status": "ok",
+                            "reason": "",
+                            "last_error": "",
+                        }
+                    else:
+                        _LOGGER.debug("Coordinador '%s' sigue sin datos, no recovery aún", key)
+            except Exception as e:
+                _LOGGER.debug("Error en recovery de %s: %s", key, e)
 
         def on_update():
+            """Callback síncrono esperado por HA."""
             hass.async_create_task(_on_update_async())
 
         coordinator.async_add_listener(on_update)
+
+        setattr(coordinator, f"_recovery_listener_{key}_registered", True)
 
     ok_count = 0
     degraded_count = 0
