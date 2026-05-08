@@ -243,7 +243,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     def _setup_recovery_listener(key: str, coordinator):
         """Configura callback para recovery automático cuando update succeed."""
-        async def on_update():
+        async def _on_update_async():
             health = hass.data[DOMAIN][entry.entry_id]["_health"].get(key, {})
             if health.get("status") == "degraded":
                 data = coordinator.data
@@ -260,6 +260,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     }
                 else:
                     _LOGGER.debug("Coordinador '%s' sigue sin datos, no recovery aún", key)
+
+        def on_update():
+            hass.async_create_task(_on_update_async())
 
         coordinator.async_add_listener(on_update)
 
