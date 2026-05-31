@@ -21,7 +21,14 @@
       },
       "set_api_limits": {
         "description": "Defineix els límits del pla de l'API.",
-        "title": "Límits de l'API"
+        "title": "Límits de l'API",
+        "data": {
+          "limit_xema": "Límit XEMA (Xarxa d'Estacions Meteorològiques Automàtiques)",
+          "limit_prediccio": "Límit Predicció",
+          "limit_xdde": "Límit XDDE (Xarxa de Detecció de Descàrregues Elèctriques) (0 per desactivar)",
+          "limit_quota": "Límit Quota",
+          "limit_basic": "Límit Basic"
+        }
       }
     },
     "error": {
@@ -44,11 +51,25 @@
       },
       "update_api_and_limits": {
         "description": "Configura l'API Key i els límits de l'API.",
-        "title": "API Key i límits"
+        "title": "API Key i límits",
+        "data": {
+          "limit_xema": "Límit XEMA (Xarxa d'Estacions Meteorològiques Automàtiques)",
+          "limit_prediccio": "Límit Predicció",
+          "limit_xdde": "Límit XDDE (Xarxa de Detecció de Descàrregues Elèctriques) (0 per desactivar)",
+          "limit_quota": "Límit Quota",
+          "limit_basic": "Límit Basic"
+        }
       },
       "update_limits_only": {
         "description": "Configura els límits de l'API.",
-        "title": "Límits de l'API"
+        "title": "Límits de l'API",
+         "data": {
+          "limit_xema": "Límit XEMA (Xarxa d'Estacions Meteorològiques Automàtiques)",
+          "limit_prediccio": "Límit Predicció",
+          "limit_xdde": "Límit XDDE (Xarxa de Detecció de Descàrregues Elèctriques) (0 per desactivar)",
+          "limit_quota": "Límit Quota",
+          "limit_basic": "Límit Basic"
+        }
       },
       "update_coordinates": {
         "description": "Introduïu noves coordenades. Coordenades actuals: latitud {current_latitude}, longitud {current_longitude}. Altitud actual: {current_altitude} metres.",
