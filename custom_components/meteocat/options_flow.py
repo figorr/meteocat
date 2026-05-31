@@ -110,25 +110,20 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
                     _LOGGER.error("Error inesperado al validar la nueva API Key: %s", ex)
                     errors["base"] = "unknown"
 
-            # Validar que los límites sean números positivos
-            limits_to_validate = [self.limit_xema, self.limit_prediccio, self.limit_xdde, self.limit_quota, self.limit_basic]
-            if not all(cv.positive_int(limit) for limit in limits_to_validate if limit is not None):
-                errors["base"] = "invalid_limit"
-
             if not errors:
                 # Actualizar la configuración de la entrada con la nueva API Key y límites
                 data_update = {}
                 if self.api_key:
                     data_update[CONF_API_KEY] = self.api_key
-                if self.limit_xema:
+                if self.limit_xema is not None:
                     data_update[LIMIT_XEMA] = self.limit_xema
-                if self.limit_prediccio:
+                if self.limit_prediccio is not None:
                     data_update[LIMIT_PREDICCIO] = self.limit_prediccio
-                if self.limit_xdde:
+                if self.limit_xdde is not None:
                     data_update[LIMIT_XDDE] = self.limit_xdde
-                if self.limit_quota:
+                if self.limit_quota is not None:
                     data_update[LIMIT_QUOTA] = self.limit_quota
-                if self.limit_basic:
+                if self.limit_basic is not None:
                     data_update[LIMIT_BASIC] = self.limit_basic
 
                 self.hass.config_entries.async_update_entry(
@@ -142,11 +137,11 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
 
         schema = vol.Schema({
             vol.Required(CONF_API_KEY): str,
-            vol.Required(LIMIT_XEMA, default=self._config_entry.data.get(LIMIT_XEMA)): cv.positive_int,
-            vol.Required(LIMIT_PREDICCIO, default=self._config_entry.data.get(LIMIT_PREDICCIO)): cv.positive_int,
-            vol.Required(LIMIT_XDDE, default=self._config_entry.data.get(LIMIT_XDDE)): cv.positive_int,
-            vol.Required(LIMIT_QUOTA, default=self._config_entry.data.get(LIMIT_QUOTA)): cv.positive_int,
-            vol.Required(LIMIT_BASIC, default=self._config_entry.data.get(LIMIT_BASIC)): cv.positive_int,
+            vol.Required(LIMIT_XEMA, default=self._config_entry.data.get(LIMIT_XEMA)): vol.All(vol.Coerce(int), vol.Range(min=1)),
+            vol.Required(LIMIT_PREDICCIO, default=self._config_entry.data.get(LIMIT_PREDICCIO)): vol.All(vol.Coerce(int), vol.Range(min=1)),
+            vol.Required(LIMIT_XDDE, default=self._config_entry.data.get(LIMIT_XDDE)): vol.All(vol.Coerce(int), vol.Range(min=0)),
+            vol.Required(LIMIT_QUOTA, default=self._config_entry.data.get(LIMIT_QUOTA)): vol.All(vol.Coerce(int), vol.Range(min=1)),
+            vol.Required(LIMIT_BASIC, default=self._config_entry.data.get(LIMIT_BASIC)): vol.All(vol.Coerce(int), vol.Range(min=1)),
         })
         return self.async_show_form(
             step_id="update_api_and_limits", data_schema=schema, errors=errors
@@ -162,11 +157,6 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
             self.limit_xdde = user_input.get(LIMIT_XDDE)
             self.limit_quota = user_input.get(LIMIT_QUOTA)
             self.limit_basic = user_input.get(LIMIT_BASIC)
-
-            # Validar que los límites sean números positivos
-            limits_to_validate = [self.limit_xema, self.limit_prediccio, self.limit_xdde, self.limit_quota, self.limit_basic]
-            if not all(cv.positive_int(limit) for limit in limits_to_validate if limit is not None):
-                errors["base"] = "invalid_limit"
 
             if not errors:
                 self.hass.config_entries.async_update_entry(
@@ -186,11 +176,11 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
                 return self.async_create_entry(title="", data={})
 
         schema = vol.Schema({
-            vol.Required(LIMIT_XEMA, default=self._config_entry.data.get(LIMIT_XEMA)): cv.positive_int,
-            vol.Required(LIMIT_PREDICCIO, default=self._config_entry.data.get(LIMIT_PREDICCIO)): cv.positive_int,
-            vol.Required(LIMIT_XDDE, default=self._config_entry.data.get(LIMIT_XDDE)): cv.positive_int,
-            vol.Required(LIMIT_QUOTA, default=self._config_entry.data.get(LIMIT_QUOTA)): cv.positive_int,
-            vol.Required(LIMIT_BASIC, default=self._config_entry.data.get(LIMIT_BASIC)): cv.positive_int,
+            vol.Required(LIMIT_XEMA, default=self._config_entry.data.get(LIMIT_XEMA)): vol.All(vol.Coerce(int), vol.Range(min=1)),
+            vol.Required(LIMIT_PREDICCIO, default=self._config_entry.data.get(LIMIT_PREDICCIO)): vol.All(vol.Coerce(int), vol.Range(min=1)),
+            vol.Required(LIMIT_XDDE, default=self._config_entry.data.get(LIMIT_XDDE)): vol.All(vol.Coerce(int), vol.Range(min=0)),
+            vol.Required(LIMIT_QUOTA, default=self._config_entry.data.get(LIMIT_QUOTA)): vol.All(vol.Coerce(int), vol.Range(min=1)),
+            vol.Required(LIMIT_BASIC, default=self._config_entry.data.get(LIMIT_BASIC)): vol.All(vol.Coerce(int), vol.Range(min=1)),
         })
         return self.async_show_form(
             step_id="update_limits_only", data_schema=schema, errors=errors

@@ -697,25 +697,30 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
     )
 
     # Sensores cuotas
+    quota_keys = {QUOTA_PREDICCIO, QUOTA_BASIC, QUOTA_XEMA, QUOTA_QUERIES}
+    if lightning_coordinator:
+        quota_keys.add(QUOTA_XDDE)
     async_add_entities(
         MeteocatQuotaSensor(quotes_file_coordinator, description, entry_data)
         for description in SENSOR_TYPES
-        if description.key in {QUOTA_XDDE, QUOTA_PREDICCIO, QUOTA_BASIC, QUOTA_XEMA, QUOTA_QUERIES}
+        if description.key in quota_keys
     )
 
     # Sensores de estado de rayos
-    async_add_entities(
-        MeteocatLightningStatusSensor(lightning_coordinator, description, entry_data)
-        for description in SENSOR_TYPES
-        if description.key == LIGHTNING_FILE_STATUS
-    )
+    if lightning_coordinator:
+        async_add_entities(
+            MeteocatLightningStatusSensor(lightning_coordinator, description, entry_data)
+            for description in SENSOR_TYPES
+            if description.key == LIGHTNING_FILE_STATUS
+        )
 
     # Sensores de rayos en comarca y municipio
-    async_add_entities(
-        MeteocatLightningSensor(lightning_file_coordinator, description, entry_data)
-        for description in SENSOR_TYPES
-        if description.key in {LIGHTNING_REGION, LIGHTNING_TOWN}
-    )
+    if lightning_file_coordinator:
+        async_add_entities(
+            MeteocatLightningSensor(lightning_file_coordinator, description, entry_data)
+            for description in SENSOR_TYPES
+            if description.key in {LIGHTNING_REGION, LIGHTNING_TOWN}
+        )
 
     # Sensor de estado de archivo de sol
     async_add_entities(

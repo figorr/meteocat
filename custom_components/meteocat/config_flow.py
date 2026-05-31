@@ -601,7 +601,7 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
         schema = vol.Schema({
             vol.Required(LIMIT_XEMA, default=750): cv.positive_int,
             vol.Required(LIMIT_PREDICCIO, default=100): cv.positive_int,
-            vol.Required(LIMIT_XDDE, default=250): cv.positive_int,
+            vol.Required(LIMIT_XDDE, default=250): vol.All(vol.Coerce(int), vol.Range(min=0)),
             vol.Required(LIMIT_QUOTA, default=300): cv.positive_int,
             vol.Required(LIMIT_BASIC, default=2000): cv.positive_int,
         })

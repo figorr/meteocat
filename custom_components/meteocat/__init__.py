@@ -19,7 +19,7 @@ from meteocatpy.town import MeteocatTown
 from meteocatpy.symbols import MeteocatSymbols
 from meteocatpy.variables import MeteocatVariables
 from meteocatpy.townstations import MeteocatTownStations
-from .const import DOMAIN, PLATFORMS
+from .const import DOMAIN, PLATFORMS, LIMIT_XDDE
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -279,6 +279,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     ok_count = 0
     degraded_count = 0
+    disabled_count = 0
+    LIGHTNING_KEYS = {"lightning_coordinator", "lightning_file_coordinator"}
 
     for key, cls_name in CRITICAL_COORDINATORS:
         result = await _init_coordinator(key, cls_name, is_critical=True)
@@ -289,15 +291,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             ok_count += 1
 
     for key, cls_name in OPTIONAL_COORDINATORS:
+        if key in LIGHTNING_KEYS and entry_data.get(LIMIT_XDDE, 250) == 0:
+            hass.data[DOMAIN][entry.entry_id]["_health"][key] = {
+                "status": "disabled",
+                "reason": "xdde_not_enabled",
+                "last_error": "",
+            }
+            disabled_count += 1
+            _LOGGER.debug("Coordinador '%s' omitido: plan XDDE no habilitado", key)
+            continue
         result = await _init_coordinator(key, cls_name, is_critical=False)
         if result is None:
             degraded_count += 1
 
     health = hass.data[DOMAIN][entry.entry_id]["_health"]
     _LOGGER.info(
-        "Meteocat cargado: %d/%d coordinadores OK, %d degradados (opcionales con incidencia). "
-        "Detalles: %s",
-        ok_count, len(CRITICAL_COORDINATORS) + len(OPTIONAL_COORDINATORS), degraded_count,
+        "Meteocat cargado: %d/%d OK, %d degradados, %d deshabilitados. Detalles: %s",
+        ok_count, len(CRITICAL_COORDINATORS) + len(OPTIONAL_COORDINATORS),
+        degraded_count, disabled_count,
         {k: v["reason"] or "ok" for k, v in health.items() if v.get("status") != "ok"}
     )
 
