@@ -1127,7 +1127,7 @@
         "name": "Archivo Sol",
         "state": {
           "updated": "Actualizado",
-          "obsolete": "Obsoleto"      
+          "obsolete": "Obsoleto"
         },
         "state_attributes": {
           "update_date": {
