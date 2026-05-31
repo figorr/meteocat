@@ -117,7 +117,7 @@
     }
   },
   "entity": {
-    "sensor": {      
+    "sensor": {
       "wind_speed": {
         "name": "Viento Velocidad"
       },
@@ -238,7 +238,7 @@
         "name": "Archivo Horario",
         "state": {
           "updated": "Actualizado",
-          "obsolete": "Obsoleto"      
+          "obsolete": "Obsoleto"
         },
         "state_attributes": {
           "update_date": {
@@ -253,7 +253,7 @@
         "name": "Archivo Diario",
         "state": {
           "updated": "Actualizado",
-          "obsolete": "Obsoleto"      
+          "obsolete": "Obsoleto"
         },
         "state_attributes": {
           "update_date": {
@@ -268,7 +268,7 @@
         "name": "Archivo UVI",
         "state": {
           "updated": "Actualizado",
-          "obsolete": "Obsoleto"      
+          "obsolete": "Obsoleto"
         },
         "state_attributes": {
           "update_date": {
@@ -283,7 +283,7 @@
         "name": "Archivo Estación",
         "state": {
           "updated": "Actualizado",
-          "obsolete": "Obsoleto"      
+          "obsolete": "Obsoleto"
         },
         "state_attributes": {
           "update_date": {
@@ -298,7 +298,7 @@
         "name": "Archivo Alerta",
         "state": {
           "updated": "Actualizado",
-          "obsolete": "Obsoleto"      
+          "obsolete": "Obsoleto"
         },
         "state_attributes": {
           "update_date": {
@@ -310,7 +310,7 @@
         "name": "Archivo Cuota",
         "state": {
           "updated": "Actualizado",
-          "obsolete": "Obsoleto"      
+          "obsolete": "Obsoleto"
         },
         "state_attributes": {
           "update_date": {
@@ -322,7 +322,7 @@
         "name": "Archivo Rayos",
         "state": {
           "updated": "Actualizado",
-          "obsolete": "Obsoleto"      
+          "obsolete": "Obsoleto"
         },
         "state_attributes": {
           "update_date": {
@@ -363,7 +363,7 @@
         "state": {
           "ok": "Ok",
           "exceeded": "Superada",
-          "unknown": "Desconocido"      
+          "unknown": "Desconocido"
         },
         "state_attributes": {
           "period": {
@@ -390,7 +390,7 @@
         "state": {
           "ok": "Ok",
           "exceeded": "Superada",
-          "unknown": "Desconocido"      
+          "unknown": "Desconocido"
         },
         "state_attributes": {
           "period": {
@@ -417,7 +417,7 @@
         "state": {
           "ok": "Ok",
           "exceeded": "Superada",
-          "unknown": "Desconocido"      
+          "unknown": "Desconocido"
         },
         "state_attributes": {
           "period": {
@@ -444,7 +444,7 @@
         "state": {
           "ok": "Ok",
           "exceeded": "Superada",
-          "unknown": "Desconocido"      
+          "unknown": "Desconocido"
         },
         "state_attributes": {
           "period": {
@@ -471,7 +471,7 @@
         "state": {
           "ok": "Ok",
           "exceeded": "Superada",
-          "unknown": "Desconocido"      
+          "unknown": "Desconocido"
         },
         "state_attributes": {
           "period": {
@@ -582,7 +582,7 @@
         "name": "Alerta Viento",
         "state": {
           "opened": "Abierto",
-          "closed": "Cerrado"      
+          "closed": "Cerrado"
         },
         "state_attributes": {
           "inicio": {
@@ -631,7 +631,7 @@
         "name": "Alerta Intensidad Lluvia",
         "state": {
           "opened": "Abierto",
-          "closed": "Cerrado"      
+          "closed": "Cerrado"
         },
         "state_attributes": {
           "inicio": {
@@ -673,7 +673,7 @@
         "name": "Alerta Intensidad Lluvia 30 min",
         "state": {
           "opened": "Abierto",
-          "closed": "Cerrado"      
+          "closed": "Cerrado"
         },
         "state_attributes": {
           "inicio": {
@@ -715,7 +715,7 @@
         "name": "Alerta Intensidad Lluvia 3 horas",
         "state": {
           "opened": "Abierto",
-          "closed": "Cerrado"      
+          "closed": "Cerrado"
         },
         "state_attributes": {
           "inicio": {
@@ -757,7 +757,7 @@
         "name": "Alerta Lluvia",
         "state": {
           "opened": "Abierto",
-          "closed": "Cerrado"      
+          "closed": "Cerrado"
         },
         "state_attributes": {
           "inicio": {
@@ -796,7 +796,7 @@
         "name": "Alerta Mar",
         "state": {
           "opened": "Abierto",
-          "closed": "Cerrado"      
+          "closed": "Cerrado"
         },
         "state_attributes": {
           "inicio": {
@@ -836,7 +836,7 @@
         "name": "Alerta Frío",
         "state": {
           "opened": "Abierto",
-          "closed": "Cerrado"      
+          "closed": "Cerrado"
         },
         "state_attributes": {
           "inicio": {
@@ -874,7 +874,7 @@
         "name": "Alerta Calor",
         "state": {
           "opened": "Abierto",
-          "closed": "Cerrado"      
+          "closed": "Cerrado"
         },
         "state_attributes": {
           "inicio": {
@@ -912,7 +912,7 @@
         "name": "Alerta Calor Nocturno",
         "state": {
           "opened": "Abierto",
-          "closed": "Cerrado"      
+          "closed": "Cerrado"
         },
         "state_attributes": {
           "inicio": {
@@ -950,7 +950,7 @@
         "name": "Alerta Nieve",
         "state": {
           "opened": "Abierto",
-          "closed": "Cerrado"      
+          "closed": "Cerrado"
         },
         "state_attributes": {
           "inicio": {

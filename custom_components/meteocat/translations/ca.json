@@ -34,7 +34,7 @@
     }
   },
   "options": {
-    "step":{
+    "step": {
       "init": {
         "description": "Configureu la clau API, els límits de l'API, regenereu els fitxers d'assets, actualitzeu coordenades o forceu l'actualització de dades.",
         "title": "Opcions de configuració",
@@ -117,7 +117,7 @@
     }
   },
   "entity": {
-    "sensor": {      
+    "sensor": {
       "wind_speed": {
         "name": "Vent Velocitat"
       },
@@ -253,7 +253,7 @@
         "name": "Arxiu Diari",
         "state": {
           "updated": "Actualitzat",
-          "obsolete": "Obsolet"      
+          "obsolete": "Obsolet"
         },
         "state_attributes": {
           "update_date": {
@@ -268,7 +268,7 @@
         "name": "Arxiu UVI",
         "state": {
           "updated": "Actualitzat",
-          "obsolete": "Obsolet"      
+          "obsolete": "Obsolet"
         },
         "state_attributes": {
           "update_date": {
@@ -283,7 +283,7 @@
         "name": "Arxiu Estació",
         "state": {
           "updated": "Actualitzat",
-          "obsolete": "Obsolet"      
+          "obsolete": "Obsolet"
         },
         "state_attributes": {
           "update_date": {
@@ -298,7 +298,7 @@
         "name": "Arxiu Alerta",
         "state": {
           "updated": "Actualitzat",
-          "obsolete": "Obsolet"      
+          "obsolete": "Obsolet"
         },
         "state_attributes": {
           "update_date": {
@@ -310,7 +310,7 @@
         "name": "Arxiu Quota",
         "state": {
           "updated": "Actualitzat",
-          "obsolete": "Obsolet"      
+          "obsolete": "Obsolet"
         },
         "state_attributes": {
           "update_date": {
@@ -322,7 +322,7 @@
         "name": "Arxiu Llamps",
         "state": {
           "updated": "Actualitzat",
-          "obsolete": "Obsolet"      
+          "obsolete": "Obsolet"
         },
         "state_attributes": {
           "update_date": {
@@ -336,7 +336,7 @@
           "cloud_cloud": {
             "name": "Núvol-Núvol"
           },
-          "cloud_ground_neg":{
+          "cloud_ground_neg": {
             "name": "Núvol-Terra Negatiu"
           },
           "cloud_ground_pos": {
@@ -363,7 +363,7 @@
         "state": {
           "ok": "Ok",
           "exceeded": "Superada",
-          "unknown": "Desconegut"      
+          "unknown": "Desconegut"
         },
         "state_attributes": {
           "period": {
@@ -390,7 +390,7 @@
         "state": {
           "ok": "Ok",
           "exceeded": "Superada",
-          "unknown": "Desconegut"      
+          "unknown": "Desconegut"
         },
         "state_attributes": {
           "period": {
@@ -417,7 +417,7 @@
         "state": {
           "ok": "Ok",
           "exceeded": "Superada",
-          "unknown": "Desconegut"      
+          "unknown": "Desconegut"
         },
         "state_attributes": {
           "period": {
@@ -444,7 +444,7 @@
         "state": {
           "ok": "Ok",
           "exceeded": "Superada",
-          "unknown": "Desconegut"      
+          "unknown": "Desconegut"
         },
         "state_attributes": {
           "period": {
@@ -471,7 +471,7 @@
         "state": {
           "ok": "Ok",
           "exceeded": "Superada",
-          "unknown": "Desconegut"      
+          "unknown": "Desconegut"
         },
         "state_attributes": {
           "period": {
@@ -582,7 +582,7 @@
         "name": "Alerta Vent",
         "state": {
           "opened": "Obert",
-          "closed": "Tancat"      
+          "closed": "Tancat"
         },
         "state_attributes": {
           "inicio": {
@@ -631,7 +631,7 @@
         "name": "Alerta Intensitat de Pluja",
         "state": {
           "opened": "Obert",
-          "closed": "Tancat"      
+          "closed": "Tancat"
         },
         "state_attributes": {
           "inicio": {
@@ -673,7 +673,7 @@
         "name": "Alerta Intensitat de Pluja 30 min",
         "state": {
           "opened": "Obert",
-          "closed": "Tancat"      
+          "closed": "Tancat"
         },
         "state_attributes": {
           "inicio": {
@@ -715,7 +715,7 @@
         "name": "Alerta Intensitat de Pluja 3 hores",
         "state": {
           "opened": "Obert",
-          "closed": "Tancat"      
+          "closed": "Tancat"
         },
         "state_attributes": {
           "inicio": {
@@ -757,7 +757,7 @@
         "name": "Alerta Pluja",
         "state": {
           "opened": "Obert",
-          "closed": "Tancat"      
+          "closed": "Tancat"
         },
         "state_attributes": {
           "inicio": {
@@ -796,7 +796,7 @@
         "name": "Alerta Mar",
         "state": {
           "opened": "Obert",
-          "closed": "Tancat"      
+          "closed": "Tancat"
         },
         "state_attributes": {
           "inicio": {
@@ -836,7 +836,7 @@
         "name": "Alerta Fred",
         "state": {
           "opened": "Obert",
-          "closed": "Tancat"      
+          "closed": "Tancat"
         },
         "state_attributes": {
           "inicio": {
@@ -874,7 +874,7 @@
         "name": "Alerta Calor",
         "state": {
           "opened": "Obert",
-          "closed": "Tancat"      
+          "closed": "Tancat"
         },
         "state_attributes": {
           "inicio": {
@@ -912,7 +912,7 @@
         "name": "Alerta Calor Nocturna",
         "state": {
           "opened": "Obert",
-          "closed": "Tancat"      
+          "closed": "Tancat"
         },
         "state_attributes": {
           "inicio": {
@@ -950,7 +950,7 @@
         "name": "Alerta Neu",
         "state": {
           "opened": "Obert",
-          "closed": "Tancat"      
+          "closed": "Tancat"
         },
         "state_attributes": {
           "inicio": {
