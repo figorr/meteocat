@@ -1127,7 +1127,7 @@
         "name": "Sun File",
         "state": {
           "updated": "Updated",
-          "obsolete": "Obsolete"      
+          "obsolete": "Obsolete"
         },
         "state_attributes": {
           "update_date": {
