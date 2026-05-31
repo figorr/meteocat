@@ -259,7 +259,7 @@
         "name": "Arxiu Horari",
         "state": {
           "updated": "Actualitzat",
-          "obsolete": "Obsolet"      
+          "obsolete": "Obsolet"
         },
         "state_attributes": {
           "update_date": {
@@ -1127,7 +1127,7 @@
         "name": "Arxiu Sol",
         "state": {
           "updated": "Actualitzat",
-          "obsolete": "Obsolet"      
+          "obsolete": "Obsolet"
         },
         "state_attributes": {
           "update_date": {
