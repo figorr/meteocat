@@ -33,7 +33,12 @@ This is a personal project.
 - [Figorr](https://github.com/figorr)
 
 **Contributors:**  
-- [mcasellas](https://github.com/mcasellas) – contributed [c505f27](https://github.com/figorr/meteocat/commit/c505f27) - Improve Catalan translations
+- [mcasellas](https://github.com/mcasellas) 
+  - contributed [c505f27](https://github.com/figorr/meteocat/commit/c505f27) - Improve Catalan translations
+  - contributed [1c54bd9](https://github.com/figorr/meteocat/commit/1c54bd9) - Improved translations code and remove whitespaces.
+  - contributed [521dc7d](https://github.com/figorr/meteocat/commit/521dc7d)	- Fixed coordinator lightning logs
+  - contributed   - Propose a XDDE optional plan approach
+
 
 ## ⚠️ Breaking changes - Upgrade to 3.0.0 or later coming from prior versions
 
