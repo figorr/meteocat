@@ -23,7 +23,8 @@ You should include the following plans when you ask for the API KEY, otherwise t
 - "Dades de la XDDE"
 - "Dades de Predicció"
 
-If you didn't include the XDDE plan when you asked for your API Key, you can set the XDDE limit to "0" during the setup, but it is not the recommended solution and there will be no support in the Meteocat Card if you have no XDDE plan. XDDE plan is mandatory to use the Meteocat Card.
+If you didn't include the XDDE plan when you asked for your API Key, you can set the XDDE limit to "0" during the setup, but it is not the recommended setup.
+
 # Credits
 
 This is a personal project.
