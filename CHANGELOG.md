@@ -1,3 +1,17 @@
+## [4.1.4](https://github.com/figorr/meteocat/compare/v4.1.3...v4.1.4) (2026-06-04)
+
+
+### Bug Fixes
+
+* critical and optional coordinators for HA restart ([073b7e0](https://github.com/figorr/meteocat/commit/073b7e061383c80145f5f3095c05966f777e4825))
+* fix cache alert region log ([d98e57b](https://github.com/figorr/meteocat/commit/d98e57be7055495d4279c2cdf6fc5ecf5351bbb6))
+* fix lightning log ([521dc7d](https://github.com/figorr/meteocat/commit/521dc7df62b9988f6812cee46f31369af7f79057))
+* fix setup_recovery_listener ([531a76d](https://github.com/figorr/meteocat/commit/531a76d69ffacd5ec26665ffe5a89cef0757539b))
+* fix translations ([b963df0](https://github.com/figorr/meteocat/commit/b963df0488fce96eb9a08d32bda2e5b1d6088b9f))
+* improve setup_recovery_listener ([a59d8b4](https://github.com/figorr/meteocat/commit/a59d8b409e3271eaafce28b9bf3bc51768baa466))
+* include limits translations ([1c54bd9](https://github.com/figorr/meteocat/commit/1c54bd998636914303d4855bea77050b7d5d4621))
+* xdde optional plan ([e396083](https://github.com/figorr/meteocat/commit/e396083a4d9120e8b5305f5553698c4ba3a3ef03))
+
 ## [4.1.3](https://github.com/figorr/meteocat/compare/v4.1.2...v4.1.3) (2026-04-27)
 
 

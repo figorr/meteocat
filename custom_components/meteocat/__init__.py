@@ -24,7 +24,7 @@ from .const import DOMAIN, PLATFORMS, LIMIT_XDDE
 _LOGGER = logging.getLogger(__name__)
 
 # Versión
-__version__ = "4.1.3"
+__version__ = "4.1.4"
 
 # Definir el esquema de configuración CONFIG_SCHEMA
 CONFIG_SCHEMA = vol.Schema(
