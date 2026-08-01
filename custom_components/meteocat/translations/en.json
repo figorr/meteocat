@@ -316,7 +316,7 @@
         }
       },
       "eto_daily": {
-        "name": "Evapotranspiration Today"
+        "name": "Evapotranspiration Daily"
       },
       "eto_hourly": {
         "name": "Evapotranspiration Hourly"

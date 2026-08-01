@@ -316,38 +316,10 @@
         }
       },
       "eto_daily": {
-        "name": "Evapotranspiration Today",
-        "state_attributes": {
-          "method": {
-            "name": "Method"
-          },
-          "date": {
-            "name": "Date"
-          },
-          "eto_daily_mm": {
-            "name": "Evapotranspiration Today"
-          },
-          "hourly": {
-            "name": "Hourly"
-          }
-        }
+        "name": "Evapotranspiration Daily"
       },
       "eto_hourly": {
-        "name": "Evapotranspiration Hourly",
-        "state_attributes": {
-          "method": {
-            "name": "Method"
-          },
-          "date": {
-            "name": "Date"
-          },
-          "eto_daily_mm": {
-            "name": "Evapotranspiration Today"
-          },
-          "hourly": {
-            "name": "Hourly"
-          }
-        }
+        "name": "Evapotranspiration Hourly"
       },
       "alert_file_status": {
         "name": "Alert File",

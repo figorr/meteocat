@@ -316,7 +316,7 @@
         }
       },
       "eto_daily": {
-        "name": "Evapotranspiració avui"
+        "name": "Evapotranspiració diària"
       },
       "eto_hourly": {
         "name": "Evapotranspiració horària"
