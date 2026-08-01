@@ -315,6 +315,12 @@
           }
         }
       },
+      "eto_daily": {
+        "name": "Evapotranspiration Today"
+      },
+      "eto_hourly": {
+        "name": "Evapotranspiration Hourly"
+      },
       "alert_file_status": {
         "name": "Alert File",
         "state": {

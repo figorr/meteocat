@@ -13,11 +13,13 @@
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/figorr/meteocat/issues",
   "loggers": [
-    "meteocatpy"
+    "meteocatpy",
+    "gardenpy_meteocat"
   ],
   "requirements": [
-    "meteocatpy==1.0.6",
+    "meteocatpy==1.0.7",
     "solarmoonpy==1.0.9",
+    "gardenpy-meteocat==1.1.0",
     "packaging>=20.3",
     "wrapt>=1.14.0"
   ],

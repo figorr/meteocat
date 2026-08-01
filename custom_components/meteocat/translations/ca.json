@@ -315,6 +315,12 @@
           }
         }
       },
+      "eto_daily": {
+        "name": "Evapotranspiració avui"
+      },
+      "eto_hourly": {
+        "name": "Evapotranspiració horària"
+      },
       "alert_file_status": {
         "name": "Arxiu Alerta",
         "state": {

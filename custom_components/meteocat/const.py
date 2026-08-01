@@ -53,6 +53,8 @@ MOON_FILE_STATUS = "moon_file_status"
 MOONRISE = "moonrise"
 MOONSET = "moonset"
 STATION_DATA_FILE_STATUS = "station_data_file_status"
+ETO_DAILY = "eto_daily"  # Evapotranspiración de referencia diaria (mm)
+ETO_HOURLY = "eto_hourly"  # Evapotranspiración de referencia horaria (mm/h)
 
 from homeassistant.const import Platform
 
