@@ -69,6 +69,25 @@ If you update without uninstalling first:
 - This change affects all entity types, including **sensors, diagnostic sensors, and alerts**.  
 - Always backup your **Home Assistant configuration** before performing major upgrades.
 
+## ⚠️ Entity IDs and Home Assistant 2026.6
+
+Home Assistant **2026.6** (Home Assistant Core [PR #170560](https://github.com/home-assistant/core/pull/170560)) changed how `entity_id`s are generated, adding area and device prefixes when IDs are (re)created.
+
+To keep `entity_id`s stable and predictable, this integration now sets them explicitly using the format:
+
+```
+sensor.meteocat_{station_id}_{town_name}_{sensor_name}
+```
+
+### ✅ What this means for existing installations
+
+- Your current `entity_id`s are **kept as they are**. Updating the integration will **not** rename your entities and will **not** require you to update your automations, dashboards, or scripts.
+- The new format only applies to **newly installed** integrations, or to entities whose IDs are **regenerated**.
+
+### 🚨 If you regenerate entity IDs
+
+If you (or Home Assistant) ever regenerate an entity ID (e.g. by using *Recreate entity IDs* in the entity settings, or after a Home Assistant upgrade that triggers regeneration), the new ID will follow the format above and your automations using that literal ID would need to be updated.
+
 ## Installation
 
 #### HACS - Install using the custom repository method.
