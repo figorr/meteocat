@@ -25,6 +25,8 @@ You should include the following plans when you ask for the API KEY, otherwise t
 
 If you didn't include the XDDE plan when you asked for your API Key, you can set the XDDE limit to "0" during the setup, but it is not the recommended setup.
 
+> **Note:** Station (XEMA) data and the derived ETo values use **UTC** day boundaries. `eto_daily` resets at `00:00 UTC` (≈02:00 local in summer, ≈01:00 in winter in Spain). See the [Wiki](https://github.com/figorr/meteocat/wiki) for details.
+
 # Credits
 
 This is a personal project.
