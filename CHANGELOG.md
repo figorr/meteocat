@@ -1,3 +1,19 @@
+# [4.2.0](https://github.com/figorr/meteocat/compare/v4.1.4...v4.2.0) (2026-08-05)
+
+
+### Bug Fixes
+
+* branding ([63e41e7](https://github.com/figorr/meteocat/commit/63e41e7df12b34a03ac0962b8275508465e1d69b))
+* document entity IDs and HA 2026.6 behavior. ([50bcd95](https://github.com/figorr/meteocat/commit/50bcd95c04d2569f6b7b91c82e6260f9fbdd2149))
+* document eto_daily UTC reset behavior ([7dc9a37](https://github.com/figorr/meteocat/commit/7dc9a3782a3db266e67e413b31e59e65e95f27d9))
+* fix eto_daily translation ([39f795f](https://github.com/figorr/meteocat/commit/39f795f0aef9ee1a8796de0885372e4da8780a8f))
+* update contributions ([bd967d8](https://github.com/figorr/meteocat/commit/bd967d895b6166e252e50ee0aa836b317122e206))
+
+
+### Features
+
+* deterministic entity IDs and ETo sensors ([88410c8](https://github.com/figorr/meteocat/commit/88410c8a9692cf8a87f9406ff060be90703e9fe2))
+
 ## [4.1.4](https://github.com/figorr/meteocat/compare/v4.1.3...v4.1.4) (2026-06-04)
 
 
