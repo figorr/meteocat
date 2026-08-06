@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 from typing import Dict, Any, Optional
 import os
 import json
+import re
 import aiofiles
 import asyncio 
 import logging
@@ -2073,12 +2074,30 @@ class MeteocatAlertMeteorSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
                 return value
         return {}
     
+    @staticmethod
+    def _normalize_umbral(text: str) -> str:
+        """Normaliza un umbral para comparaciones robustas.
+
+        Se elimina todo el espacio en blanco (incluyendo espacios múltiples y
+        no separables), se aplica casefold y se unifican los símbolos unicode
+        (≥, ≤) con sus equivalentes ASCII. Así "> 40 m/s", ">40 m/s",
+        ">40m/s" o "> 40m/s" (con espacios o NBSP) se consideran iguales.
+        """
+        if text is None:
+            return ""
+        return re.sub(
+            r"\s+",
+            "",
+            text.casefold().replace("≥", ">=").replace("≤", "<=").strip(),
+        )
+
     def _get_umbral_case_insensitive(self, umbral: str) -> str:
-        """Convierte un umbral a su clave interna usando case-insensitive."""
+        """Convierte un umbral a su clave interna usando normalización robusta."""
         if umbral is None:
             return "unknown"
+        normalized = self._normalize_umbral(umbral)
         for key, value in self.UMBRAL_MAPPING.items():
-            if key.lower() == umbral.lower():
+            if self._normalize_umbral(key) == normalized:
                 return value
         return "unknown"
 
