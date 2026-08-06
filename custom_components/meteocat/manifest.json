@@ -23,5 +23,5 @@
     "packaging>=20.3",
     "wrapt>=1.14.0"
   ],
-  "version": "4.2.0"
+  "version": "4.2.1"
 }

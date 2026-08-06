@@ -1,3 +1,10 @@
+## [4.2.1](https://github.com/figorr/meteocat/compare/v4.2.0...v4.2.1) (2026-08-06)
+
+
+### Bug Fixes
+
+* normalize umbral thresholds for robust alert matching ([3f3486d](https://github.com/figorr/meteocat/commit/3f3486dad169cb351b039a75c2eb50e819e11a16))
+
 # [4.2.0](https://github.com/figorr/meteocat/compare/v4.1.4...v4.2.0) (2026-08-05)
 
 
