@@ -17,7 +17,7 @@
     "gardenpy_meteocat"
   ],
   "requirements": [
-    "meteocatpy==1.0.7",
+    "meteocatpy==1.0.8",
     "solarmoonpy==1.0.9",
     "gardenpy-meteocat==1.1.0",
     "packaging>=20.3",
