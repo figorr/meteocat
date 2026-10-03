@@ -20,7 +20,6 @@
     "meteocatpy==1.0.8",
     "solarmoonpy==1.0.9",
     "gardenpy-meteocat==1.1.0",
-    "packaging>=20.3",
     "wrapt>=1.14.0"
   ],
   "version": "4.2.1"
