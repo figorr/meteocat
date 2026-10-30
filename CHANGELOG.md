@@ -1,3 +1,14 @@
+## [4.2.2](https://github.com/figorr/meteocat/compare/v4.2.1...v4.2.2) (2026-10-30)
+
+
+### Bug Fixes
+
+* bump meteocatpy to v1.0.8 ([cbc0066](https://github.com/figorr/meteocat/commit/cbc006649393e2005b2886d4ddf9b5fefefe23b6))
+* remove packaging from requirements ([8ff161a](https://github.com/figorr/meteocat/commit/8ff161a50aaed857492ac2de9ca99f45cb765af5))
+* stop publishing to npm in semantic-release ([a08a46f](https://github.com/figorr/meteocat/commit/a08a46f4288f9a16818a04dfd540344b6738b4fe))
+* update dependencies ([f236147](https://github.com/figorr/meteocat/commit/f236147db0c6693d0fc88d9ad9eb84464914ffc1))
+* update workflows checkout to v5 ([2d7c185](https://github.com/figorr/meteocat/commit/2d7c185cfd0d029f8458921ef751ed4b06017322))
+
 ## [4.2.1](https://github.com/figorr/meteocat/compare/v4.2.0...v4.2.1) (2026-08-06)
 
 
