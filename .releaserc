@@ -30,8 +30,12 @@
         "message": "chore(release): v${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
       }
     ],
-    "@semantic-release/npm",
-    "@semantic-release/github"
+    [
+      "@semantic-release/github",
+      {
+        "failComment": false
+      }
+    ]
   ],
   "repositoryUrl": "https://github.com/figorr/meteocat"
 }
