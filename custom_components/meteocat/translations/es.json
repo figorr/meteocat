@@ -3,7 +3,12 @@
     "step": {
       "user": {
         "description": "Ingrese la API Key facilitada por Meteocat para poder iniciar el proceso de validación.",
-        "title": "API Key"
+        "title": "API Key",
+        "data": {
+          "api_key": "API Key",
+          "api_key_date": "Fecha de emisión de la API Key",
+          "api_key_reminder": "Avísame antes de que caduque la API Key"
+        }
       },
       "select_municipi": {
         "description": "Seleccione el municipio de la lista.",
@@ -29,6 +34,14 @@
           "limit_quota": "Límite Quota",
           "limit_basic": "Límite Básico"
         }
+      },
+      "reauth_confirm": {
+        "description": "Introduce una nueva API Key de Meteocat y la fecha de emisión. Puedes solicitar o renovar una clave en {api_key_url}.",
+        "title": "Reautenticar Meteocat",
+        "data": {
+          "api_key": "API Key",
+          "api_key_date": "Fecha de emisión de la API Key"
+        }
       }
     },
     "error": {
@@ -37,7 +50,11 @@
       "rate_limit_exceeded": "Exceso del límite de peticiones. Por favor, inténtelo de nuevo más tarde.",
       "server_error": "Error del servidor. Inténtelo de nuevo más tarde.",
       "connection_error": "Error de conexión. Revise su conexión de red.",
-      "unknown_error": "Error desconocido."
+      "unknown_error": "Error desconocido.",
+      "invalid_date": "La fecha de emisión de la API Key debe ser hoy o anterior."
+    },
+    "abort": {
+      "reauth_successful": "Reautenticación correcta."
     }
   },
   "options": {
@@ -50,9 +67,12 @@
         }
       },
       "update_api_and_limits": {
-        "description": "Configura el API Key y los límites de la API.",
+        "description": "Configura el API Key, la fecha de emisión y los límites de la API.",
         "title": "API Key y límites",
         "data": {
+          "api_key": "API Key",
+          "api_key_date": "Fecha de emisión de la API Key",
+          "api_key_reminder": "Avísame antes de que caduque la API Key",
           "limit_xema": "Límite XEMA (Red de Estaciones Meteorológicas Automáticas)",
           "limit_prediccio": "Límite Predicción",
           "limit_xdde": "Límite XDDE (Red de Detección de Descargas Eléctricas) (0 para desactivar)",
@@ -110,7 +130,9 @@
       "invalid_altitude": "Altitud no puede ser negativa.",
       "invalid_config": "Fallo en la configuración (town_id no encontrado u otro problema).",
       "force_update_failed": "No se pudo forzar la actualización. Revisa los logs.",
-      "no_selection": "Debes seleccionar al menos un tipo de datos."
+      "no_selection": "Debes seleccionar al menos un tipo de datos.",
+      "invalid_date": "La fecha de emisión de la API Key debe ser hoy o anterior.",
+      "date_required": "Debes indicar la fecha de emisión de la API Key para activar los avisos de caducidad."
     }
   },
   "selector": {

@@ -1,25 +1,31 @@
 from __future__ import annotations
 
-import logging
-import voluptuous as vol
-from pathlib import Path
-import aiofiles
-import json
 import importlib  # Para importaciones lazy
+import logging
+from types import SimpleNamespace
+
+import voluptuous as vol
 
 from homeassistant import core
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
-from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers.entity_platform import async_get_platforms
+from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.entity_platform import async_get_platforms
 
-from .helpers import get_storage_dir
-from meteocatpy.town import MeteocatTown
 from meteocatpy.symbols import MeteocatSymbols
-from meteocatpy.variables import MeteocatVariables
+from meteocatpy.town import MeteocatTown
 from meteocatpy.townstations import MeteocatTownStations
-from .const import DOMAIN, PLATFORMS, LIMIT_XDDE
+from meteocatpy.variables import MeteocatVariables
+
+from .cache import get_cache
+from .const import CONF_API_KEY, DOMAIN, LIMIT_XDDE, PLATFORMS
+from .helpers import (
+    async_delete_unused_quotes_file,
+    async_migrate_legacy_quotes,
+    get_storage_dir,
+)
+from .reminder import async_cancel_api_key_reminder, async_schedule_api_key_reminder
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -51,29 +57,27 @@ CONFIG_SCHEMA = vol.Schema(
     extra=vol.ALLOW_EXTRA,
 )
 
-def safe_remove(path: Path, is_folder: bool = False) -> None:
-    """Elimina un archivo o carpeta vacía de forma segura."""
-    try:
-        if is_folder:
-            if path.exists() and path.is_dir():
-                path.rmdir()  # Solo elimina si está vacía
-                _LOGGER.info("Carpeta eliminada: %s", path)
-        else:
-            if path.exists():
-                path.unlink()
-                _LOGGER.info("Archivo eliminado: %s", path)
-    except Exception as e:
-        _LOGGER.error("Error eliminando %s: %s", path, e)
-
-async def ensure_assets_exist(hass, api_key, town_id=None, variable_id=None):
+async def ensure_assets_exist(
+    hass,
+    api_key,
+    town_id=None,
+    variable_id=None,
+    *,
+    force: bool = False,
+    raise_on_error: bool = False,
+):
     """Comprueba y crea los assets básicos si faltan."""
     assets_dir = get_storage_dir(hass, "assets")
-    assets_dir.mkdir(parents=True, exist_ok=True)
 
     # Lista de assets: (nombre_archivo, fetch_func, clave_json, args)
     assets = [
         ("towns.json", MeteocatTown(api_key).get_municipis, "towns", []),
-        ("stations.json", MeteocatTownStations(api_key).stations_service.get_stations, "stations", []),
+        (
+            "stations.json",
+            MeteocatTownStations(api_key).stations_service.get_stations,
+            "stations",
+            [],
+        ),
         ("variables.json", MeteocatVariables(api_key).get_variables, "variables", []),
         ("symbols.json", MeteocatSymbols(api_key).fetch_symbols, "symbols", []),
     ]
@@ -81,25 +85,44 @@ async def ensure_assets_exist(hass, api_key, town_id=None, variable_id=None):
     # Si tenemos town_id y variable_id, agregamos stations_<town_id>.json
     if town_id and variable_id:
         assets.append(
-            (f"stations_{town_id}.json", MeteocatTownStations(api_key).get_town_stations, "town_stations", [town_id, variable_id])
+            (
+                f"stations_{town_id}.json",
+                MeteocatTownStations(api_key).get_town_stations,
+                "town_stations",
+                [town_id, variable_id],
+            )
         )
 
     for filename, fetch_func, key, args in assets:
         file_path = assets_dir / filename
-        if not file_path.exists():
-            _LOGGER.debug("Intentando descargar datos para %s desde la API con args: %s", key, args)
-            try:
-                data = await fetch_func(*args)
-            except Exception as ex:
+        exists = await file_path.async_exists()
+        if exists and not force:
+            continue
+        _LOGGER.debug(
+            "Intentando descargar datos para %s desde la API con args: %s", key, args
+        )
+        try:
+            data = await fetch_func(*args)
+        except Exception as ex:
+            if raise_on_error:
+                raise
+            if exists:
                 _LOGGER.warning(
-                    "No se pudieron obtener los datos para %s. Intenta regenerarlo más adelante desde las opciones de la integración. Detalle: %s",
+                    "No se pudieron regenerar los datos para %s. Se mantiene el "
+                    "archivo existente. Detalle: %s",
                     key,
                     ex,
                 )
-                data = []
-            async with aiofiles.open(file_path, "w", encoding="utf-8") as file:
-                await file.write(json.dumps({key: data}, ensure_ascii=False, indent=4))
-            _LOGGER.info("Archivo creado: %s", file_path)
+                continue
+            _LOGGER.warning(
+                "No se pudieron obtener los datos para %s. Intenta regenerarlo más "
+                "adelante desde las opciones de la integración. Detalle: %s",
+                key,
+                ex,
+            )
+            data = []
+        await file_path.async_write_json({key: data})
+        _LOGGER.info("Archivo %s: %s", "actualizado" if exists else "creado", file_path)
 
 async def async_setup(hass: core.HomeAssistant, config: dict) -> bool:
     """Configuración inicial del componente Meteocat."""
@@ -115,7 +138,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     _LOGGER.info("Configurando la integración de Meteocat...")
 
     # Extraer los datos necesarios de la entrada de configuración
-    entry_data = entry.data
+    entry_data = {**entry.data, **entry.options}
 
     # Validar campos requeridos
     required_fields = [
@@ -142,10 +165,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "longitude": 2.15899
         }
 
+    await get_cache(hass).async_load()
+    await async_migrate_legacy_quotes(hass, entry_data[CONF_API_KEY])
+
     # Crear los assets básicos si faltan
     await ensure_assets_exist(
         hass,
-        api_key=entry_data["api_key"],
+        api_key=entry_data[CONF_API_KEY],
         town_id=entry_data.get("town_id"),
         variable_id=entry_data.get("variable_id"),
     )
@@ -212,6 +238,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         try:
             cls = await hass.async_add_executor_job(_get_coordinator_module, cls_name)
             coordinator = cls(hass=hass, entry_data=entry_data)
+            coordinator.config_entry = entry
             await coordinator.async_config_entry_first_refresh()
             hass.data[DOMAIN][entry.entry_id][key] = coordinator
             hass.data[DOMAIN][entry.entry_id]["_health"][key] = {
@@ -221,6 +248,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             }
             _setup_recovery_listener(key, coordinator)
             return True
+        except ConfigEntryAuthFailed:
+            raise
         except Exception as err:
             reason = _normalize_error_reason(err)
             if is_critical:
@@ -228,6 +257,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
             cls = await hass.async_add_executor_job(_get_coordinator_module, cls_name)
             coordinator = cls(hass=hass, entry_data=entry_data)
+            coordinator.config_entry = entry
             hass.data[DOMAIN][entry.entry_id][key] = coordinator
             hass.data[DOMAIN][entry.entry_id]["_health"][key] = {
                 "status": "degraded",
@@ -317,9 +347,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     _LOGGER.debug(f"Cargando plataformas: {PLATFORMS}")
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
+    entry.runtime_data = SimpleNamespace(reminder_unsub=None)
+    if reminder_unsub := async_schedule_api_key_reminder(hass, entry):
+        entry.runtime_data.reminder_unsub = reminder_unsub
+        entry.async_on_unload(reminder_unsub)
+
     return True
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Desactiva una entrada de configuración para Meteocat."""
     platforms = async_get_platforms(hass, DOMAIN)
     _LOGGER.info(f"Descargando plataformas: {[p.domain for p in platforms]}")
@@ -329,14 +364,17 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if not hass.data[DOMAIN]:
             hass.data.pop(DOMAIN)
 
-    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    await hass.config_entries.async_unload_platforms_or_raise(entry, PLATFORMS)
+    async_cancel_api_key_reminder(hass, entry)
 
 async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Limpia cualquier dato adicional al desinstalar la integración."""
     _LOGGER.info(f"Eliminando datos residuales de la integración: {entry.entry_id}")
+    async_cancel_api_key_reminder(hass, entry)
 
-    # Rutas persistentes en /config/meteocat_files
-    base_folder = get_storage_dir(hass)
+    cache = get_cache(hass)
+    await cache.async_load()
+
     assets_folder = get_storage_dir(hass, "assets")
     files_folder = get_storage_dir(hass, "files")
 
@@ -347,66 +385,80 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
         assets_folder / "variables.json",
         assets_folder / "stations.json",
         files_folder / "alerts.json",
-        files_folder / "quotes.json",
     ]
 
     # Identificadores de la entrada eliminada
     station_id = entry.data.get("station_id")
     town_id = entry.data.get("town_id")
     region_id = entry.data.get("region_id")
+    api_key = entry.options.get(CONF_API_KEY) or entry.data.get(CONF_API_KEY)
 
     specific_files = []
 
     # 1. Archivos de estación
     if station_id:
         other_entries_with_station = [
-            e for e in hass.config_entries.async_entries(DOMAIN)
+            e
+            for e in hass.config_entries.async_entries(DOMAIN)
             if e.entry_id != entry.entry_id and e.data.get("station_id") == station_id
         ]
         if not other_entries_with_station:
-            specific_files.append(files_folder / f"station_{station_id.lower()}_data.json")
+            specific_files.append(
+                files_folder / f"station_{station_id.lower()}_data.json"
+            )
 
     # 2. Archivos de municipio
     if town_id:
         other_entries_with_town = [
-            e for e in hass.config_entries.async_entries(DOMAIN)
+            e
+            for e in hass.config_entries.async_entries(DOMAIN)
             if e.entry_id != entry.entry_id and e.data.get("town_id") == town_id
         ]
         if not other_entries_with_town:
-            specific_files.extend([
-                assets_folder / f"stations_{town_id.lower()}.json",
-                files_folder / f"uvi_{town_id.lower()}_data.json",
-                files_folder / f"forecast_{town_id.lower()}_hourly_data.json",
-                files_folder / f"forecast_{town_id.lower()}_daily_data.json",
-                files_folder / f"sun_{town_id.lower()}_data.json",
-                files_folder / f"moon_{town_id.lower()}_data.json",
-            ])
+            specific_files.extend(
+                [
+                    assets_folder / f"stations_{town_id.lower()}.json",
+                    files_folder / f"uvi_{town_id.lower()}_data.json",
+                    files_folder / f"forecast_{town_id.lower()}_hourly_data.json",
+                    files_folder / f"forecast_{town_id.lower()}_daily_data.json",
+                    files_folder / f"sun_{town_id.lower()}_data.json",
+                    files_folder / f"moon_{town_id.lower()}_data.json",
+                ]
+            )
 
     # 3. Archivos de comarca (region_id)
     if region_id:
         other_entries_with_region = [
-            e for e in hass.config_entries.async_entries(DOMAIN)
+            e
+            for e in hass.config_entries.async_entries(DOMAIN)
             if e.entry_id != entry.entry_id and e.data.get("region_id") == region_id
         ]
         if not other_entries_with_region:
-            specific_files.extend([
-                files_folder / f"alerts_{region_id}.json",
-                files_folder / f"lightning_{region_id}.json",
-            ])
+            specific_files.extend(
+                [
+                    files_folder / f"alerts_{region_id}.json",
+                    files_folder / f"lightning_{region_id}.json",
+                ]
+            )
 
-    # Eliminar archivos específicos (solo si ya no los necesita nadie más)
-    for f in specific_files:
-        safe_remove(f)
+    for cache_file in specific_files:
+        await cache_file.async_delete()
+
+    await async_delete_unused_quotes_file(
+        hass,
+        api_key,
+        exclude_entry_id=entry.entry_id,
+    )
 
     # Comprobar si quedan entradas activas de la integración
     remaining_entries = [
-        e for e in hass.config_entries.async_entries(DOMAIN)
+        e
+        for e in hass.config_entries.async_entries(DOMAIN)
         if e.entry_id != entry.entry_id
     ]
     if not remaining_entries:
-        for f in common_files:
-            safe_remove(f)
+        for cache_file in [*common_files, files_folder / "quotes.json"]:
+            await cache_file.async_delete()
 
-        # Intentar eliminar carpetas vacías
-        for folder in [assets_folder, files_folder, base_folder]:
-            safe_remove(folder, is_folder=True)
+        if not await cache.async_keys():
+            await cache.async_remove()

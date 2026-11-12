@@ -1,19 +1,16 @@
 from __future__ import annotations
 
-import json
-import aiofiles
-import logging
 import asyncio
+import logging
 import random
 import unicodedata
-from pathlib import Path
-from datetime import date, datetime, timedelta, timezone, time
+from datetime import date, datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 from typing import List, Dict, Any, Optional
 
 from homeassistant.core import HomeAssistant, EVENT_HOMEASSISTANT_START
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.components.weather import Forecast
 
 from solarmoonpy.moon import (
@@ -44,8 +41,15 @@ from meteocatpy.exceptions import (
     UnknownAPIError,
 )
 
-from .helpers import get_storage_dir
 from .condition import get_condition_from_statcel
+from .reminder import async_cancel_api_key_reminder
+from .helpers import (
+    CacheFile,
+    async_migrate_legacy_quotes,
+    get_quotes_file,
+    get_quotes_lock,
+    get_storage_dir,
+)
 from .const import (
     DOMAIN,
     CONDITION_MAPPING,
@@ -73,6 +77,15 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
+
+def _raise_api_key_auth_failed(coordinator, err: Exception) -> None:
+    """Cancel pending reminders and request reauthentication."""
+    entry = getattr(coordinator, "config_entry", None)
+    if entry is not None:
+        async_cancel_api_key_reminder(coordinator.hass, entry)
+    raise ConfigEntryAuthFailed(f"Meteocat API access denied: {err}") from err
+
+
 # Valores predeterminados para los intervalos de actualización
 DEFAULT_SENSOR_UPDATE_INTERVAL = timedelta(minutes=90)
 DEFAULT_SENSOR_FILE_UPDATE_INTERVAL = timedelta(minutes=5)
@@ -98,26 +111,23 @@ DEFAULT_MOON_FILE_UPDATE_INTERVAL = timedelta(seconds=30)
 # Definir la zona horaria local
 TIMEZONE = ZoneInfo("Europe/Madrid")
 
-async def save_json_to_file(data: dict, output_file: Path) -> None:
-    """Guarda datos JSON en un archivo de forma asíncrona."""
+async def save_json_to_file(data: dict, output_file: CacheFile) -> None:
+    """Guarda datos JSON en la caché de forma asíncrona."""
     try:
-        output_file.parent.mkdir(parents=True, exist_ok=True)
-        async with aiofiles.open(output_file, mode="w", encoding="utf-8") as f:
-            await f.write(json.dumps(data, indent=4, ensure_ascii=False))
+        await output_file.async_write_json(data)
     except Exception as e:
-        raise RuntimeError(f"Error guardando JSON en {output_file}: {e}")
+        raise RuntimeError(f"Error guardando JSON en {output_file}: {e}") from e
 
-async def load_json_from_file(input_file: Path) -> dict:
-    """Carga un archivo JSON de forma asincrónica."""
+
+async def load_json_from_file(input_file: CacheFile) -> dict:
+    """Carga un archivo JSON de la caché de forma asincrónica."""
     try:
-        async with aiofiles.open(input_file, "r", encoding="utf-8") as f:
-            data = await f.read()
-            return json.loads(data)
+        return await input_file.async_read_json()
     except FileNotFoundError:
         _LOGGER.warning("El archivo %s no existe.", input_file)
         return {}
-    except json.JSONDecodeError as err:
-        _LOGGER.error("Error al decodificar JSON del archivo %s: %s", input_file, err)
+    except Exception as err:  # noqa: BLE001
+        _LOGGER.error("Error al leer JSON del archivo %s: %s", input_file, err)
         return {}
 
 def normalize_name(name: str) -> str:
@@ -125,24 +135,24 @@ def normalize_name(name: str) -> str:
     name = unicodedata.normalize("NFKD", name).encode("ASCII", "ignore").decode("utf-8")
     return name.lower()
 
-# Definir _quotes_lock para evitar que varios coordinadores modifiquen quotes.json al mismo tiempo
-_quotes_lock = asyncio.Lock()
-
-async def _update_quotes(hass: HomeAssistant, plan_name: str) -> None:
-    """Actualiza las cuotas en quotes.json después de una consulta."""
-    async with _quotes_lock:
-        # Ruta persistente en /config/meteocat_files/files
-        files_folder = get_storage_dir(hass, "files")
-        quotes_file = files_folder / "quotes.json"
+async def _update_quotes(
+    hass: HomeAssistant, api_key: str, plan_name: str
+) -> None:
+    """Actualiza las cuotas del API key después de una consulta."""
+    quotes_file = get_quotes_file(hass, api_key)
+    async with get_quotes_lock(hass, api_key):
+        await async_migrate_legacy_quotes(hass, api_key)
 
         try:
             data = await load_json_from_file(quotes_file)
 
             if not data or not isinstance(data, dict):
-                _LOGGER.warning("quotes.json está vacío o tiene un formato inválido: %s", data)
+                _LOGGER.warning(
+                    "Las cuotas están vacías o tienen un formato inválido: %s", data
+                )
                 return
             if "plans" not in data or not isinstance(data["plans"], list):
-                _LOGGER.warning("Estructura inesperada en quotes.json: %s", data)
+                _LOGGER.warning("Estructura inesperada en las cuotas: %s", data)
                 return
 
             for plan in data["plans"]:
@@ -151,18 +161,23 @@ async def _update_quotes(hass: HomeAssistant, plan_name: str) -> None:
                     plan["consultesRestants"] = max(0, plan["consultesRestants"] - 1)
                     _LOGGER.debug(
                         "Cuota actualizada para el plan %s: Consultas realizadas %s, restantes %s",
-                        plan_name, plan["consultesRealitzades"], plan["consultesRestants"]
+                        plan_name,
+                        plan["consultesRealitzades"],
+                        plan["consultesRestants"],
                     )
                     break
-            
+
             await save_json_to_file(data, quotes_file)
 
         except FileNotFoundError:
-            _LOGGER.error("El archivo quotes.json no fue encontrado en la ruta esperada: %s", quotes_file)
-        except json.JSONDecodeError:
-            _LOGGER.error("Error al decodificar quotes.json, posiblemente el archivo está corrupto.")
-        except Exception as e:
-            _LOGGER.exception("Error inesperado al actualizar las cuotas en quotes.json: %s", str(e))
+            _LOGGER.error(
+                "No se encontró el archivo de cuotas en la ruta esperada: %s",
+                quotes_file,
+            )
+        except Exception as e:  # noqa: BLE001
+            _LOGGER.exception(
+                "Error inesperado al actualizar las cuotas: %s", str(e)
+            )
 
 class BaseFileCoordinator(DataUpdateCoordinator):
     """
@@ -260,7 +275,7 @@ class MeteocatSensorCoordinator(DataUpdateCoordinator):
                 )
                 _LOGGER.debug("Datos de sensores obtenidos desde API (forzado): %s", data)
 
-                await _update_quotes(self.hass, "XEMA")
+                await _update_quotes(self.hass, self.api_key, "XEMA")
 
                 if not isinstance(data, list) or not all(isinstance(item, dict) for item in data):
                     _LOGGER.error(
@@ -308,7 +323,7 @@ class MeteocatSensorCoordinator(DataUpdateCoordinator):
             _LOGGER.debug("Datos de sensores actualizados exitosamente: %s", data)
 
             # Actualizar las cuotas
-            await _update_quotes(self.hass, "XEMA")
+            await _update_quotes(self.hass, self.api_key, "XEMA")
 
             if not isinstance(data, list) or not all(isinstance(item, dict) for item in data):
                 _LOGGER.error(
@@ -344,7 +359,7 @@ class MeteocatSensorCoordinator(DataUpdateCoordinator):
                 self.station_id,
                 err,
             )
-            raise ConfigEntryNotReady from err
+            _raise_api_key_auth_failed(self, err)
         except TooManyRequestsError as err:
             _LOGGER.warning(
                 "Límite de solicitudes alcanzado al obtener datos de sensores (Station ID: %s): %s",
@@ -484,24 +499,11 @@ class MeteocatSensorFileCoordinator(BaseFileCoordinator):
         await self._apply_random_delay()
 
         try:
-            async with aiofiles.open(self._file_path, "r", encoding="utf-8") as file:
-                raw = await file.read()
-                raw_data = json.loads(raw)
+            raw_data = await self._file_path.async_read_json()
 
         except FileNotFoundError:
             _LOGGER.error(
                 "No se ha encontrado el archivo JSON de estación en %s.",
-                self._file_path
-            )
-            return {
-                "actualizado": None,
-                "last_observation": None,
-                "raw": {},
-            }
-
-        except json.JSONDecodeError:
-            _LOGGER.error(
-                "Error al decodificar el archivo JSON de estación en %s.",
                 self._file_path
             )
             return {
@@ -629,7 +631,7 @@ class MeteocatUviCoordinator(DataUpdateCoordinator):
            3. Han pasado más de DEFAULT_UVI_MIN_HOURS_SINCE_LAST_UPDATE horas desde la última actualización exitosa
         """
 
-        if not self.uvi_file.exists():
+        if not await self.uvi_file.async_exists():
             _LOGGER.debug("Archivo UVI no existe: %s", self.uvi_file)
             return None
 
@@ -714,9 +716,6 @@ class MeteocatUviCoordinator(DataUpdateCoordinator):
             _LOGGER.debug("Datos UVI válidos → usando caché")
             return data
 
-        except json.JSONDecodeError:
-            _LOGGER.error("JSON corrupto en %s", self.uvi_file)
-            return None
         except Exception as e:
             _LOGGER.error("Error validando UVI: %s", e)
             return None
@@ -733,7 +732,7 @@ class MeteocatUviCoordinator(DataUpdateCoordinator):
                 )
                 _LOGGER.debug("Datos UVI obtenidos desde API (forzado): %s", data)
 
-                await _update_quotes(self.hass, "Prediccio")
+                await _update_quotes(self.hass, self.api_key, "Prediccio")
 
                 now_iso = datetime.now(TIMEZONE).isoformat()
                 enhanced_data = {
@@ -772,7 +771,7 @@ class MeteocatUviCoordinator(DataUpdateCoordinator):
             )
             _LOGGER.debug("Datos UVI obtenidos desde API: %s", data)
 
-            await _update_quotes(self.hass, "Prediccio")
+            await _update_quotes(self.hass, self.api_key, "Prediccio")
 
             if not isinstance(data, dict) or "uvi" not in data or not isinstance(data["uvi"], list):
                 _LOGGER.error("Formato inválido: se esperaba un dict con 'uvi' -> %s", data)
@@ -800,7 +799,7 @@ class MeteocatUviCoordinator(DataUpdateCoordinator):
             raise ConfigEntryNotReady from err
         except ForbiddenError as err:
             _LOGGER.error("Acceso denegado al obtener datos UVI para town %s: %s", self.town_id, err)
-            raise ConfigEntryNotReady from err
+            _raise_api_key_auth_failed(self, err)
         except TooManyRequestsError as err:
             _LOGGER.warning("Límite de solicitudes alcanzado al obtener datos UVI para town %s: %s", self.town_id, err)
             raise ConfigEntryNotReady from err
@@ -867,14 +866,12 @@ class MeteocatUviFileCoordinator(BaseFileCoordinator):
         await self._apply_random_delay()
 
         try:
-            async with aiofiles.open(self._file_path, "r", encoding="utf-8") as file:
-                raw = await file.read()
-                raw_data = json.loads(raw)
+            raw_data = await self._file_path.async_read_json()
         except FileNotFoundError:
-            _LOGGER.error("No se ha encontrado el archivo JSON con datos del índice UV en %s.", self._file_path)
-            return {}
-        except json.JSONDecodeError:
-            _LOGGER.error("Error al decodificar el archivo JSON del índice UV en %s.", self._file_path)
+            _LOGGER.error(
+                "No se ha encontrado el archivo JSON con datos del índice UV en %s.",
+                self._file_path,
+            )
             return {}
 
         return self._get_uv_for_current_hour(raw_data)
@@ -955,11 +952,11 @@ class MeteocatEntityCoordinator(DataUpdateCoordinator):
     # --------------------------------------------------------------------- #
     #  VALIDACIÓN DINÁMICA DE DATOS DE PREDICCIÓN
     # --------------------------------------------------------------------- #
-    async def validate_forecast_data(self, file_path: Path) -> Optional[dict]:
+    async def validate_forecast_data(self, file_path: CacheFile) -> Optional[dict]:
         """Valida si los datos de predicción son válidos considerando 3 condiciones."""
         is_hourly = "hourly" in file_path.name.lower()
 
-        if not file_path.exists():
+        if not await file_path.async_exists():
             _LOGGER.warning("Archivo no existe: %s", file_path)
             return None
 
@@ -1038,14 +1035,11 @@ class MeteocatEntityCoordinator(DataUpdateCoordinator):
             _LOGGER.debug("Datos válidos → usando caché %s", file_path.name)
             return data
 
-        except json.JSONDecodeError:
-            _LOGGER.error("JSON corrupto en %s", file_path)
-            return None
         except Exception as e:
             _LOGGER.error("Error validando %s: %s", file_path, e)
             return None
 
-    async def _fetch_and_save_data(self, api_method, file_path: Path) -> dict:
+    async def _fetch_and_save_data(self, api_method, file_path: CacheFile) -> dict:
         """Obtiene datos de la API, los procesa y guarda con timestamp."""
         try:
             data = await asyncio.wait_for(api_method(self.town_id), timeout=30)
@@ -1072,7 +1066,7 @@ class MeteocatEntityCoordinator(DataUpdateCoordinator):
 
             # Actualizar cuotas
             if api_method.__name__ in ("get_prediccion_horaria", "get_prediccion_diaria"):
-                await _update_quotes(self.hass, "Prediccio")
+                await _update_quotes(self.hass, self.api_key, "Prediccio")
 
             return enhanced_data
 
@@ -1162,7 +1156,7 @@ class MeteocatEntityCoordinator(DataUpdateCoordinator):
                 self.town_id,
                 err,
             )
-            raise ConfigEntryNotReady from err
+            _raise_api_key_auth_failed(self, err)
         except TooManyRequestsError as err:
             _LOGGER.warning(
                 "Límite de solicitudes alcanzado al obtener datos de predicción (Town ID: %s): %s",
@@ -1270,13 +1264,11 @@ class HourlyForecastCoordinator(DataUpdateCoordinator):
 
     async def _is_data_valid(self) -> bool:
         """Verifica si los datos horarios en el archivo JSON son válidos y actuales."""
-        if not self.file_path.exists():
+        if not await self.file_path.async_exists():
             return False
 
         try:
-            async with aiofiles.open(self.file_path, "r", encoding="utf-8") as f:
-                content = await f.read()
-                data = json.loads(content)
+            data = await self.file_path.async_read_json()
 
             if not data or "dies" not in data:
                 return False
@@ -1299,11 +1291,13 @@ class HourlyForecastCoordinator(DataUpdateCoordinator):
         """Lee los datos horarios desde el archivo local."""
         if await self._is_data_valid():
             try:
-                async with aiofiles.open(self.file_path, "r", encoding="utf-8") as f:
-                    content = await f.read()
-                    return json.loads(content)
+                return await self.file_path.async_read_json()
             except Exception as e:
-                _LOGGER.warning("Error leyendo archivo de predicción horaria en %s: %s", self.file_path, e)
+                _LOGGER.warning(
+                    "Error leyendo archivo de predicción horaria en %s: %s",
+                    self.file_path,
+                    e,
+                )
 
         return {}
 
@@ -1421,13 +1415,11 @@ class DailyForecastCoordinator(DataUpdateCoordinator):
 
     async def _is_data_valid(self) -> bool:
         """Verifica si hay datos válidos y actuales en el archivo JSON."""
-        if not self.file_path.exists():
+        if not await self.file_path.async_exists():
             return False
 
         try:
-            async with aiofiles.open(self.file_path, "r", encoding="utf-8") as f:
-                content = await f.read()
-                data = json.loads(content)
+            data = await self.file_path.async_read_json()
 
             if not data or "dies" not in data or not data["dies"]:
                 return False
@@ -1448,9 +1440,7 @@ class DailyForecastCoordinator(DataUpdateCoordinator):
         """Lee y filtra los datos de predicción diaria desde el archivo local."""
         if await self._is_data_valid():
             try:
-                async with aiofiles.open(self.file_path, "r", encoding="utf-8") as f:
-                    content = await f.read()
-                    data = json.loads(content)
+                data = await self.file_path.async_read_json()
 
                 # Filtrar días pasados
                 today = datetime.now(TIMEZONE).date()
@@ -1802,7 +1792,7 @@ class MeteocatAlertsCoordinator(DataUpdateCoordinator):
             raise ConfigEntryNotReady from err
         except ForbiddenError as err:
             _LOGGER.error("Acceso denegado a alertas: %s", err)
-            raise ConfigEntryNotReady from err
+            _raise_api_key_auth_failed(self, err)
         except TooManyRequestsError as err:
             _LOGGER.warning("Límite alcanzado en alertas: %s", err)
             raise ConfigEntryNotReady from err
@@ -1864,7 +1854,7 @@ class MeteocatAlertsCoordinator(DataUpdateCoordinator):
                 raise ValueError("Formato de datos inválido")
             
             # Actualizar cuotas usando la función externa
-            await _update_quotes(self.hass, "Prediccio")  # Asegúrate de usar el nombre correcto del plan aquí
+            await _update_quotes(self.hass, self.api_key, "Prediccio")  # Asegúrate de usar el nombre correcto del plan aquí
             
             # Añadir la clave 'actualitzat' con la fecha y hora actual de la zona horaria local
             current_time = datetime.now(timezone.utc).astimezone(TIMEZONE).isoformat()
@@ -1890,7 +1880,7 @@ class MeteocatAlertsCoordinator(DataUpdateCoordinator):
             raise ConfigEntryNotReady from err
         except ForbiddenError as err:
             _LOGGER.error("Acceso denegado al obtener datos de alertas: %s", err)
-            raise ConfigEntryNotReady from err
+            _raise_api_key_auth_failed(self, err)
         except TooManyRequestsError as err:
             _LOGGER.warning("Límite de solicitudes alcanzado al obtener datos de alertas: %s", err)
             raise ConfigEntryNotReady from err
@@ -2253,9 +2243,7 @@ class MeteocatQuotesCoordinator(DataUpdateCoordinator):
         self._force_update = False  # Flag para forzar actualización
         self.meteocat_quotes = MeteocatQuotes(self.api_key)
 
-        # Ruta persistente en /config/meteocat_files/files
-        files_folder = get_storage_dir(hass, "files")
-        self.quotes_file = files_folder / "quotes.json"
+        self.quotes_file = get_quotes_file(hass, self.api_key)
 
         super().__init__(
             hass,
@@ -2313,7 +2301,7 @@ class MeteocatQuotesCoordinator(DataUpdateCoordinator):
             raise ConfigEntryNotReady from err
         except ForbiddenError as err:
             _LOGGER.error("Acceso denegado a cuotas: %s", err)
-            raise ConfigEntryNotReady from err
+            _raise_api_key_auth_failed(self, err)
         except TooManyRequestsError as err:
             _LOGGER.warning("Límite alcanzado en cuotas: %s", err)
             raise ConfigEntryNotReady from err
@@ -2417,7 +2405,7 @@ class MeteocatQuotesCoordinator(DataUpdateCoordinator):
             raise ConfigEntryNotReady from err
         except ForbiddenError as err:
             _LOGGER.error("Acceso denegado al obtener cuotas de la API de Meteocat: %s", err)
-            raise ConfigEntryNotReady from err
+            _raise_api_key_auth_failed(self, err)
         except TooManyRequestsError as err:
             _LOGGER.warning("Límite de solicitudes alcanzado al obtener cuotas de la API de Meteocat: %s", err)
             raise ConfigEntryNotReady from err
@@ -2481,6 +2469,7 @@ class MeteocatQuotesFileCoordinator(BaseFileCoordinator):
             update_interval (timedelta): Intervalo de actualización.
         """
         self.town_id = entry_data["town_id"]  # Usamos el ID del municipio
+        self.api_key = entry_data["api_key"]
 
         super().__init__(
             hass,
@@ -2489,9 +2478,7 @@ class MeteocatQuotesFileCoordinator(BaseFileCoordinator):
             min_delay=1.0,  # Rango predeterminado
             max_delay=2.0,  # Rango predeterminado
         )
-        # Ruta persistente en /config/meteocat_files/files
-        files_folder = get_storage_dir(hass, "files")
-        self.quotes_file = files_folder / "quotes.json"
+        self.quotes_file = get_quotes_file(hass, self.api_key)
 
     async def _async_update_data(self) -> Dict[str, Any]:
         """Carga los datos de quotes.json y devuelve el estado de las cuotas."""
@@ -2618,7 +2605,7 @@ class MeteocatLightningCoordinator(DataUpdateCoordinator):
             raise ConfigEntryNotReady from err
         except ForbiddenError as err:
             _LOGGER.error("Acceso denegado al obtener datos de rayos de la API de Meteocat: %s", err)
-            raise ConfigEntryNotReady from err
+            _raise_api_key_auth_failed(self, err)
         except TooManyRequestsError as err:
             _LOGGER.warning("Límite de solicitudes alcanzado al obtener datos de rayos de la API de Meteocat: %s", err)
             raise ConfigEntryNotReady from err
@@ -2686,7 +2673,7 @@ class MeteocatLightningCoordinator(DataUpdateCoordinator):
             await save_json_to_file(data_with_timestamp, self.lightning_file)
 
             # Actualizar cuotas usando la función externa
-            await _update_quotes(self.hass, "XDDE")  # Asegúrate de usar el nombre correcto del plan aquí
+            await _update_quotes(self.hass, self.api_key, "XDDE")  # Asegúrate de usar el nombre correcto del plan aquí
 
             return {"actualizado": data_with_timestamp['actualitzat']['dataUpdate']}
 
@@ -2695,7 +2682,7 @@ class MeteocatLightningCoordinator(DataUpdateCoordinator):
             raise ConfigEntryNotReady from err
         except ForbiddenError as err:
             _LOGGER.error("Acceso denegado al obtener datos de rayos de la API de Meteocat: %s", err)
-            raise ConfigEntryNotReady from err
+            _raise_api_key_auth_failed(self, err)
         except TooManyRequestsError as err:
             _LOGGER.warning("Límite de solicitudes alcanzado al obtener datos de rayos de la API de Meteocat: %s", err)
             raise ConfigEntryNotReady from err

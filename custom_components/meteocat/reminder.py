@@ -1,0 +1,144 @@
+"""API key expiry reminders for the Meteocat integration."""
+
+from collections.abc import Callable
+from datetime import date, datetime, timedelta
+from functools import partial
+
+from homeassistant.components import persistent_notification
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.event import async_track_point_in_utc_time
+from homeassistant.util import dt as dt_util
+
+from .const import (
+    API_KEY_REMINDER_DAYS,
+    API_KEY_REMINDER_HOUR,
+    API_KEY_URL,
+    CONF_API_KEY_DATE,
+    CONF_API_KEY_REMINDER,
+    DOMAIN,
+)
+from .util import api_key_expiry_date, parse_issue_date
+
+
+def api_key_notification_id(entry: ConfigEntry) -> str:
+    """Return the persistent notification ID for an entry."""
+    return f"{DOMAIN}_api_key_expiry_{entry.entry_id}"
+
+
+@callback
+def async_dismiss_api_key_reminder(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Dismiss the API key expiry notification for an entry."""
+    persistent_notification.async_dismiss(hass, api_key_notification_id(entry))
+
+
+@callback
+def async_cancel_api_key_reminder(
+    hass: HomeAssistant, entry: ConfigEntry | None
+) -> None:
+    """Cancel scheduled reminders and dismiss the notification for an entry."""
+    if entry is None:
+        return
+
+    runtime_data = getattr(entry, "runtime_data", None)
+    reminder_unsub = getattr(runtime_data, "reminder_unsub", None)
+    if reminder_unsub is not None:
+        reminder_unsub()
+        runtime_data.reminder_unsub = None
+
+    async_dismiss_api_key_reminder(hass, entry)
+
+
+@callback
+def _async_create_api_key_expiry_notification(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    expiry_date: date,
+    _now: datetime | None = None,
+) -> None:
+    """Create the API key expiry notification."""
+    persistent_notification.async_create(
+        hass,
+        (
+            f"Your Meteocat API key expires on {expiry_date.isoformat()}. "
+            f"Request a new one at {API_KEY_URL} and update it in the "
+            "integration options."
+        ),
+        title="Meteocat API key expiring soon",
+        notification_id=api_key_notification_id(entry),
+    )
+
+
+@callback
+def _async_handle_api_key_expired(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    _now: datetime | None = None,
+) -> None:
+    """Dismiss the reminder and request reauthentication for an expired key."""
+    async_dismiss_api_key_reminder(hass, entry)
+    entry.async_start_reauth(hass)
+
+
+@callback
+def _async_cancel_reminders(unsubs: list[Callable[[], None]]) -> None:
+    """Cancel scheduled reminder callbacks."""
+    while unsubs:
+        unsubs.pop()()
+
+
+@callback
+def async_schedule_api_key_reminder(
+    hass: HomeAssistant, entry: ConfigEntry
+) -> Callable[[], None] | None:
+    """Schedule a reminder before the API key expires.
+
+    Return a callback that cancels the scheduled callbacks, if any.
+    """
+    issue_date = parse_issue_date(entry.data.get(CONF_API_KEY_DATE))
+    if issue_date is None:
+        async_dismiss_api_key_reminder(hass, entry)
+        return None
+
+    expiry_date = api_key_expiry_date(issue_date)
+    now = dt_util.now()
+
+    if now.date() >= expiry_date:
+        _async_handle_api_key_expired(hass, entry)
+        return None
+
+    async_dismiss_api_key_reminder(hass, entry)
+
+    unsubs: list[Callable[[], None]] = [
+        async_track_point_in_utc_time(
+            hass,
+            partial(_async_handle_api_key_expired, hass, entry),
+            dt_util.as_utc(dt_util.start_of_local_day(expiry_date)),
+        )
+    ]
+
+    if not entry.options.get(CONF_API_KEY_REMINDER, False):
+        return partial(_async_cancel_reminders, unsubs)
+
+    reminder_date = expiry_date - timedelta(days=API_KEY_REMINDER_DAYS)
+    reminder_dt = dt_util.start_of_local_day(reminder_date) + timedelta(
+        hours=API_KEY_REMINDER_HOUR
+    )
+
+    if now >= reminder_dt:
+        _async_create_api_key_expiry_notification(hass, entry, expiry_date)
+        return partial(_async_cancel_reminders, unsubs)
+
+    unsubs.append(
+        async_track_point_in_utc_time(
+            hass,
+            partial(
+                _async_create_api_key_expiry_notification,
+                hass,
+                entry,
+                expiry_date,
+            ),
+            dt_util.as_utc(reminder_dt),
+        )
+    )
+    return partial(_async_cancel_reminders, unsubs)

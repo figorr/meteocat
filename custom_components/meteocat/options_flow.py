@@ -1,34 +1,41 @@
 from __future__ import annotations
 
-import logging
 import asyncio
+import logging
+
+import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry, OptionsFlow
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
-import voluptuous as vol
-
-from .const import (
-    DOMAIN,
-    CONF_API_KEY,
-    LIMIT_XEMA,
-    LIMIT_PREDICCIO,
-    LIMIT_XDDE,
-    LIMIT_QUOTA,
-    LIMIT_BASIC,
-    LATITUDE,
-    LONGITUDE,
-    ALTITUDE,
-)
-from .helpers import get_storage_dir
-from meteocatpy.town import MeteocatTown
+from homeassistant.util import dt as dt_util
 from meteocatpy.exceptions import (
     BadRequestError,
     ForbiddenError,
-    TooManyRequestsError,
     InternalServerError,
+    TooManyRequestsError,
     UnknownAPIError,
 )
+from meteocatpy.town import MeteocatTown
+
+from .const import (
+    ALTITUDE,
+    API_KEY_URL,
+    CONF_API_KEY,
+    CONF_API_KEY_DATE,
+    CONF_API_KEY_REMINDER,
+    DOMAIN,
+    LATITUDE,
+    LIMIT_BASIC,
+    LIMIT_PREDICCIO,
+    LIMIT_QUOTA,
+    LIMIT_XDDE,
+    LIMIT_XEMA,
+    LONGITUDE,
+)
+from .helpers import async_delete_unused_quotes_file
+from .reminder import async_cancel_api_key_reminder
+from .util import OptionalDateSelector, is_future_date, parse_issue_date
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -47,6 +54,15 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
         self.latitude: float | None = None
         self.longitude: float | None = None
         self.altitude: float | None = None
+
+    @property
+    def _config(self) -> dict:
+        """Return the effective entry configuration."""
+        return {**self._config_entry.data, **self._config_entry.options}
+
+    def _options_with(self, updates: dict | None = None) -> dict:
+        """Return the current options with optional updates."""
+        return {**self._config_entry.options, **(updates or {})}
 
     async def async_step_init(self, user_input: dict | None = None):
         """Paso inicial del flujo de opciones."""
@@ -83,17 +99,34 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
     async def async_step_update_api_and_limits(self, user_input: dict | None = None):
         """Permite al usuario actualizar la API Key y los límites."""
         errors = {}
+        config = self._config
+        old_api_key = config.get(CONF_API_KEY)
+        existing_issue_date = parse_issue_date(config.get(CONF_API_KEY_DATE))
+        today = dt_util.now().date()
 
         if user_input is not None:
-            self.api_key = user_input.get(CONF_API_KEY)
+            self.api_key = user_input.get(CONF_API_KEY) or old_api_key
             self.limit_xema = user_input.get(LIMIT_XEMA)
             self.limit_prediccio = user_input.get(LIMIT_PREDICCIO)
             self.limit_xdde = user_input.get(LIMIT_XDDE)
             self.limit_quota = user_input.get(LIMIT_QUOTA)
             self.limit_basic = user_input.get(LIMIT_BASIC)
+            reminder = user_input.get(CONF_API_KEY_REMINDER, False)
+            issue_date_input = user_input.get(CONF_API_KEY_DATE)
+            issue_date = parse_issue_date(issue_date_input)
+
+            if issue_date_input and issue_date is None or issue_date is not None and is_future_date(issue_date, today):
+                errors[CONF_API_KEY_DATE] = "invalid_date"
+            else:
+                if self.api_key != old_api_key:
+                    new_issue_date = issue_date or today
+                else:
+                    new_issue_date = issue_date or existing_issue_date
+                if reminder and new_issue_date is None:
+                    errors[CONF_API_KEY_DATE] = "date_required"
 
             # Validar la nueva API Key utilizando MeteocatTown
-            if self.api_key:
+            if not errors and self.api_key:
                 town_client = MeteocatTown(self.api_key)
                 try:
                     await town_client.get_municipis()  # Verificar que la API Key sea válida
@@ -125,31 +158,61 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
                     data_update[LIMIT_QUOTA] = self.limit_quota
                 if self.limit_basic is not None:
                     data_update[LIMIT_BASIC] = self.limit_basic
+                if new_issue_date is not None:
+                    data_update[CONF_API_KEY_DATE] = new_issue_date.isoformat()
 
+                if old_api_key and old_api_key != self.api_key:
+                    await async_delete_unused_quotes_file(
+                        self.hass,
+                        old_api_key,
+                        exclude_entry_id=self._config_entry.entry_id,
+                    )
+
+                new_options = self._options_with(
+                    {CONF_API_KEY_REMINDER: bool(reminder)}
+                )
+                async_cancel_api_key_reminder(self.hass, self._config_entry)
                 self.hass.config_entries.async_update_entry(
                     self._config_entry,
                     data={**self._config_entry.data, **data_update},
+                    options=new_options,
                 )
                 # Recargar la integración para aplicar los cambios dinámicamente
                 await self.hass.config_entries.async_reload(self._config_entry.entry_id)
 
-                return self.async_create_entry(title="", data={})
+                return self.async_create_entry(title="", data=new_options)
 
+        suggested_date = (
+            existing_issue_date.isoformat()
+            if existing_issue_date is not None
+            else today.isoformat()
+        )
         schema = vol.Schema({
-            vol.Required(CONF_API_KEY): str,
-            vol.Required(LIMIT_XEMA, default=self._config_entry.data.get(LIMIT_XEMA)): vol.All(vol.Coerce(int), vol.Range(min=1)),
-            vol.Required(LIMIT_PREDICCIO, default=self._config_entry.data.get(LIMIT_PREDICCIO)): vol.All(vol.Coerce(int), vol.Range(min=1)),
-            vol.Required(LIMIT_XDDE, default=self._config_entry.data.get(LIMIT_XDDE)): vol.All(vol.Coerce(int), vol.Range(min=0)),
-            vol.Required(LIMIT_QUOTA, default=self._config_entry.data.get(LIMIT_QUOTA)): vol.All(vol.Coerce(int), vol.Range(min=1)),
-            vol.Required(LIMIT_BASIC, default=self._config_entry.data.get(LIMIT_BASIC)): vol.All(vol.Coerce(int), vol.Range(min=1)),
+            vol.Required(CONF_API_KEY, default=old_api_key): str,
+            vol.Optional(
+                CONF_API_KEY_DATE, default=suggested_date
+            ): OptionalDateSelector(),
+            vol.Optional(
+                CONF_API_KEY_REMINDER,
+                default=config.get(CONF_API_KEY_REMINDER, False),
+            ): bool,
+            vol.Required(LIMIT_XEMA, default=config.get(LIMIT_XEMA)): vol.All(vol.Coerce(int), vol.Range(min=1)),
+            vol.Required(LIMIT_PREDICCIO, default=config.get(LIMIT_PREDICCIO)): vol.All(vol.Coerce(int), vol.Range(min=1)),
+            vol.Required(LIMIT_XDDE, default=config.get(LIMIT_XDDE)): vol.All(vol.Coerce(int), vol.Range(min=0)),
+            vol.Required(LIMIT_QUOTA, default=config.get(LIMIT_QUOTA)): vol.All(vol.Coerce(int), vol.Range(min=1)),
+            vol.Required(LIMIT_BASIC, default=config.get(LIMIT_BASIC)): vol.All(vol.Coerce(int), vol.Range(min=1)),
         })
         return self.async_show_form(
-            step_id="update_api_and_limits", data_schema=schema, errors=errors
+            step_id="update_api_and_limits",
+            data_schema=schema,
+            errors=errors,
+            description_placeholders={"api_key_url": API_KEY_URL},
         )
 
     async def async_step_update_limits_only(self, user_input: dict | None = None):
         """Permite al usuario actualizar solo los límites de la API."""
         errors = {}
+        config = self._config
 
         if user_input is not None:
             self.limit_xema = user_input.get(LIMIT_XEMA)
@@ -173,14 +236,16 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
                 # Recargar la integración para aplicar los cambios dinámicamente
                 await self.hass.config_entries.async_reload(self._config_entry.entry_id)
 
-                return self.async_create_entry(title="", data={})
+                return self.async_create_entry(
+                    title="", data=self._options_with()
+                )
 
         schema = vol.Schema({
-            vol.Required(LIMIT_XEMA, default=self._config_entry.data.get(LIMIT_XEMA)): vol.All(vol.Coerce(int), vol.Range(min=1)),
-            vol.Required(LIMIT_PREDICCIO, default=self._config_entry.data.get(LIMIT_PREDICCIO)): vol.All(vol.Coerce(int), vol.Range(min=1)),
-            vol.Required(LIMIT_XDDE, default=self._config_entry.data.get(LIMIT_XDDE)): vol.All(vol.Coerce(int), vol.Range(min=0)),
-            vol.Required(LIMIT_QUOTA, default=self._config_entry.data.get(LIMIT_QUOTA)): vol.All(vol.Coerce(int), vol.Range(min=1)),
-            vol.Required(LIMIT_BASIC, default=self._config_entry.data.get(LIMIT_BASIC)): vol.All(vol.Coerce(int), vol.Range(min=1)),
+            vol.Required(LIMIT_XEMA, default=config.get(LIMIT_XEMA)): vol.All(vol.Coerce(int), vol.Range(min=1)),
+            vol.Required(LIMIT_PREDICCIO, default=config.get(LIMIT_PREDICCIO)): vol.All(vol.Coerce(int), vol.Range(min=1)),
+            vol.Required(LIMIT_XDDE, default=config.get(LIMIT_XDDE)): vol.All(vol.Coerce(int), vol.Range(min=0)),
+            vol.Required(LIMIT_QUOTA, default=config.get(LIMIT_QUOTA)): vol.All(vol.Coerce(int), vol.Range(min=1)),
+            vol.Required(LIMIT_BASIC, default=config.get(LIMIT_BASIC)): vol.All(vol.Coerce(int), vol.Range(min=1)),
         })
         return self.async_show_form(
             step_id="update_limits_only", data_schema=schema, errors=errors
@@ -189,6 +254,7 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
     async def async_step_update_coordinates(self, user_input: dict | None = None):
         """Permite al usuario actualizar las coordenadas (latitude, longitude)."""
         errors = {}
+        config = self._config
 
         if user_input is not None:
             self.latitude = user_input.get(LATITUDE)
@@ -223,21 +289,23 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
                     "Coordenadas actualizadas a latitude: %s, longitude: %s, altitude=%s.",
                     self.latitude, self.longitude, self.altitude
                 )
-                return self.async_create_entry(title="", data={})
+                return self.async_create_entry(
+                    title="", data=self._options_with()
+                )
 
         schema = vol.Schema({
-            vol.Required(LATITUDE, default=self._config_entry.data.get(LATITUDE)): cv.latitude,
-            vol.Required(LONGITUDE, default=self._config_entry.data.get(LONGITUDE)): cv.longitude,
-            vol.Required(ALTITUDE, default=self._config_entry.data.get(ALTITUDE)): vol.Coerce(float),
+            vol.Required(LATITUDE, default=config.get(LATITUDE)): cv.latitude,
+            vol.Required(LONGITUDE, default=config.get(LONGITUDE)): cv.longitude,
+            vol.Required(ALTITUDE, default=config.get(ALTITUDE)): vol.Coerce(float),
         })
         return self.async_show_form(
             step_id="update_coordinates",
             data_schema=schema,
             errors=errors,
             description_placeholders={
-                "current_latitude": self._config_entry.data.get(LATITUDE),
-                "current_longitude": self._config_entry.data.get(LONGITUDE),
-                "current_altitude": self._config_entry.data.get(ALTITUDE, 0.0)
+                "current_latitude": config.get(LATITUDE),
+                "current_longitude": config.get(LONGITUDE),
+                "current_altitude": config.get(ALTITUDE, 0.0)
             }
         )
 
@@ -268,7 +336,7 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
         errors = {}
         try:
             # Llamar a la función que garantiza que los assets existan
-            entry_data = self._config_entry.data
+            entry_data = self._config
 
             await ensure_assets_exist(
                 self.hass,
@@ -281,7 +349,9 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
             # Forzar recarga de la integración
             await self.hass.config_entries.async_reload(self._config_entry.entry_id)
 
-            return self.async_create_entry(title="", data={})
+            return self.async_create_entry(
+                title="", data=self._options_with()
+            )
 
         except Exception as ex:
             _LOGGER.error("Error al regenerar assets: %s", ex)
@@ -528,7 +598,9 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
                         else:
                             _LOGGER.warning("Coordinador moon no encontrado; no se pudo forzar.")
 
-                    return self.async_create_entry(title="", data={})
+                    return self.async_create_entry(
+                        title="", data=self._options_with()
+                    )
 
                 except Exception as ex:
                     _LOGGER.error("Error al forzar actualización de datos: %s", ex)

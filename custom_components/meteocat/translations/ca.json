@@ -3,7 +3,12 @@
     "step": {
       "user": {
         "description": "Introduïu l'API Key subministrada per Meteocat per poder iniciar el procés de validació.",
-        "title": "API Key"
+        "title": "API Key",
+        "data": {
+          "api_key": "API Key",
+          "api_key_date": "Data d'emissió de l'API Key",
+          "api_key_reminder": "Avisa'm abans que caduqui l'API Key"
+        }
       },
       "select_municipi": {
         "description": "Seleccioneu el municipi de la llista.",
@@ -29,6 +34,14 @@
           "limit_quota": "Límit Quota",
           "limit_basic": "Límit Basic"
         }
+      },
+      "reauth_confirm": {
+        "description": "Introduïu una nova API Key de Meteocat i la data d'emissió. Podeu sol·licitar o renovar una clau a {api_key_url}.",
+        "title": "Reautenticar Meteocat",
+        "data": {
+          "api_key": "API Key",
+          "api_key_date": "Data d'emissió de l'API Key"
+        }
       }
     },
     "error": {
@@ -37,7 +50,11 @@
       "rate_limit_exceeded": "Excés del límit de peticions. Si us plau, torneu-ho a provar més tard.",
       "server_error": "Error del servidor. Torneu-ho a provar més tard.",
       "connection_error": "Error de connexió. Reviseu la vostra connexió de xarxa.",
-      "unknown_error": "Error desconegut."
+      "unknown_error": "Error desconegut.",
+      "invalid_date": "La data d'emissió de l'API Key ha de ser avui o anterior."
+    },
+    "abort": {
+      "reauth_successful": "Reautenticació correcta."
     }
   },
   "options": {
@@ -50,9 +67,12 @@
         }
       },
       "update_api_and_limits": {
-        "description": "Configura l'API Key i els límits de l'API.",
+        "description": "Configura l'API Key, la data d'emissió i els límits de l'API.",
         "title": "API Key i límits",
         "data": {
+          "api_key": "API Key",
+          "api_key_date": "Data d'emissió de l'API Key",
+          "api_key_reminder": "Avisa'm abans que caduqui l'API Key",
           "limit_xema": "Límit XEMA (Xarxa d'Estacions Meteorològiques Automàtiques)",
           "limit_prediccio": "Límit Predicció",
           "limit_xdde": "Límit XDDE (Xarxa de Detecció de Descàrregues Elèctriques) (0 per desactivar)",
@@ -110,7 +130,9 @@
       "invalid_altitude": "Altitud no pot ser negativa.",
       "invalid_config": "Error a la configuració (town_id no trobat o un altre problema).",
       "force_update_failed": "No s'ha pogut forçar l'actualització. Revisa els logs.",
-      "no_selection": "Has de seleccionar almenys un tipus de dades."
+      "no_selection": "Has de seleccionar almenys un tipus de dades.",
+      "invalid_date": "La data d'emissió de l'API Key ha de ser avui o anterior.",
+      "date_required": "Cal indicar la data d'emissió de l'API Key per activar els avisos de caducitat."
     }
   },
   "selector": {

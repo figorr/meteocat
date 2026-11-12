@@ -2,6 +2,14 @@
 DOMAIN = "meteocat"
 BASE_URL = "https://api.meteo.cat"
 CONF_API_KEY = "api_key"
+CONF_API_KEY_DATE = "api_key_date"
+CONF_API_KEY_REMINDER = "api_key_reminder"
+API_KEY_VALIDITY_MONTHS = 12
+API_KEY_REMINDER_DAYS = 3
+API_KEY_REMINDER_HOUR = 9
+API_KEY_URL = (
+    "https://apidocs.meteocat.gencat.cat/documentacio/acces-ciutada-i-administracio/"
+)
 TOWN_NAME = "town_name"
 TOWN_ID = "town_id"
 VARIABLE_NAME = "variable_name"
