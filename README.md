@@ -117,6 +117,8 @@ To add a Meteocat Device, go to `Configuration > Integrations` in the UI. Then c
 
 ![Meteocat custom component login dialog](images/login.png)
 
+During the same step you can also provide the API key issue date and enable expiry reminders. Both are optional, but a date is required to enable reminders. See [API key date and expiry reminders](#api-key-date-and-expiry-reminders) below.
+
 After submitting your API Key you will either be prompted to pick a town from the list as shown below.
 
 ![Meteocat custom component town picker dialog](images/pick_town.png)
@@ -143,6 +145,31 @@ This device will then have the entities shown below. The sensors are translated 
 
 ![Diagnostic Sensors](images/diagnostic_sensors.png)
 
+### API key date and expiry reminders
+
+During setup, Meteocat asks for the API key issue date and whether expiry reminders should be enabled.
+
+- The issue date is optional, but it is required to enable reminders.
+- The API key is considered valid for 12 months from the issue date.
+- Reminders are disabled by default. When enabled, a persistent notification is created 3 days before expiry at 09:00 local time.
+- When the key expires, or when the API returns a forbidden error, the integration starts a reauthentication flow.
+
+If you are updating from an older version, the issue date may not be set. Go to `Settings > Devices & Services > Meteocat > Configure > Update API Key and limits`, leave the API Key field empty to keep the current key, set the issue date and enable the reminder if needed.
+
+> The issue date and reminder setting are stored per config entry. Use the API key fingerprint sensor to identify entries that share the same API key.
+
+### API key diagnostic sensors
+
+The integration adds the following diagnostic sensors:
+
+| Sensor | Description | Attributes |
+| --- | --- | --- |
+| **API Key Date** | API key issue date. The state uses ISO 8601 (`YYYY-MM-DD`), as expected for Home Assistant date sensors. | `expiry_date`, `days_until_expiry` |
+| **API Key Reminder** | Whether expiry reminders are enabled (`enabled` / `disabled`). | |
+| **API Key Fingerprint** | Short SHA-256 fingerprint of the API key. The API key itself is never exposed. | `entries_using_key` |
+
+Entries with the same API key fingerprint share the same API key. The fingerprint is only used for identification and cannot be used to recover the original key.
+
 ## Changing Units
 
 To change units select one of the entities and open the more info dialog and click the cog in the top right. This will bring up the settings for the entity. Then select `Unit of Measurement`, and a dropdown will appear where you can select the units you want.
@@ -156,10 +183,10 @@ Once the integration is installed, you can reconfigure some parameters without h
 Go to:
 `Settings > Devices & Services > Meteocat > Configure`
 
-You will see three available options:
+You will see the following options:
 
 - **Update API Key and limits**  
-  Allows you to change the API Key and update all API plan limits at the same time.
+  Allows you to change the API key issue date, enable or disable expiry reminders, and update all API plan limits at the same time. Leave the API Key field empty to keep the current key.
 
 - **Update limits only**  
   Allows you to adjust only the API plan limits, keeping the same API Key.
