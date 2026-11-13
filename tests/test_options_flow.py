@@ -1,8 +1,10 @@
 """Tests for the Meteocat options flow."""
 
 from datetime import timedelta
-from unittest.mock import AsyncMock
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, Mock
 
+from homeassistant.components import persistent_notification
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -141,7 +143,9 @@ async def test_update_api_and_limits_saves_date_and_reminder(hass, monkeypatch) 
 async def test_update_api_and_limits_rejects_future_date(hass, monkeypatch) -> None:
     """Reject issue dates in the future without calling the API."""
     town = AsyncMock()
+    reload = AsyncMock()
     monkeypatch.setattr(of, "MeteocatTown", town)
+    monkeypatch.setattr(hass.config_entries, "async_reload", reload)
 
     entry = make_entry()
     entry.add_to_hass(hass)
@@ -163,6 +167,164 @@ async def test_update_api_and_limits_rejects_future_date(hass, monkeypatch) -> N
     assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {CONF_API_KEY_DATE: "invalid_date"}
     town.assert_not_called()
+    reload.assert_not_awaited()
+    assert entry.data[CONF_API_KEY] == ENTRY_DATA[CONF_API_KEY]
+    assert CONF_API_KEY_DATE not in entry.data
+
+
+async def test_same_key_empty_date_preserves_stored_date(hass, monkeypatch) -> None:
+    """An empty date for the same key keeps the stored issue date."""
+    monkeypatch.setattr(of, "MeteocatTown", FakeTown)
+    reload = AsyncMock()
+    monkeypatch.setattr(hass.config_entries, "async_reload", reload)
+
+    entry = make_entry(data={CONF_API_KEY_DATE: "2025-01-15"})
+    entry.add_to_hass(hass)
+
+    result = await make_flow(hass, entry).async_step_update_api_and_limits(
+        {
+            CONF_API_KEY: ENTRY_DATA[CONF_API_KEY],
+            CONF_API_KEY_DATE: "",
+            CONF_API_KEY_REMINDER: False,
+            LIMIT_XEMA: 700,
+            LIMIT_PREDICCIO: 100,
+            LIMIT_XDDE: 250,
+            LIMIT_QUOTA: 300,
+            LIMIT_BASIC: 2000,
+        }
+    )
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert entry.data[CONF_API_KEY_DATE] == "2025-01-15"
+    reload.assert_awaited_once_with(entry.entry_id)
+
+
+async def test_new_key_uses_explicit_date(hass, monkeypatch) -> None:
+    """A new API key stores the explicitly supplied issue date."""
+    monkeypatch.setattr(of, "MeteocatTown", FakeTown)
+    reload = AsyncMock()
+    monkeypatch.setattr(hass.config_entries, "async_reload", reload)
+
+    entry = make_entry(data={CONF_API_KEY_DATE: "2025-01-15"})
+    entry.add_to_hass(hass)
+
+    result = await make_flow(hass, entry).async_step_update_api_and_limits(
+        {
+            CONF_API_KEY: "new-api-key",
+            CONF_API_KEY_DATE: "2025-02-15",
+            CONF_API_KEY_REMINDER: False,
+            LIMIT_XEMA: 700,
+            LIMIT_PREDICCIO: 100,
+            LIMIT_XDDE: 250,
+            LIMIT_QUOTA: 300,
+            LIMIT_BASIC: 2000,
+        }
+    )
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert entry.data[CONF_API_KEY] == "new-api-key"
+    assert entry.data[CONF_API_KEY_DATE] == "2025-02-15"
+    reload.assert_awaited_once_with(entry.entry_id)
+
+
+async def test_new_key_with_empty_date_uses_today(hass, monkeypatch) -> None:
+    """A new API key with an empty date defaults to today."""
+    monkeypatch.setattr(of, "MeteocatTown", FakeTown)
+    reload = AsyncMock()
+    monkeypatch.setattr(hass.config_entries, "async_reload", reload)
+
+    entry = make_entry(data={CONF_API_KEY_DATE: "2025-01-15"})
+    entry.add_to_hass(hass)
+
+    result = await make_flow(hass, entry).async_step_update_api_and_limits(
+        {
+            CONF_API_KEY: "new-api-key",
+            CONF_API_KEY_DATE: "",
+            CONF_API_KEY_REMINDER: False,
+            LIMIT_XEMA: 700,
+            LIMIT_PREDICCIO: 100,
+            LIMIT_XDDE: 250,
+            LIMIT_QUOTA: 300,
+            LIMIT_BASIC: 2000,
+        }
+    )
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert entry.data[CONF_API_KEY] == "new-api-key"
+    assert entry.data[CONF_API_KEY_DATE] == dt_util.now().date().isoformat()
+    reload.assert_awaited_once_with(entry.entry_id)
+
+
+async def test_missing_key_and_empty_date_preserves_stored_date(
+    hass, monkeypatch
+) -> None:
+    """Omitting the API key and date keeps the existing values."""
+    monkeypatch.setattr(of, "MeteocatTown", FakeTown)
+    reload = AsyncMock()
+    monkeypatch.setattr(hass.config_entries, "async_reload", reload)
+
+    entry = make_entry(data={CONF_API_KEY_DATE: "2025-01-15"})
+    entry.add_to_hass(hass)
+
+    result = await make_flow(hass, entry).async_step_update_api_and_limits(
+        {
+            CONF_API_KEY_DATE: "",
+            CONF_API_KEY_REMINDER: False,
+            LIMIT_XEMA: 700,
+            LIMIT_PREDICCIO: 100,
+            LIMIT_XDDE: 250,
+            LIMIT_QUOTA: 300,
+            LIMIT_BASIC: 2000,
+        }
+    )
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert entry.data[CONF_API_KEY] == ENTRY_DATA[CONF_API_KEY]
+    assert entry.data[CONF_API_KEY_DATE] == "2025-01-15"
+    reload.assert_awaited_once_with(entry.entry_id)
+
+
+async def test_failed_reload_clears_reminder_and_notification(
+    hass, monkeypatch
+) -> None:
+    """A failed reload still cancels the timer and notification first."""
+    monkeypatch.setattr(of, "MeteocatTown", FakeTown)
+    reload = AsyncMock(side_effect=RuntimeError("reload failed"))
+    dismiss = Mock()
+    monkeypatch.setattr(hass.config_entries, "async_reload", reload)
+    monkeypatch.setattr(
+        persistent_notification, "async_dismiss", dismiss
+    )
+
+    unsub = Mock()
+    entry = make_entry(data={CONF_API_KEY_DATE: "2025-01-15"})
+    entry.runtime_data = SimpleNamespace(reminder_unsub=unsub)
+    entry.add_to_hass(hass)
+
+    flow = make_flow(hass, entry)
+    try:
+        await flow.async_step_update_api_and_limits(
+            {
+                CONF_API_KEY: ENTRY_DATA[CONF_API_KEY],
+                CONF_API_KEY_DATE: "2025-02-15",
+                CONF_API_KEY_REMINDER: False,
+                LIMIT_XEMA: 700,
+                LIMIT_PREDICCIO: 100,
+                LIMIT_XDDE: 250,
+                LIMIT_QUOTA: 300,
+                LIMIT_BASIC: 2000,
+            }
+        )
+    except RuntimeError as err:
+        assert str(err) == "reload failed"
+    else:
+        raise AssertionError("Expected reload failure")
+
+    unsub.assert_called_once_with()
+    dismiss.assert_called_once_with(hass, f"meteocat_api_key_expiry_{entry.entry_id}")
+    assert entry.runtime_data.reminder_unsub is None
+    reload.assert_awaited_once_with(entry.entry_id)
+    assert entry.data[CONF_API_KEY_DATE] == "2025-02-15"
 
 
 async def test_reminder_without_date_requires_date(hass) -> None:

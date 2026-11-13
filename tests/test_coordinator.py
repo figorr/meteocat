@@ -1,11 +1,14 @@
 """Tests for Meteocat sensor coordinator error handling."""
 
-from unittest.mock import AsyncMock
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, Mock
 
 import pytest
+from homeassistant.components import persistent_notification
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from meteocatpy.exceptions import ForbiddenError, TooManyRequestsError
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.meteocat.coordinator import MeteocatSensorCoordinator
 
@@ -61,6 +64,31 @@ async def test_coordinator_update_data_forbidden_requests_reauth(hass):
 
     with pytest.raises(ConfigEntryAuthFailed):
         await coordinator._async_update_data()
+
+
+async def test_forbidden_cancels_reminder_and_notification_before_reauth(
+    hass, monkeypatch
+):
+    """Forbidden errors clear pending reminders before requesting reauth."""
+    coordinator = make_coordinator(hass)
+    unsub = Mock()
+    entry = MockConfigEntry(domain="meteocat", entry_id="coordinator-entry")
+    entry.runtime_data = SimpleNamespace(reminder_unsub=unsub)
+    coordinator.config_entry = entry
+    dismiss = Mock()
+    monkeypatch.setattr(persistent_notification, "async_dismiss", dismiss)
+    coordinator.meteocat_station_data.get_station_data = AsyncMock(
+        side_effect=ForbiddenError("Forbidden")
+    )
+
+    with pytest.raises(ConfigEntryAuthFailed):
+        await coordinator._async_update_data()
+
+    unsub.assert_called_once_with()
+    dismiss.assert_called_once_with(
+        hass, "meteocat_api_key_expiry_coordinator-entry"
+    )
+    assert entry.runtime_data.reminder_unsub is None
 
 
 async def test_coordinator_update_data_invalid_payload(hass):

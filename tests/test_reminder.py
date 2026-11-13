@@ -1,19 +1,26 @@
 """Tests for Meteocat API key expiry reminders."""
 
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from types import SimpleNamespace
 from unittest.mock import Mock
 
 import pytest
 from homeassistant.components import persistent_notification
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from homeassistant.util import dt as dt_util
+from pytest_homeassistant_custom_component.common import (
+    MockConfigEntry,
+    async_fire_time_changed,
+)
 
 from custom_components.meteocat import reminder
 from custom_components.meteocat.const import (
+    API_KEY_REMINDER_DAYS,
+    API_KEY_REMINDER_HOUR,
     CONF_API_KEY_DATE,
     CONF_API_KEY_REMINDER,
     DOMAIN,
 )
+from custom_components.meteocat.util import api_key_expiry_date
 
 
 def make_entry(
@@ -165,3 +172,57 @@ def test_scheduled_callback_reauthenticates(hass, monkeypatch) -> None:
 
     entry.async_start_reauth.assert_called_once_with(hass)
     dismiss.assert_called_once()
+
+
+@pytest.mark.usefixtures("freezer")
+async def test_reminder_fires_after_real_time_jump(hass, monkeypatch, freezer) -> None:
+    """The reminder notification fires when the clock reaches the window."""
+    freezer.move_to("2025-01-01 12:00:00+00:00")
+    create, _dismiss = patch_notifications(monkeypatch)
+    entry = make_entry("2025-01-02")
+
+    cancel = reminder.async_schedule_api_key_reminder(hass, entry)
+    assert cancel is not None
+    create.assert_not_called()
+
+    expiry = api_key_expiry_date(date(2025, 1, 2))
+    reminder_day = expiry - timedelta(days=API_KEY_REMINDER_DAYS)
+    fire_at = dt_util.start_of_local_day(reminder_day) + timedelta(
+        hours=API_KEY_REMINDER_HOUR, seconds=1
+    )
+    freezer.move_to(fire_at)
+    async_fire_time_changed(hass, fire_at)
+    await hass.async_block_till_done()
+
+    create.assert_called_once()
+    assert create.call_args.kwargs["notification_id"] == (
+        "meteocat_api_key_expiry_test-entry"
+    )
+    cancel()
+
+
+@pytest.mark.usefixtures("freezer")
+async def test_disabled_reminder_reauths_after_real_time_jump(
+    hass, monkeypatch, freezer
+) -> None:
+    """The expiry timer starts reauth when the clock reaches expiry."""
+    freezer.move_to("2025-01-01 12:00:00+00:00")
+    create, dismiss = patch_notifications(monkeypatch)
+    entry = make_entry("2025-01-02", reminder_enabled=False)
+    entry.async_start_reauth = Mock()
+
+    cancel = reminder.async_schedule_api_key_reminder(hass, entry)
+    assert cancel is not None
+    create.assert_not_called()
+
+    fire_at = dt_util.start_of_local_day(api_key_expiry_date(date(2025, 1, 2))) + (
+        timedelta(seconds=1)
+    )
+    freezer.move_to(fire_at)
+    async_fire_time_changed(hass, fire_at)
+    await hass.async_block_till_done()
+
+    entry.async_start_reauth.assert_called_once_with(hass)
+    dismiss.assert_called_with(hass, "meteocat_api_key_expiry_test-entry")
+    create.assert_not_called()
+    cancel()
