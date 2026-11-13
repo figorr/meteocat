@@ -1,9 +1,11 @@
 """Tests for the Meteocat config flow API key step."""
 
 from datetime import timedelta
+from typing import ClassVar
 from unittest.mock import AsyncMock
 
 from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.util import dt as dt_util
 
 from custom_components.meteocat import config_flow as cf
@@ -18,9 +20,12 @@ from custom_components.meteocat.const import (
 class FakeTown:
     """Fake Meteocat town client."""
 
+    instances: ClassVar[list["FakeTown"]] = []
+
     def __init__(self, api_key: str, session=None) -> None:
         self.api_key = api_key
         self.session = session
+        self.instances.append(self)
 
     async def get_municipis(self) -> list[dict[str, str]]:
         return [{"codi": "08019", "nom": "Barcelona"}]
@@ -72,6 +77,7 @@ async def test_user_rejects_future_date(hass, monkeypatch) -> None:
 async def test_user_stores_date_and_reminder(hass, monkeypatch) -> None:
     """Store the submitted date and reminder flag before selecting a town."""
     patch_clients(monkeypatch)
+    FakeTown.instances.clear()
     flow = make_flow(hass)
     flow.fetch_and_save_quotes = AsyncMock()
     flow.create_alerts_file = AsyncMock()
@@ -91,6 +97,7 @@ async def test_user_stores_date_and_reminder(hass, monkeypatch) -> None:
     assert flow.api_key_reminder is True
     assert flow.municipis == [{"codi": "08019", "nom": "Barcelona"}]
     flow.fetch_and_save_quotes.assert_awaited_once_with("test-api-key")
+    assert FakeTown.instances[-1].session is async_get_clientsession(hass)
 
 
 async def test_user_empty_date_uses_today(hass, monkeypatch) -> None:
