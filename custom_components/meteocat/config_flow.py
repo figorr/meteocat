@@ -12,6 +12,7 @@ from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResu
 from homeassistant.core import callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.util import dt as dt_util
 from meteocatpy.infostation import MeteocatInfoStation
 from meteocatpy.quotes import MeteocatQuotes
@@ -113,7 +114,9 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def fetch_and_save_quotes(self, api_key: str):
         """Obtiene las cuotas de la API de Meteocat y las guarda por API key."""
-        meteocat_quotes = MeteocatQuotes(api_key)
+        meteocat_quotes = MeteocatQuotes(
+            api_key, async_get_clientsession(self.hass)
+        )
         quotes_file = get_quotes_file(self.hass, api_key)
 
         try:
@@ -424,7 +427,9 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
                 self.api_key_date = issue_date.isoformat()
 
             if not errors:
-                town_client = MeteocatTown(self.api_key)
+                town_client = MeteocatTown(
+                    self.api_key, async_get_clientsession(self.hass)
+                )
                 try:
                     self.municipis = await town_client.get_municipis()
 
@@ -498,10 +503,13 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
         symbols_file = assets_dir / "symbols.json"
         variables_file = assets_dir / "variables.json"
         try:
-            symbols_data = await MeteocatSymbols(self.api_key).fetch_symbols()
+            session = async_get_clientsession(self.hass)
+            symbols_data = await MeteocatSymbols(self.api_key, session).fetch_symbols()
             await symbols_file.async_write_json({"symbols": symbols_data})
 
-            variables_data = await MeteocatVariables(self.api_key).get_variables()
+            variables_data = await MeteocatVariables(
+                self.api_key, session
+            ).get_variables()
             await variables_file.async_write_json({"variables": variables_data})
 
             self.variable_id = next(
@@ -517,7 +525,9 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Tercer paso: seleccionar estación."""
         errors = {}
-        townstations_client = MeteocatTownStations(self.api_key)
+        townstations_client = MeteocatTownStations(
+            self.api_key, async_get_clientsession(self.hass)
+        )
 
         try:
             # Obtener la lista completa de estaciones de la API
@@ -560,7 +570,9 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
 
                 # Obtener metadatos de la estación
                 try:
-                    station_metadata = await MeteocatInfoStation(self.api_key).get_infostation(self.station_id)
+                    station_metadata = await MeteocatInfoStation(
+                        self.api_key, async_get_clientsession(self.hass)
+                    ).get_infostation(self.station_id)
                     self.station_type = station_metadata.get("tipus", "")
                     self.latitude = station_metadata.get("coordenades", {}).get("latitud", 0.0)
                     self.longitude = station_metadata.get("coordenades", {}).get("longitud", 0.0)
@@ -659,7 +671,9 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
 
             if not errors:
                 try:
-                    await MeteocatTown(api_key).get_municipis()
+                    await MeteocatTown(
+                        api_key, async_get_clientsession(self.hass)
+                    ).get_municipis()
                 except Exception:  # noqa: BLE001
                     errors["base"] = "connection_error"
 

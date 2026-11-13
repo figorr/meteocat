@@ -11,6 +11,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity_platform import async_get_platforms
 
 from meteocatpy.symbols import MeteocatSymbols
@@ -68,18 +69,24 @@ async def ensure_assets_exist(
 ):
     """Comprueba y crea los assets básicos si faltan."""
     assets_dir = get_storage_dir(hass, "assets")
+    session = async_get_clientsession(hass)
 
     # Lista de assets: (nombre_archivo, fetch_func, clave_json, args)
     assets = [
-        ("towns.json", MeteocatTown(api_key).get_municipis, "towns", []),
+        ("towns.json", MeteocatTown(api_key, session).get_municipis, "towns", []),
         (
             "stations.json",
-            MeteocatTownStations(api_key).stations_service.get_stations,
+            MeteocatTownStations(api_key, session).stations_service.get_stations,
             "stations",
             [],
         ),
-        ("variables.json", MeteocatVariables(api_key).get_variables, "variables", []),
-        ("symbols.json", MeteocatSymbols(api_key).fetch_symbols, "symbols", []),
+        (
+            "variables.json",
+            MeteocatVariables(api_key, session).get_variables,
+            "variables",
+            [],
+        ),
+        ("symbols.json", MeteocatSymbols(api_key, session).fetch_symbols, "symbols", []),
     ]
 
     # Si tenemos town_id y variable_id, agregamos stations_<town_id>.json
@@ -87,7 +94,7 @@ async def ensure_assets_exist(
         assets.append(
             (
                 f"stations_{town_id}.json",
-                MeteocatTownStations(api_key).get_town_stations,
+                MeteocatTownStations(api_key, session).get_town_stations,
                 "town_stations",
                 [town_id, variable_id],
             )

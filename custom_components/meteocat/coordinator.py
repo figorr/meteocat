@@ -9,6 +9,7 @@ from zoneinfo import ZoneInfo
 from typing import List, Dict, Any, Optional
 
 from homeassistant.core import HomeAssistant, EVENT_HOMEASSISTANT_START
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.components.weather import Forecast
@@ -246,7 +247,9 @@ class MeteocatSensorCoordinator(DataUpdateCoordinator):
         self.variable_name = entry_data["variable_name"]
         self.variable_id = entry_data["variable_id"]
         self._force_update = False  # Flag para forzar actualización
-        self.meteocat_station_data = MeteocatStationData(self.api_key)
+        self.meteocat_station_data = MeteocatStationData(
+            self.api_key, async_get_clientsession(hass)
+        )
 
         # Ruta persistente en /config/meteocat_files/files
         files_folder = get_storage_dir(hass, "files")
@@ -606,7 +609,9 @@ class MeteocatUviCoordinator(DataUpdateCoordinator):
         self.api_key = entry_data["api_key"]
         self.town_id = entry_data["town_id"]
         self.limit_prediccio = entry_data["limit_prediccio"]
-        self.meteocat_uvi_data = MeteocatUviData(self.api_key)
+        self.meteocat_uvi_data = MeteocatUviData(
+            self.api_key, async_get_clientsession(hass)
+        )
         self._force_update = False  # Nuevo flag para forzar actualización
 
         # Ruta persistente en /config/meteocat_files/files
@@ -928,7 +933,9 @@ class MeteocatEntityCoordinator(DataUpdateCoordinator):
         self.limit_prediccio = entry_data["limit_prediccio"]  # Límite de llamada a la API para PREDICCIONES
         self._force_hourly = False  # Flag específico para hourly
         self._force_daily = False   # Flag específico para daily (permite forzar solo uno)
-        self.meteocat_forecast = MeteocatForecast(self.api_key)
+        self.meteocat_forecast = MeteocatForecast(
+            self.api_key, async_get_clientsession(hass)
+        )
 
         # Ruta persistente en /config/meteocat_files/files
         files_folder = get_storage_dir(hass, "files")
@@ -1707,7 +1714,9 @@ class MeteocatAlertsCoordinator(DataUpdateCoordinator):
         self.region_id = entry_data["region_id"]  # ID de la región o comarca
         self.limit_prediccio = entry_data["limit_prediccio"]  # Límite de llamada a la API para PREDICCIONES
         self._force_update = False  # Nuevo flag para forzar actualización
-        self.alerts_data = MeteocatAlerts(self.api_key)
+        self.alerts_data = MeteocatAlerts(
+            self.api_key, async_get_clientsession(hass)
+        )
 
         # Ruta persistente en /config/meteocat_files/files
         files_folder = get_storage_dir(hass, "files")
@@ -2241,7 +2250,9 @@ class MeteocatQuotesCoordinator(DataUpdateCoordinator):
         """
         self.api_key = entry_data["api_key"]  # Usamos la API key de la configuración
         self._force_update = False  # Flag para forzar actualización
-        self.meteocat_quotes = MeteocatQuotes(self.api_key)
+        self.meteocat_quotes = MeteocatQuotes(
+            self.api_key, async_get_clientsession(hass)
+        )
 
         self.quotes_file = get_quotes_file(hass, self.api_key)
 
@@ -2539,7 +2550,9 @@ class MeteocatLightningCoordinator(DataUpdateCoordinator):
         self.api_key = entry_data["api_key"]  # API Key de la configuración
         self.region_id = entry_data["region_id"]  # Región de la configuración
         self._force_update = False  # Flag para forzar actualización de datos
-        self.meteocat_lightning = MeteocatLightning(self.api_key)
+        self.meteocat_lightning = MeteocatLightning(
+            self.api_key, async_get_clientsession(hass)
+        )
 
         # Ruta persistente en /config/meteocat_files/files
         files_folder = get_storage_dir(hass, "files")

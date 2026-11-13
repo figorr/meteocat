@@ -7,6 +7,7 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry, OptionsFlow
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
 from homeassistant.util import dt as dt_util
 from meteocatpy.exceptions import (
@@ -127,7 +128,9 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
 
             # Validar la nueva API Key utilizando MeteocatTown
             if not errors and self.api_key:
-                town_client = MeteocatTown(self.api_key)
+                town_client = MeteocatTown(
+                    self.api_key, async_get_clientsession(self.hass)
+                )
                 try:
                     await town_client.get_municipis()  # Verificar que la API Key sea válida
                 except (

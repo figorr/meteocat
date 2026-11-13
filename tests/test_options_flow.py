@@ -35,8 +35,9 @@ from custom_components.meteocat.const import (
 class FakeTown:
     """Fake Meteocat town client."""
 
-    def __init__(self, api_key: str) -> None:
+    def __init__(self, api_key: str, session=None) -> None:
         self.api_key = api_key
+        self.session = session
 
     async def get_municipis(self) -> list[dict[str, str]]:
         return [{"codi": "08019", "nom": "Barcelona"}]
