@@ -1,13 +1,19 @@
 from __future__ import annotations
 
+from unittest.mock import AsyncMock
+
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.meteocat.cache import CacheFile, get_storage_dir
-from custom_components.meteocat.coordinator import _update_quotes
+from custom_components.meteocat.coordinator import (
+    MeteocatQuotesFileCoordinator,
+    _update_quotes,
+)
 from custom_components.meteocat.helpers import (
     async_delete_unused_quotes_file,
     async_migrate_legacy_quotes,
+    async_sanitize_quotes_file,
     get_quotes_file,
     get_quotes_id,
 )
@@ -74,6 +80,56 @@ async def test_legacy_quotes_migration_strips_client(hass: HomeAssistant) -> Non
         "plans": [],
     }
     assert not await legacy_file.async_exists()
+
+
+async def test_sanitize_existing_quotes_file_strips_client(hass: HomeAssistant) -> None:
+    quotes_file = get_quotes_file(hass, "key-a")
+    plans = [
+        {
+            "nom": "XEMA",
+            "periode": "Mensual",
+            "maxConsultes": 750,
+            "consultesRestants": 700,
+            "consultesRealitzades": 50,
+        }
+    ]
+    await quotes_file.async_write_json(
+        {
+            "client": {"nom": "Private User"},
+            "actualitzat": {"dataUpdate": "2026-01-01T00:00:00+00:00"},
+            "plans": plans,
+        }
+    )
+
+    await async_sanitize_quotes_file(hass, "key-a")
+
+    assert await quotes_file.async_read_json() == {
+        "actualitzat": {"dataUpdate": "2026-01-01T00:00:00+00:00"},
+        "plans": plans,
+    }
+
+
+async def test_quotes_file_coordinator_does_not_expose_client(
+    hass: HomeAssistant,
+) -> None:
+    quotes_file = get_quotes_file(hass, "key-a")
+    await quotes_file.async_write_json(
+        {
+            "client": {"nom": "Private User"},
+            "actualitzat": {"dataUpdate": "2026-01-01T00:00:00+00:00"},
+            "plans": [{"nom": "XEMA", "consultesRealitzades": 1}],
+        }
+    )
+    coordinator = MeteocatQuotesFileCoordinator(
+        hass,
+        {"town_id": "08019", "api_key": "key-a"},
+    )
+    coordinator._apply_random_delay = AsyncMock()
+
+    data = await coordinator._async_update_data()
+
+    assert "client" not in data
+    assert data["plans"][0]["nom"] == "XEMA"
 
 
 async def test_legacy_quotes_kept_when_read_fails(

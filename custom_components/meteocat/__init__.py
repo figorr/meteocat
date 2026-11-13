@@ -24,6 +24,7 @@ from .const import CONF_API_KEY, DOMAIN, LIMIT_XDDE, PLATFORMS
 from .helpers import (
     async_delete_unused_quotes_file,
     async_migrate_legacy_quotes,
+    async_sanitize_quotes_file,
     get_storage_dir,
 )
 from .reminder import async_cancel_api_key_reminder, async_schedule_api_key_reminder
@@ -174,6 +175,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     await get_cache(hass).async_load()
     await async_migrate_legacy_quotes(hass, entry_data[CONF_API_KEY])
+    await async_sanitize_quotes_file(hass, entry_data[CONF_API_KEY])
 
     # Crear los assets básicos si faltan
     await ensure_assets_exist(

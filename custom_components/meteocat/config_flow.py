@@ -156,7 +156,6 @@ class MeteocatConfigFlow(ConfigFlow, domain=DOMAIN):
             current_time = datetime.now(UTC).astimezone(TIMEZONE).isoformat()
             data_with_timestamp = {
                 "actualitzat": {"dataUpdate": current_time},
-                "client": data["client"],
                 "plans": modified_plans,
             }
 

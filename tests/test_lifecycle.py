@@ -98,6 +98,8 @@ async def test_setup_schedules_reminder_and_registers_unload(hass, monkeypatch) 
     cache = make_cache()
     monkeypatch.setattr(integration, "get_cache", Mock(return_value=cache))
     monkeypatch.setattr(integration, "async_migrate_legacy_quotes", AsyncMock())
+    sanitize = AsyncMock()
+    monkeypatch.setattr(integration, "async_sanitize_quotes_file", sanitize)
     monkeypatch.setattr(integration, "ensure_assets_exist", AsyncMock())
     monkeypatch.setattr(
         integration,
@@ -119,6 +121,7 @@ async def test_setup_schedules_reminder_and_registers_unload(hass, monkeypatch) 
     assert await integration.async_setup_entry(hass, entry) is True
 
     cache.async_load.assert_awaited_once()
+    sanitize.assert_awaited_once_with(hass, ENTRY_DATA[CONF_API_KEY])
     forward.assert_awaited_once_with(entry, integration.PLATFORMS)
     schedule.assert_called_once_with(hass, entry)
     on_unload.assert_called_once_with(unsub)

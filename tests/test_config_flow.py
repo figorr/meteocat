@@ -17,6 +17,7 @@ from custom_components.meteocat.const import (
     CONF_API_KEY_REMINDER,
     DOMAIN,
 )
+from custom_components.meteocat.helpers import get_quotes_file
 
 
 class FakeTown:
@@ -31,6 +32,28 @@ class FakeTown:
 
     async def get_municipis(self) -> list[dict[str, str]]:
         return [{"codi": "08019", "nom": "Barcelona"}]
+
+
+class FakeQuotes:
+    """Fake Meteocat quotes client."""
+
+    def __init__(self, api_key: str, session=None) -> None:
+        self.api_key = api_key
+        self.session = session
+
+    async def get_quotes(self) -> dict:
+        return {
+            "client": {"nom": "Private User"},
+            "plans": [
+                {
+                    "nom": "xema_xarxa",
+                    "periode": "Mensual",
+                    "maxConsultes": 750,
+                    "consultesRestants": 700,
+                    "consultesRealitzades": 50,
+                }
+            ],
+        }
 
 
 def make_flow(hass):
@@ -216,3 +239,17 @@ async def test_reauth_rejects_future_date(hass, monkeypatch) -> None:
     assert entry.data[CONF_API_KEY] == "old-api-key"
     assert entry.data[CONF_API_KEY_DATE] == "2025-01-15"
     assert FakeTown.instances == []
+
+
+async def test_fetch_and_save_quotes_does_not_store_client(
+    hass, monkeypatch
+) -> None:
+    """Saving quotes must not persist the API account holder name."""
+    monkeypatch.setattr(cf, "MeteocatQuotes", FakeQuotes)
+    flow = make_flow(hass)
+
+    await flow.fetch_and_save_quotes("key-a")
+
+    data = await get_quotes_file(hass, "key-a").async_read_json()
+    assert "client" not in data
+    assert data["plans"][0]["nom"] == "XEMA"

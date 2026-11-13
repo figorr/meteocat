@@ -2399,7 +2399,6 @@ class MeteocatQuotesCoordinator(DataUpdateCoordinator):
                 "actualitzat": {
                     "dataUpdate": current_time
                 },
-                "client": data["client"],
                 "plans": modified_plans
             }
 
@@ -2504,7 +2503,6 @@ class MeteocatQuotesFileCoordinator(BaseFileCoordinator):
 
         return {
             "actualizado": existing_data.get("actualitzat", {}).get("dataUpdate"),
-            "client": existing_data.get("client", {}).get("nom"),
             "plans": [
                 {
                     "nom": plan.get("nom"),

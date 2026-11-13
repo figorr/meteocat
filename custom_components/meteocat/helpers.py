@@ -16,6 +16,7 @@ from .const import CONF_API_KEY, DOMAIN
 __all__ = [
     "async_delete_unused_quotes_file",
     "async_migrate_legacy_quotes",
+    "async_sanitize_quotes_file",
     "get_quotes_file",
     "get_quotes_id",
     "get_quotes_lock",
@@ -74,6 +75,27 @@ async def async_migrate_legacy_quotes(hass: HomeAssistant, api_key: str) -> None
         await target_file.async_write_json(data)
 
     await legacy_file.async_delete()
+
+
+async def async_sanitize_quotes_file(hass: HomeAssistant, api_key: str) -> None:
+    """Remove personal client data from an existing quotes cache file."""
+    quotes_file = get_quotes_file(hass, api_key)
+    if not await quotes_file.async_exists():
+        return
+
+    async with get_quotes_lock(hass, api_key):
+        try:
+            data = await quotes_file.async_read_json()
+        except Exception:
+            _LOGGER.exception("Could not read quotes cache for sanitization")
+            return
+
+        if not isinstance(data, dict) or "client" not in data:
+            return
+
+        data.pop("client", None)
+        await quotes_file.async_write_json(data)
+        _LOGGER.info("Removed client data from %s", quotes_file)
 
 
 async def async_delete_unused_quotes_file(
