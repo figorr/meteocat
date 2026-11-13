@@ -4,8 +4,10 @@ from datetime import timedelta
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
 
+import voluptuous as vol
 from homeassistant.components import persistent_notification
 from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.helpers.selector import TextSelector, TextSelectorType
 from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -174,7 +176,8 @@ async def test_update_api_and_limits_rejects_future_date(hass, monkeypatch) -> N
 
 async def test_same_key_empty_date_preserves_stored_date(hass, monkeypatch) -> None:
     """An empty date for the same key keeps the stored issue date."""
-    monkeypatch.setattr(of, "MeteocatTown", FakeTown)
+    town = Mock()
+    monkeypatch.setattr(of, "MeteocatTown", town)
     reload = AsyncMock()
     monkeypatch.setattr(hass.config_entries, "async_reload", reload)
 
@@ -196,6 +199,7 @@ async def test_same_key_empty_date_preserves_stored_date(hass, monkeypatch) -> N
 
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert entry.data[CONF_API_KEY_DATE] == "2025-01-15"
+    town.assert_not_called()
     reload.assert_awaited_once_with(entry.entry_id)
 
 
@@ -259,7 +263,8 @@ async def test_missing_key_and_empty_date_preserves_stored_date(
     hass, monkeypatch
 ) -> None:
     """Omitting the API key and date keeps the existing values."""
-    monkeypatch.setattr(of, "MeteocatTown", FakeTown)
+    town = Mock()
+    monkeypatch.setattr(of, "MeteocatTown", town)
     reload = AsyncMock()
     monkeypatch.setattr(hass.config_entries, "async_reload", reload)
 
@@ -281,7 +286,66 @@ async def test_missing_key_and_empty_date_preserves_stored_date(
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert entry.data[CONF_API_KEY] == ENTRY_DATA[CONF_API_KEY]
     assert entry.data[CONF_API_KEY_DATE] == "2025-01-15"
+    town.assert_not_called()
     reload.assert_awaited_once_with(entry.entry_id)
+
+
+async def test_legacy_entry_blank_date_is_not_defaulted_to_today(
+    hass, monkeypatch
+) -> None:
+    """An entry without a date must not store today's date on save."""
+    town = Mock()
+    monkeypatch.setattr(of, "MeteocatTown", town)
+    reload = AsyncMock()
+    monkeypatch.setattr(hass.config_entries, "async_reload", reload)
+
+    entry = make_entry()
+    entry.add_to_hass(hass)
+
+    result = await make_flow(hass, entry).async_step_update_api_and_limits(
+        {
+            CONF_API_KEY_DATE: "",
+            CONF_API_KEY_REMINDER: False,
+            LIMIT_XEMA: 700,
+            LIMIT_PREDICCIO: 100,
+            LIMIT_XDDE: 250,
+            LIMIT_QUOTA: 300,
+            LIMIT_BASIC: 2000,
+        }
+    )
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert CONF_API_KEY_DATE not in entry.data
+    town.assert_not_called()
+    reload.assert_awaited_once_with(entry.entry_id)
+
+
+async def test_form_hides_api_key_and_empty_legacy_date(hass) -> None:
+    """The options form does not prefill the API key or invent a date."""
+    entry = make_entry()
+    entry.add_to_hass(hass)
+
+    result = await make_flow(hass, entry).async_step_update_api_and_limits()
+    schema = result["data_schema"].schema
+    api_key_key = next(key for key in schema if key == CONF_API_KEY)
+    date_key = next(key for key in schema if key == CONF_API_KEY_DATE)
+
+    assert api_key_key.default is vol.UNDEFINED
+    assert isinstance(schema[api_key_key], TextSelector)
+    assert schema[api_key_key].config["type"] == TextSelectorType.PASSWORD
+    assert date_key.default() == ""
+
+
+async def test_form_prefills_existing_date(hass) -> None:
+    """The options form keeps suggesting an existing issue date."""
+    entry = make_entry(data={CONF_API_KEY_DATE: "2025-01-15"})
+    entry.add_to_hass(hass)
+
+    result = await make_flow(hass, entry).async_step_update_api_and_limits()
+    schema = result["data_schema"].schema
+    date_key = next(key for key in schema if key == CONF_API_KEY_DATE)
+
+    assert date_key.default() == "2025-01-15"
 
 
 async def test_failed_reload_clears_reminder_and_notification(

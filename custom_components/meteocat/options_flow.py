@@ -8,7 +8,13 @@ from homeassistant.config_entries import ConfigEntry, OptionsFlow
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
+from homeassistant.helpers.selector import (
+    SelectSelector,
+    SelectSelectorConfig,
+    TextSelector,
+    TextSelectorConfig,
+    TextSelectorType,
+)
 from homeassistant.util import dt as dt_util
 from meteocatpy.exceptions import (
     BadRequestError,
@@ -126,8 +132,8 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
                 if reminder and new_issue_date is None:
                     errors[CONF_API_KEY_DATE] = "date_required"
 
-            # Validar la nueva API Key utilizando MeteocatTown
-            if not errors and self.api_key:
+            # Validar solo cuando se ha introducido una API Key diferente
+            if not errors and self.api_key and self.api_key != old_api_key:
                 town_client = MeteocatTown(
                     self.api_key, async_get_clientsession(self.hass)
                 )
@@ -188,10 +194,12 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
         suggested_date = (
             existing_issue_date.isoformat()
             if existing_issue_date is not None
-            else today.isoformat()
+            else ""
         )
         schema = vol.Schema({
-            vol.Required(CONF_API_KEY, default=old_api_key): str,
+            vol.Optional(CONF_API_KEY): TextSelector(
+                TextSelectorConfig(type=TextSelectorType.PASSWORD)
+            ),
             vol.Optional(
                 CONF_API_KEY_DATE, default=suggested_date
             ): OptionalDateSelector(),

@@ -67,7 +67,7 @@
         }
       },
       "update_api_and_limits": {
-        "description": "Setup the API Key, the date it was issued and the API limits.",
+        "description": "Setup the API Key, the date it was issued and the API limits. Leave the API Key blank to keep the current one.",
         "title": "API Key and limits",
         "data": {
           "api_key": "API Key",

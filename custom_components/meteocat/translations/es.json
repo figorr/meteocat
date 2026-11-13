@@ -67,7 +67,7 @@
         }
       },
       "update_api_and_limits": {
-        "description": "Configura el API Key, la fecha de emisión y los límites de la API.",
+        "description": "Configura el API Key, la fecha de emisión y los límites de la API. Deja el API Key vacío para mantener el actual.",
         "title": "API Key y límites",
         "data": {
           "api_key": "API Key",

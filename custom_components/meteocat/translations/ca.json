@@ -67,7 +67,7 @@
         }
       },
       "update_api_and_limits": {
-        "description": "Configura l'API Key, la data d'emissió i els límits de l'API.",
+        "description": "Configura l'API Key, la data d'emissió i els límits de l'API. Deixa l'API Key buida per mantenir l'actual.",
         "title": "API Key i límits",
         "data": {
           "api_key": "API Key",
