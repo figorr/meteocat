@@ -371,7 +371,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
         if not hass.data[DOMAIN]:
             hass.data.pop(DOMAIN)
 
-    await hass.config_entries.async_unload_platforms_or_raise(entry, PLATFORMS)
+    await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     async_cancel_api_key_reminder(hass, entry)
 
 async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
