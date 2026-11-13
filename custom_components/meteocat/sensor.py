@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone, time, timedelta
 from zoneinfo import ZoneInfo
-from typing import Dict, Any, Optional
+from typing import Any, ClassVar, Optional
 import os
 import json
 import re
@@ -24,6 +24,7 @@ from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import dt as dt_util
 from homeassistant.util import slugify
 from homeassistant.const import (
     DEGREE,
@@ -37,6 +38,10 @@ from homeassistant.const import (
 )
 
 from .const import (
+    API_KEY_FINGERPRINT,
+    CONF_API_KEY,
+    CONF_API_KEY_DATE,
+    CONF_API_KEY_REMINDER,
     DOMAIN,
     TOWN_NAME,
     TOWN_ID,
@@ -153,6 +158,9 @@ from .coordinator import (
     MeteocatMoonCoordinator,
     MeteocatMoonFileCoordinator,
 )
+
+from .helpers import get_quotes_id
+from .util import api_key_expiry_date, parse_issue_date
 
 from gardenpy_meteocat import Evapotranspiration
 
@@ -324,6 +332,27 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         key=REGION_ID,
         translation_key="region_id",
         icon="mdi:identifier",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    MeteocatSensorEntityDescription(
+        key=CONF_API_KEY_DATE,
+        translation_key="api_key_date",
+        icon="mdi:calendar-key",
+        device_class=SensorDeviceClass.DATE,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    MeteocatSensorEntityDescription(
+        key=CONF_API_KEY_REMINDER,
+        translation_key="api_key_reminder",
+        icon="mdi:bell-ring-outline",
+        device_class=SensorDeviceClass.ENUM,
+        options=["enabled", "disabled"],
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    MeteocatSensorEntityDescription(
+        key=API_KEY_FINGERPRINT,
+        translation_key="api_key_fingerprint",
+        icon="mdi:key-variant",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     MeteocatSensorEntityDescription(
@@ -597,6 +626,7 @@ def _build_entity_id(station_id, town_name, entry_data, translation_key, fallbac
 async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback) -> None:
     """Set up Meteocat sensors from a config entry."""
     entry_data = hass.data[DOMAIN][entry.entry_id]
+    entry_data["_entry_id"] = entry.entry_id
     entry_data["_entity_names"] = (
         await hass.async_add_executor_job(_load_entity_names, hass.config.language)
         or await hass.async_add_executor_job(_load_entity_names, "en")
@@ -659,7 +689,17 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
     async_add_entities(
         MeteocatStaticSensor(static_sensor_coordinator, description, entry_data)
         for description in SENSOR_TYPES
-        if description.key in {TOWN_NAME, TOWN_ID, STATION_NAME, STATION_ID, REGION_NAME, REGION_ID}
+        if description.key in {
+            TOWN_NAME,
+            TOWN_ID,
+            STATION_NAME,
+            STATION_ID,
+            REGION_NAME,
+            REGION_ID,
+            CONF_API_KEY_DATE,
+            CONF_API_KEY_REMINDER,
+            API_KEY_FINGERPRINT,
+        }
     )
 
     # Sensor UVI
@@ -857,7 +897,17 @@ def convert_to_local_time(utc_time: str, local_tz: str = "Europe/Madrid") -> dat
 
 class MeteocatStaticSensor(CoordinatorEntity[MeteocatStaticSensorCoordinator], SensorEntity):
     """Representation of a static Meteocat sensor."""
-    STATIC_KEYS = {TOWN_NAME, TOWN_ID, STATION_NAME, STATION_ID, REGION_NAME, REGION_ID}
+    STATIC_KEYS: ClassVar[set[str]] = {
+        TOWN_NAME,
+        TOWN_ID,
+        STATION_NAME,
+        STATION_ID,
+        REGION_NAME,
+        REGION_ID,
+        CONF_API_KEY_DATE,
+        CONF_API_KEY_REMINDER,
+        API_KEY_FINGERPRINT,
+    }
     
     _attr_has_entity_name = True
 
@@ -871,8 +921,21 @@ class MeteocatStaticSensor(CoordinatorEntity[MeteocatStaticSensorCoordinator], S
         self._station_id = entry_data["station_id"]
         self._region_name = entry_data["region_name"]
         self._region_id = entry_data["region_id"]
+        self._api_key = entry_data.get(CONF_API_KEY)
+        self._api_key_date = entry_data.get(CONF_API_KEY_DATE)
+        self._api_key_reminder = entry_data.get(CONF_API_KEY_REMINDER, False)
 
-        self._attr_unique_id = f"sensor.{DOMAIN}_{self._town_id}_{self.entity_description.key}"
+        if self.entity_description.key in {
+            CONF_API_KEY_DATE,
+            CONF_API_KEY_REMINDER,
+            API_KEY_FINGERPRINT,
+        }:
+            unique_base = entry_data.get("_entry_id", self._town_id)
+        else:
+            unique_base = self._town_id
+        self._attr_unique_id = (
+            f"sensor.{DOMAIN}_{unique_base}_{self.entity_description.key}"
+        )
         self.entity_id = _build_entity_id(
             self._station_id,
             self._town_name,
@@ -904,7 +967,48 @@ class MeteocatStaticSensor(CoordinatorEntity[MeteocatStaticSensorCoordinator], S
                 return self._region_name
             if self.entity_description.key == REGION_ID:
                 return self._region_id
-    
+            if self.entity_description.key == CONF_API_KEY_DATE:
+                return parse_issue_date(self._api_key_date)
+            if self.entity_description.key == CONF_API_KEY_REMINDER:
+                return "enabled" if self._api_key_reminder else "disabled"
+            if self.entity_description.key == API_KEY_FINGERPRINT:
+                return get_quotes_id(self._api_key)[:8] if self._api_key else None
+
+    @property
+    def extra_state_attributes(self):
+        """Return diagnostic attributes without exposing the API key."""
+        attributes = super().extra_state_attributes or {}
+
+        if self.entity_description.key == CONF_API_KEY_DATE:
+            issue_date = parse_issue_date(self._api_key_date)
+            if issue_date is not None:
+                expiry_date = api_key_expiry_date(issue_date)
+                attributes.update(
+                    {
+                        "expiry_date": expiry_date.isoformat(),
+                        "days_until_expiry": (
+                            expiry_date - dt_util.now().date()
+                        ).days,
+                    }
+                )
+        elif (
+            self.entity_description.key == API_KEY_FINGERPRINT
+            and self.hass is not None
+            and self._api_key
+        ):
+            entries = self.hass.config_entries.async_entries(DOMAIN)
+            attributes["entries_using_key"] = sum(
+                1
+                for entry in entries
+                if (
+                    entry.options.get(CONF_API_KEY)
+                    or entry.data.get(CONF_API_KEY)
+                )
+                == self._api_key
+            )
+
+        return attributes
+
     @property
     def device_info(self) -> DeviceInfo:
         """Return the device info."""
@@ -2060,12 +2164,12 @@ class MeteocatAlertMeteorSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
             self.entity_description.key,
         )
         self._attr_entity_category = getattr(description, "entity_category", None)
+        
         _LOGGER.debug(
             "Inicializando sensor: %s, Unique ID: %s",
             self.entity_description.name,
             self._attr_unique_id,
         )
-    
     def _get_meteor_data_case_insensitive(self, meteor_type: str) -> dict:
         """Busca en los datos de meteor de forma case-insensitive."""
         meteor_data_dict = self.coordinator.data.get("detalles", {}).get("meteor", {})

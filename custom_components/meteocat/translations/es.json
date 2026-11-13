@@ -251,6 +251,19 @@
       "region_id": {
         "name": "Comarca ID"
       },
+      "api_key_date": {
+        "name": "Fecha de la API Key"
+      },
+      "api_key_reminder": {
+        "name": "Recordatorio de la API Key",
+        "state": {
+          "enabled": "Activado",
+          "disabled": "Desactivado"
+        }
+      },
+      "api_key_fingerprint": {
+        "name": "Huella de la API Key"
+      },
       "condition": {
         "name": "Estado del cielo",
         "state": {

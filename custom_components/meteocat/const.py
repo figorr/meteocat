@@ -4,6 +4,7 @@ BASE_URL = "https://api.meteo.cat"
 CONF_API_KEY = "api_key"
 CONF_API_KEY_DATE = "api_key_date"
 CONF_API_KEY_REMINDER = "api_key_reminder"
+API_KEY_FINGERPRINT = "api_key_fingerprint"
 API_KEY_VALIDITY_MONTHS = 12
 API_KEY_REMINDER_DAYS = 3
 API_KEY_REMINDER_HOUR = 9

@@ -251,6 +251,19 @@
       "region_id": {
         "name": "Comarca ID"
       },
+      "api_key_date": {
+        "name": "Data de l'API Key"
+      },
+      "api_key_reminder": {
+        "name": "Recordatori de l'API Key",
+        "state": {
+          "enabled": "Activat",
+          "disabled": "Desactivat"
+        }
+      },
+      "api_key_fingerprint": {
+        "name": "Empremta de l'API Key"
+      },
       "condition": {
         "name": "Estat del Cel",
         "state": {

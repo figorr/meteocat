@@ -251,6 +251,19 @@
       "region_id": {
         "name": "Region ID"
       },
+      "api_key_date": {
+        "name": "API Key Date"
+      },
+      "api_key_reminder": {
+        "name": "API Key Reminder",
+        "state": {
+          "enabled": "Enabled",
+          "disabled": "Disabled"
+        }
+      },
+      "api_key_fingerprint": {
+        "name": "API Key Fingerprint"
+      },
       "condition": {
         "name": "Condition",
         "state": {
