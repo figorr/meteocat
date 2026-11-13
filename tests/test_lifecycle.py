@@ -138,7 +138,7 @@ async def test_unload_removes_entry_data_and_cancels_reminder(hass, monkeypatch)
     entry = make_entry(entry_id="unload-entry")
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {"data": True}
     hass.data[DOMAIN]["other-entry"] = {"keep": True}
-    unload = AsyncMock(return_value=None)
+    unload = AsyncMock(return_value=True)
     cancel = Mock()
     monkeypatch.setattr(hass.config_entries, "async_unload_platforms", unload)
     monkeypatch.setattr(integration, "async_get_platforms", Mock(return_value=[]))
@@ -146,11 +146,29 @@ async def test_unload_removes_entry_data_and_cancels_reminder(hass, monkeypatch)
 
     result = await integration.async_unload_entry(hass, entry)
 
-    assert result is None
+    assert result is True
     unload.assert_awaited_once_with(entry, integration.PLATFORMS)
     cancel.assert_called_once_with(hass, entry)
     assert entry.entry_id not in hass.data[DOMAIN]
     assert hass.data[DOMAIN]["other-entry"] == {"keep": True}
+
+
+async def test_failed_unload_keeps_entry_data_and_reminder(hass, monkeypatch) -> None:
+    """A failed platform unload leaves the entry data and reminder intact."""
+    entry = make_entry(entry_id="unload-failure-entry")
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {"data": True}
+    unload = AsyncMock(return_value=False)
+    cancel = Mock()
+    monkeypatch.setattr(hass.config_entries, "async_unload_platforms", unload)
+    monkeypatch.setattr(integration, "async_get_platforms", Mock(return_value=[]))
+    monkeypatch.setattr(integration, "async_cancel_api_key_reminder", cancel)
+
+    result = await integration.async_unload_entry(hass, entry)
+
+    assert result is False
+    unload.assert_awaited_once_with(entry, integration.PLATFORMS)
+    cancel.assert_not_called()
+    assert entry.entry_id in hass.data[DOMAIN]
 
 
 async def test_remove_entry_cancels_reminder_and_cleans_cache(hass, monkeypatch) -> None:

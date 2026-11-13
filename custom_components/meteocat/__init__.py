@@ -361,18 +361,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     return True
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Desactiva una entrada de configuración para Meteocat."""
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Desactiva una entrada de configuraci��n para Meteocat."""
     platforms = async_get_platforms(hass, DOMAIN)
     _LOGGER.info(f"Descargando plataformas: {[p.domain for p in platforms]}")
+
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    if not unload_ok:
+        return False
 
     if entry.entry_id in hass.data.get(DOMAIN, {}):
         hass.data[DOMAIN].pop(entry.entry_id, None)
         if not hass.data[DOMAIN]:
             hass.data.pop(DOMAIN)
 
-    await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     async_cancel_api_key_reminder(hass, entry)
+    return True
 
 async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Limpia cualquier dato adicional al desinstalar la integración."""
