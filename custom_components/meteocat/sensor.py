@@ -337,7 +337,7 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
     MeteocatSensorEntityDescription(
         key=CONF_API_KEY_DATE,
         translation_key="api_key_date",
-        icon="mdi:calendar-key",
+        icon="mdi:calendar-clock",
         device_class=SensorDeviceClass.DATE,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
