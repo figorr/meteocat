@@ -137,11 +137,18 @@ Use this only if `Meteocat` is not available in the Marketplace catalog.
 Copy the `custom_components/meteocat` folder into the config folder.
 
 ## Configuration
-To add a Meteocat Device, go to `Configuration > Integrations` in the UI. Then click the `+` button and from the list of integrations select Meteocat. You will then be prompted to enter your API Key.
+
+To add a Meteocat device, go to `Settings > Devices & Services`, select `+ Add Integration`, and choose `Meteocat`.
+
+On the first screen, enter:
+
+- **API Key** (required): the key issued by Meteocat.
+- **API key issue date** (recommended): the date the key was issued. It defaults to today, cannot be in the future, and is used to estimate expiry 12 months later.
+- **Notify me before the API key expires** (optional): enables expiry reminders. It requires an issue date.
 
 ![Meteocat custom component login dialog](images/login.png)
 
-During the same step you can also provide the API key issue date and enable expiry reminders. Both are optional, but a date is required to enable reminders. See [API key date and expiry reminders](#api-key-date-and-expiry-reminders) below.
+The issue date and reminder setting are stored per config entry. Use the API key fingerprint sensor to identify entries that share the same API key. See [API key date and expiry reminders](#api-key-date-and-expiry-reminders) below.
 
 After submitting your API Key you will either be prompted to pick a town from the list as shown below.
 
@@ -211,7 +218,11 @@ Go to:
 You will see the following options:
 
 - **Update API Key and limits**  
-  Allows you to change the API key issue date, enable or disable expiry reminders, and update all API plan limits at the same time. Leave the API Key field empty to keep the current key.
+  Allows you to change the API key, its issue date, the expiry reminder setting, and all API plan limits at the same time.
+  - Leave **API Key** empty to keep the current key.
+  - Changing the issue date recalculates the estimated expiry date and reschedules the reminder.
+  - The reminder is disabled by default. When enabled, it creates a persistent notification 3 days before expiry and updates it when the configured date is reached. It does not force reauthentication; reauthentication is only requested when Meteocat rejects the key.
+  - When entering a different key, set its issue date so the reminder matches the new key.
 
 - **Update limits only**  
   Allows you to adjust only the API plan limits, keeping the same API Key.
@@ -225,6 +236,8 @@ You will see the following options:
 
 - **Force data update**  
   Force the data update for just one or even for multiple options at a time. Please be aware of your quota limits, each data update will consume an API call. If you force the data update for example for hourly and daily data at the same time ... this means 2 API calls, not just one.
+
+> The **API Key Date** and **API Key Reminder** diagnostic sensors reflect the current options. Use the **API Key Fingerprint** sensor to identify entries that share the same API key.
 
 ### Accessing the Options Menu
 
