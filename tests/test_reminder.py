@@ -78,8 +78,8 @@ def test_schedules_expiry_and_reminder(hass, monkeypatch, freezer) -> None:
     create.assert_not_called()
     for action, _point_in_time in scheduled:
         action()
-    assert create.call_count == 1
-    entry.async_start_reauth.assert_called_once_with(hass)
+    assert create.call_count == 2
+    entry.async_start_reauth.assert_not_called()
     cancel()
 
 
@@ -102,11 +102,13 @@ def test_notifies_when_inside_reminder_window(hass, monkeypatch, freezer) -> Non
 
 
 @pytest.mark.usefixtures("freezer")
-def test_expired_key_starts_reauth(hass, monkeypatch, freezer) -> None:
-    """Test requesting reauthentication when the key has expired."""
+def test_expired_key_updates_notification_without_reauth(
+    hass, monkeypatch, freezer
+) -> None:
+    """Test that a reached expiry date does not force reauthentication."""
     freezer.move_to("2026-01-02 12:00:00+00:00")
     scheduled = patch_tracking(monkeypatch)
-    _create, dismiss = patch_notifications(monkeypatch)
+    create, dismiss = patch_notifications(monkeypatch)
     entry = make_entry("2025-01-01")
     entry.async_start_reauth = Mock()
 
@@ -114,8 +116,11 @@ def test_expired_key_starts_reauth(hass, monkeypatch, freezer) -> None:
 
     assert result is None
     assert scheduled == []
-    entry.async_start_reauth.assert_called_once_with(hass)
-    dismiss.assert_called_once()
+    entry.async_start_reauth.assert_not_called()
+    create.assert_called_once()
+    assert "2026-01-01" in create.call_args.args[1]
+    assert "has passed" in create.call_args.args[1]
+    dismiss.assert_not_called()
 
 
 @pytest.mark.usefixtures("freezer")
@@ -162,16 +167,23 @@ def test_cancel_reminder(hass, monkeypatch) -> None:
     dismiss.assert_called_once()
 
 
-def test_scheduled_callback_reauthenticates(hass, monkeypatch) -> None:
-    """Test that the expiry callback dismisses the notification and reauths."""
-    _create, dismiss = patch_notifications(monkeypatch)
+def test_scheduled_callback_updates_notification(hass, monkeypatch) -> None:
+    """Test that the expiry callback updates the notification without reauth."""
+    create, dismiss = patch_notifications(monkeypatch)
     entry = make_entry("2025-01-02")
     entry.async_start_reauth = Mock()
 
-    reminder._async_handle_api_key_expired(hass, entry, datetime(2026, 1, 2, 12, 0, 0))
+    reminder._async_handle_api_key_expiry_date_reached(
+        hass,
+        entry,
+        date(2026, 1, 2),
+        datetime(2026, 1, 2, 12, 0, 0),
+    )
 
-    entry.async_start_reauth.assert_called_once_with(hass)
-    dismiss.assert_called_once()
+    entry.async_start_reauth.assert_not_called()
+    create.assert_called_once()
+    assert "has passed" in create.call_args.args[1]
+    dismiss.assert_not_called()
 
 
 @pytest.mark.usefixtures("freezer")
@@ -202,10 +214,10 @@ async def test_reminder_fires_after_real_time_jump(hass, monkeypatch, freezer) -
 
 
 @pytest.mark.usefixtures("freezer")
-async def test_disabled_reminder_reauths_after_real_time_jump(
+async def test_disabled_reminder_does_not_notify_or_reauth_at_expiry(
     hass, monkeypatch, freezer
 ) -> None:
-    """The expiry timer starts reauth when the clock reaches expiry."""
+    """A disabled reminder does not notify or force reauth at expiry."""
     freezer.move_to("2025-01-01 12:00:00+00:00")
     create, dismiss = patch_notifications(monkeypatch)
     entry = make_entry("2025-01-02", reminder_enabled=False)
@@ -222,7 +234,7 @@ async def test_disabled_reminder_reauths_after_real_time_jump(
     async_fire_time_changed(hass, fire_at)
     await hass.async_block_till_done()
 
-    entry.async_start_reauth.assert_called_once_with(hass)
-    dismiss.assert_called_with(hass, "meteocat_api_key_expiry_test-entry")
+    entry.async_start_reauth.assert_not_called()
+    assert dismiss.called
     create.assert_not_called()
     cancel()

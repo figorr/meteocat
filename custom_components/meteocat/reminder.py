@@ -70,14 +70,34 @@ def _async_create_api_key_expiry_notification(
 
 
 @callback
-def _async_handle_api_key_expired(
+def _async_handle_api_key_expiry_date_reached(
     hass: HomeAssistant,
     entry: ConfigEntry,
+    expiry_date: date,
     _now: datetime | None = None,
 ) -> None:
-    """Dismiss the reminder and request reauthentication for an expired key."""
-    async_dismiss_api_key_reminder(hass, entry)
-    entry.async_start_reauth(hass)
+    """Update the reminder when the configured expiry date is reached.
+
+    The date is only an estimate. Reauthentication is requested by the
+    coordinators when the API actually rejects the key.
+    """
+    if not entry.options.get(CONF_API_KEY_REMINDER, False):
+        async_dismiss_api_key_reminder(hass, entry)
+        return
+
+    persistent_notification.async_create(
+        hass,
+        (
+            f"The configured expiry date for your Meteocat API key "
+            f"({expiry_date.isoformat()}) has passed. Meteocat may still "
+            "accept the key temporarily and the integration will keep using "
+            f"it. Update the API key date or request a new key at "
+            f"{API_KEY_URL}. Reauthentication will be requested automatically "
+            "when Meteocat rejects the key."
+        ),
+        title="Meteocat API key expiry date reached",
+        notification_id=api_key_notification_id(entry),
+    )
 
 
 @callback
@@ -104,7 +124,7 @@ def async_schedule_api_key_reminder(
     now = dt_util.now()
 
     if now.date() >= expiry_date:
-        _async_handle_api_key_expired(hass, entry)
+        _async_handle_api_key_expiry_date_reached(hass, entry, expiry_date)
         return None
 
     async_dismiss_api_key_reminder(hass, entry)
@@ -112,7 +132,12 @@ def async_schedule_api_key_reminder(
     unsubs: list[Callable[[], None]] = [
         async_track_point_in_utc_time(
             hass,
-            partial(_async_handle_api_key_expired, hass, entry),
+            partial(
+                _async_handle_api_key_expiry_date_reached,
+                hass,
+                entry,
+                expiry_date,
+            ),
             dt_util.as_utc(dt_util.start_of_local_day(expiry_date)),
         )
     ]

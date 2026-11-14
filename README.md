@@ -152,7 +152,8 @@ During setup, Meteocat asks for the API key issue date and whether expiry remind
 - The issue date is optional, but it is required to enable reminders.
 - The API key is considered valid for 12 months from the issue date.
 - Reminders are disabled by default. When enabled, a persistent notification is created 3 days before expiry at 09:00 local time.
-- When the key expires, or when the API returns a forbidden error, the integration starts a reauthentication flow.
+- The configured issue date is only an estimate. When it is reached, the notification is updated to indicate that Meteocat may still accept the key temporarily.
+- Reauthentication is started only when the Meteocat API actually rejects the key with a forbidden error, not solely because the configured date has passed.
 
 If you are updating from an older version, the issue date may not be set. Go to `Settings > Devices & Services > Meteocat > Configure > Update API Key and limits`, leave the API Key field empty to keep the current key, set the issue date and enable the reminder if needed.
 
