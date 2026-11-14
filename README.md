@@ -2,7 +2,7 @@
 ![Meteocat Banner](images/banner.png)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 ![Python](https://img.shields.io/badge/Language-Python-blue)
-[![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg)](https://github.com/hacs/integration)
+[![Marketplace](https://img.shields.io/badge/Marketplace-Default-orange.svg)](https://www.home-assistant.io/integrations/marketplace/)
 [![Validate](https://github.com/figorr/meteocat/actions/workflows/validate.yaml/badge.svg)](https://github.com/figorr/meteocat/actions/workflows/validate.yaml)
 [![Release](https://github.com/figorr/meteocat/actions/workflows/release.yml/badge.svg)](https://github.com/figorr/meteocat/actions/workflows/release.yml)
 ![GitHub all releases](https://img.shields.io/github/downloads/figorr/meteocat/total)
@@ -92,16 +92,30 @@ If you (or Home Assistant) ever regenerate an entity ID (e.g. by using *Recreate
 
 ## Installation
 
-#### HACS - Install using the custom repository method.
+Starting with Home Assistant 2026.11, [HACS is built into Home Assistant as the Marketplace](https://www.home-assistant.io/integrations/marketplace/). On Home Assistant 2026.10 or older, use the HACS instructions below.
 
-1. First of all you need to add a custom repository like [this](https://hacs.xyz/docs/faq/custom_repositories/).
-1. Then download the integration from HACS.
-1. Restart Home Assistant.
-1. Go to `Settings > Devices & Services`
-1. Click `+ Add Integration`
-1. Search for `Meteocat` and follow the configuration instructions
+### Home Assistant 2026.11 or newer - Marketplace
 
-#### HACS - Install from the store
+#### Install from the catalog
+
+1. Go to `Settings > Marketplace`
+1. Search for `Meteocat` and open its repository page
+1. Select `Install` and follow the configuration instructions
+1. Restart Home Assistant only if it asks you to do so
+
+#### Install using a custom repository
+
+Use this only if `Meteocat` is not available in the Marketplace catalog.
+
+1. Go to `Settings > Marketplace`
+1. Select `Add from link` and enter `https://github.com/figorr/meteocat`
+1. Select `Add`. A GitHub connection is required for custom repositories
+1. Open the `Meteocat` repository, select `Install`, and follow the configuration instructions
+
+### Home Assistant 2026.10 or older - HACS
+
+#### Install from the store
+
 1. Go to `HACS`
 1. Search for `Meteocat` and add it to HACS
 1. Restart Home Assistant
@@ -109,7 +123,17 @@ If you (or Home Assistant) ever regenerate an entity ID (e.g. by using *Recreate
 1. Click `+ Add Integration`
 1. Search for `Meteocat` and follow the configuration instructions
 
-#### Manually
+#### Install using a custom repository
+
+1. Add a custom repository as described in the [HACS documentation](https://hacs.xyz/docs/faq/custom_repositories/)
+1. Download the integration from HACS
+1. Restart Home Assistant
+1. Go to `Settings > Devices & Services`
+1. Click `+ Add Integration`
+1. Search for `Meteocat` and follow the configuration instructions
+
+### Manually
+
 Copy the `custom_components/meteocat` folder into the config folder.
 
 ## Configuration
@@ -225,7 +249,7 @@ To correctly uninstall the integration:
 
 - If you are upgrading due to **breaking changes**, remove all configured entries from  
   **Settings > Devices & Services > Integrations**, restart Home Assistant, and reinstall the new version.  
-- If you want to **completely remove Meteocat**, after removing the entries and restarting, also uninstall the integration from **HACS > Integrations**.
+- If you want to **completely remove Meteocat**, after removing the entries and restarting, uninstall the integration from the **Marketplace** on Home Assistant 2026.11 or newer (open the `Meteocat` repository, then select the three dots menu > `Uninstall`) or from **HACS > Integrations** on Home Assistant 2026.10 or older.
 
 👉 For detailed steps with screenshots, check the [Uninstallation Guide](https://github.com/figorr/meteocat/wiki/Uninstallation).
 
