@@ -1,3 +1,22 @@
+# [4.3.0](https://github.com/figorr/meteocat/compare/v4.2.2...v4.3.0) (2026-11-15)
+
+
+### Bug Fixes
+
+* avoid reauth until the API rejects an expired key ([906d69a](https://github.com/figorr/meteocat/commit/906d69af436e7e340c855afabfed8c878f18a358))
+* hide API key and avoid inventing legacy dates in options ([4f490ca](https://github.com/figorr/meteocat/commit/4f490ca43025c987cdcc1db28d31160097ba8662))
+* return unload result to Home Assistant ([62901c3](https://github.com/figorr/meteocat/commit/62901c348cf46689e31d7fab64509ea4bafff22b))
+* stop storing API account holder data in quotes cache ([daf896d](https://github.com/figorr/meteocat/commit/daf896d91ecab8b4f543e0aca3828f8e809995e3))
+* use available calendar icon for API key date ([ec1d3f6](https://github.com/figorr/meteocat/commit/ec1d3f6bd52ebe8436e192c2a79dd577b1b2371a))
+* use platform unload API available in supported Home Assistant ([42978dd](https://github.com/figorr/meteocat/commit/42978dd84232d52fdff892a18bfd9506f7604bb4))
+
+
+### Features
+
+* add API key cache, expiry reminders and reauth ([28a0da9](https://github.com/figorr/meteocat/commit/28a0da9b1aa0e83315ad06f389286f0faabad6e0))
+* add API key diagnostic sensors ([ee46b09](https://github.com/figorr/meteocat/commit/ee46b09090ec2c8e6fde6a6650fe2b25b533e0a2))
+* reuse Home Assistant aiohttp session ([ba0a8ca](https://github.com/figorr/meteocat/commit/ba0a8ca3037ddf5bf6d67aaf8ad1645df8884a8a))
+
 ## [4.2.2](https://github.com/figorr/meteocat/compare/v4.2.1...v4.2.2) (2026-10-30)
 
 
