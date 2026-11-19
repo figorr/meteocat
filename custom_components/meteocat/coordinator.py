@@ -2170,7 +2170,12 @@ class MeteocatAlertsRegionCoordinator(DataUpdateCoordinator):
                 data_fi = self._convert_to_local_time(aviso.get("dataFi"))
                 _LOGGER.info("Procesando aviso: inicio=%s, fin=%s", data_inici, data_fi)  # Log del aviso
 
-                if data_inici and data_fi and data_inici <= data_fi:  # Asegurarse que data_inici no sea mayor que data_fi
+                if (
+                    data_inici
+                    and data_fi
+                    and data_inici <= data_fi
+                    and current_time <= data_fi + timedelta(seconds=1)
+                ):
                     evoluciones = aviso.get("evolucions", [])
                     for evolucion in evoluciones:
                         evolucion_date = datetime.fromisoformat(evolucion["dia"].replace("Z", "+00:00")).date()
