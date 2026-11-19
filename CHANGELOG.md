@@ -1,3 +1,10 @@
+## [4.3.1](https://github.com/figorr/meteocat/compare/v4.3.0...v4.3.1) (2026-11-19)
+
+
+### Bug Fixes
+
+* expire cached alerts without API refresh ([d20e171](https://github.com/figorr/meteocat/commit/d20e171e9575307f6eab105cdf934ae4dcdc0b19))
+
 # [4.3.0](https://github.com/figorr/meteocat/compare/v4.2.2...v4.3.0) (2026-11-15)
 
 
