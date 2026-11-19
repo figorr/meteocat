@@ -65,7 +65,7 @@ jobs:
 
       # Paso 5: Subir meteocat.zip al release de GitHub
       - name: Upload meteocat.zip to release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: meteocat.zip
         env:
