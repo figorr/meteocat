@@ -38,7 +38,7 @@ from .reminder import async_cancel_api_key_reminder, async_schedule_api_key_remi
 _LOGGER = logging.getLogger(__name__)
 
 # Versión
-__version__ = "4.3.1"
+__version__ = "4.4.0"
 
 # Definir el esquema de configuración CONFIG_SCHEMA
 CONFIG_SCHEMA = vol.Schema(

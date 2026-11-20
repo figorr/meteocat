@@ -1,3 +1,10 @@
+# [4.4.0](https://github.com/figorr/meteocat/compare/v4.3.1...v4.4.0) (2026-11-20)
+
+
+### Features
+
+* add public SMP alert feed ([d3cbda4](https://github.com/figorr/meteocat/commit/d3cbda490f5de506cb893ba85fe9e2c3cfd2299c))
+
 ## [4.3.1](https://github.com/figorr/meteocat/compare/v4.3.0...v4.3.1) (2026-11-19)
 
 
