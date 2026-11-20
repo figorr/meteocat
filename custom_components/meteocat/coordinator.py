@@ -75,7 +75,10 @@ from .const import (
     DEFAULT_LIGHTNING_VALIDITY_HOURS,
     DEFAULT_LIGHTNING_VALIDITY_MINUTES,
     PREDICCIO_HIGH_QUOTA_LIMIT,
+    PUBLIC_SMP_BASE_URL,
     PUBLIC_SMP_CACHE_KEY,
+    PUBLIC_SMP_CACHE_SECONDS,
+    PUBLIC_SMP_DAYS,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -103,12 +106,6 @@ DEFAULT_TEMP_FORECAST_UPDATE_INTERVAL = timedelta(minutes=5)
 DEFAULT_ALERTS_UPDATE_INTERVAL = timedelta(minutes=10)
 DEFAULT_ALERTS_REGION_UPDATE_INTERVAL = timedelta(minutes=5)
 DEFAULT_ALERTS_PUBLIC_UPDATE_INTERVAL = timedelta(minutes=5)
-PUBLIC_SMP_BASE_URL = (
-    "https://static-m.meteo.cat/ginys/pronostic/smp/episodisOberts/"
-    "avisos-episodis-oberts-{date}.json"
-)
-PUBLIC_SMP_DAYS = 3
-PUBLIC_SMP_CACHE_SECONDS = 5 * 60
 ALERT_SOURCE_KEY = "_meteocat_source"
 ALERT_SOURCE_API = "api"
 ALERT_SOURCE_PUBLIC = "public"
