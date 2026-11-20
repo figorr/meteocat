@@ -202,6 +202,26 @@ The integration adds the following diagnostic sensors:
 
 Entries with the same API key fingerprint share the same API key. The fingerprint is only used for identification and cannot be used to recover the original key.
 
+### Public alert feed diagnostic sensor
+
+The **Public Alert Feed** diagnostic sensor reports the health of the public SMP feed used to complement the official alerts API.
+
+- `OK`: the feed is reachable. A `404` response is normal and means there are no alerts for that day.
+- `Degraded`: a technical failure occurred, such as a timeout, DNS/HTTP error or invalid payload.
+- `Unknown`: the feed has not been queried yet.
+
+| Attribute | Description |
+| --- | --- |
+| `last_result` | `ok`, `no_alerts`, `error` or `unknown`. |
+| `last_success` | Last successful feed query. |
+| `last_200` | Last valid HTTP 200 response. |
+| `last_error` | Last technical error, if any. |
+| `last_http_status` | Last HTTP status received. |
+| `http_statuses` | HTTP statuses for the last three-day query. |
+| `consecutive_failures` | Number of consecutive technical failures. |
+| `alerts` | Number of alerts in the latest feed response. |
+| `cache_age_seconds` | Age of the cached public feed. |
+
 ## Changing Units
 
 To change units select one of the entities and open the more info dialog and click the cog in the top right. This will bring up the settings for the entity. Then select `Unit of Measurement`, and a dropdown will appear where you can select the units you want.
