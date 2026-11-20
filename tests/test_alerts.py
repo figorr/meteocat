@@ -71,6 +71,7 @@ def test_expired_alert_is_not_processed():
     result = coordinator._process_alerts_data(data)
 
     assert result["activas"] == 0
+    assert result["estado"] == "Tancat"
     assert result["detalles"]["meteor"] == {}
 
 

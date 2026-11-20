@@ -637,6 +637,21 @@
               "heat": "Calor",
               "night_heat": "Calor nocturno"
             }
+          },
+          "sources": {
+            "name": "Fuentes"
+          },
+          "api_alerts": {
+            "name": "Alertas API"
+          },
+          "public_alerts": {
+            "name": "Alertas feed público"
+          },
+          "api_updated": {
+            "name": "API actualizada"
+          },
+          "public_updated": {
+            "name": "Feed público actualizado"
           }
         }
       },
@@ -686,6 +701,9 @@
           },
           "nivel": {
             "name": "Nivel"
+          },
+          "source": {
+            "name": "Origen"
           }
         }
       },
@@ -728,6 +746,9 @@
           },
           "nivel": {
             "name": "Nivel"
+          },
+          "source": {
+            "name": "Origen"
           }
         }
       },
@@ -770,6 +791,9 @@
           },
           "nivel": {
             "name": "Nivel"
+          },
+          "source": {
+            "name": "Origen"
           }
         }
       },
@@ -812,6 +836,9 @@
           },
           "nivel": {
             "name": "Nivel"
+          },
+          "source": {
+            "name": "Origen"
           }
         }
       },
@@ -851,6 +878,9 @@
           },
           "nivel": {
             "name": "Nivel"
+          },
+          "source": {
+            "name": "Origen"
           }
         }
       },
@@ -891,6 +921,9 @@
           },
           "nivel": {
             "name": "Nivel"
+          },
+          "source": {
+            "name": "Origen"
           }
         }
       },
@@ -929,6 +962,9 @@
           },
           "nivel": {
             "name": "Nivel"
+          },
+          "source": {
+            "name": "Origen"
           }
         }
       },
@@ -967,6 +1003,9 @@
           },
           "nivel": {
             "name": "Nivel"
+          },
+          "source": {
+            "name": "Origen"
           }
         }
       },
@@ -1005,6 +1044,9 @@
           },
           "nivel": {
             "name": "Nivel"
+          },
+          "source": {
+            "name": "Origen"
           }
         }
       },
@@ -1054,6 +1096,9 @@
           },
           "nivel": {
             "name": "Nivel"
+          },
+          "source": {
+            "name": "Origen"
           }
         }
       },

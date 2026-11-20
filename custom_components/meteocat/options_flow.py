@@ -484,24 +484,37 @@ class MeteocatOptionsFlowHandler(OptionsFlow):
                     
                     # Alertas
                     if "force_alerts_update" in selected:
+                        refreshed_alerts = False
                         alerts_coord = domain_data.get("alerts_coordinator")
                         if alerts_coord:
                             alerts_coord.force_next_update()
                             await alerts_coord.async_request_refresh()
                             _LOGGER.info("Forzando actualización de alertas via flag para region=%s", region_id)
+                            refreshed_alerts = True
 
                             # Pequeño delay para asegurar que los JSONs se hayan escrito
                             await asyncio.sleep(1)  # 1 segundo; ajusta si es necesario
+                        else:
+                            _LOGGER.warning("Coordinador de alertas no encontrado; no se pudo forzar.")
 
-                            # Refrescar dependiente: alerts_region_coordinator
+                        # El feed público complementa a la API. Forzarlo también
+                        # evita que el coordinador regional use datos cacheados.
+                        public_alerts_coord = domain_data.get("alerts_public_coordinator")
+                        if public_alerts_coord:
+                            public_alerts_coord.force_next_update()
+                            await public_alerts_coord.async_request_refresh()
+                            _LOGGER.info("Forzando actualización del feed público de alertas")
+                            refreshed_alerts = True
+                        else:
+                            _LOGGER.warning("Coordinador del feed público de alertas no encontrado; no se pudo forzar.")
+
+                        if refreshed_alerts:
                             alerts_region_coord = domain_data.get("alerts_region_coordinator")
                             if alerts_region_coord:
                                 await alerts_region_coord.async_request_refresh()
                                 _LOGGER.debug("Refrescado alerts_region_coordinator dependiente")
                             else:
                                 _LOGGER.warning("Coordinador alerts_region no encontrado; se actualizará en su próximo ciclo.")
-                        else:
-                            _LOGGER.warning("Coordinador de alertas no encontrado; no se pudo forzar.")
                     
                     # Datos de la estación (sensores XEMA)
                     if "force_station_update" in selected:

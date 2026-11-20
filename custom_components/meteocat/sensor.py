@@ -2065,7 +2065,8 @@ class MeteocatAlertRegionSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
     @property
     def extra_state_attributes(self):
         """Devuelve los atributos extra del sensor con los nombres traducidos."""
-        meteor_details = self.coordinator.data.get("detalles", {}).get("meteor", {})
+        data = self.coordinator.data or {}
+        meteor_details = data.get("detalles", {}).get("meteor", {})
         attributes = {}
         for i, meteor in enumerate(meteor_details.keys()):
             mapped_name = self._map_meteor_case_insensitive(meteor)
@@ -2073,6 +2074,13 @@ class MeteocatAlertRegionSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
                 _LOGGER.warning("Meteor desconocido sin mapeo: '%s'. Añadirlo a 'METEOR_MAPPING' del coordinador 'MeteocatAlertRegionSensor' si es necesario.", meteor)
                 mapped_name = "unknown"
             attributes[f"alert_{i+1}"] = mapped_name
+        attributes["sources"] = data.get("sources", [])
+        attributes["api_alerts"] = data.get("api_alerts", 0)
+        attributes["public_alerts"] = data.get("public_alerts", 0)
+        if data.get("api_updated"):
+            attributes["api_updated"] = data["api_updated"]
+        if data.get("public_updated"):
+            attributes["public_updated"] = data["public_updated"]
         _LOGGER.debug("Atributos traducidos del sensor: %s", attributes)
         return attributes
     
@@ -2246,6 +2254,7 @@ class MeteocatAlertMeteorSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
             "nivel": meteor_data.get("nivel"),
             "peligro": meteor_data.get("peligro"),
             "comentario": meteor_data.get("comentario"),
+            "source": meteor_data.get("source", "unknown"),
         }
     
     @property

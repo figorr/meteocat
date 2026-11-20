@@ -20,7 +20,13 @@ from meteocatpy.townstations import MeteocatTownStations
 from meteocatpy.variables import MeteocatVariables
 
 from .cache import get_cache
-from .const import CONF_API_KEY, DOMAIN, LIMIT_XDDE, PLATFORMS
+from .const import (
+    CONF_API_KEY,
+    DOMAIN,
+    LIMIT_XDDE,
+    PLATFORMS,
+    PUBLIC_SMP_CACHE_KEY,
+)
 from .helpers import (
     async_delete_unused_quotes_file,
     async_migrate_legacy_quotes,
@@ -212,6 +218,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         ("uvi_coordinator", "MeteocatUviCoordinator"),
         ("uvi_file_coordinator", "MeteocatUviFileCoordinator"),
         ("alerts_coordinator", "MeteocatAlertsCoordinator"),
+        ("alerts_public_coordinator", "MeteocatAlertsPublicCoordinator"),
         ("alerts_region_coordinator", "MeteocatAlertsRegionCoordinator"),
         ("quotes_coordinator", "MeteocatQuotesCoordinator"),
         ("quotes_file_coordinator", "MeteocatQuotesFileCoordinator"),
@@ -398,6 +405,7 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
         assets_folder / "variables.json",
         assets_folder / "stations.json",
         files_folder / "alerts.json",
+        files_folder / "alerts_public.json",
     ]
 
     # Identificadores de la entrada eliminada
@@ -475,3 +483,5 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
         if not await cache.async_keys():
             await cache.async_remove()
+
+        hass.data.pop(PUBLIC_SMP_CACHE_KEY, None)

@@ -4,13 +4,14 @@ import asyncio
 import logging
 import random
 import unicodedata
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import UTC, date, datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 from typing import List, Dict, Any, Optional
 
+from aiohttp import ClientError, ClientTimeout
 from homeassistant.core import HomeAssistant, EVENT_HOMEASSISTANT_START
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.components.weather import Forecast
 
@@ -73,7 +74,8 @@ from .const import (
     DEFAULT_LIGHTNING_VALIDITY_TIME,
     DEFAULT_LIGHTNING_VALIDITY_HOURS,
     DEFAULT_LIGHTNING_VALIDITY_MINUTES,
-    PREDICCIO_HIGH_QUOTA_LIMIT
+    PREDICCIO_HIGH_QUOTA_LIMIT,
+    PUBLIC_SMP_CACHE_KEY,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -100,6 +102,16 @@ DEFAULT_CONDITION_SENSOR_UPDATE_INTERVAL = timedelta(minutes=5)
 DEFAULT_TEMP_FORECAST_UPDATE_INTERVAL = timedelta(minutes=5)
 DEFAULT_ALERTS_UPDATE_INTERVAL = timedelta(minutes=10)
 DEFAULT_ALERTS_REGION_UPDATE_INTERVAL = timedelta(minutes=5)
+DEFAULT_ALERTS_PUBLIC_UPDATE_INTERVAL = timedelta(minutes=5)
+PUBLIC_SMP_BASE_URL = (
+    "https://static-m.meteo.cat/ginys/pronostic/smp/episodisOberts/"
+    "avisos-episodis-oberts-{date}.json"
+)
+PUBLIC_SMP_DAYS = 3
+PUBLIC_SMP_CACHE_SECONDS = 5 * 60
+ALERT_SOURCE_KEY = "_meteocat_source"
+ALERT_SOURCE_API = "api"
+ALERT_SOURCE_PUBLIC = "public"
 DEFAULT_QUOTES_UPDATE_INTERVAL = timedelta(minutes=10)
 DEFAULT_QUOTES_FILE_UPDATE_INTERVAL = timedelta(minutes=5)
 DEFAULT_LIGHTNING_UPDATE_INTERVAL = timedelta(minutes=10)
@@ -1698,7 +1710,119 @@ class MeteocatTempForecastCoordinator(DataUpdateCoordinator):
             "min_temp_forecast": float(variables.get("tmin", {}).get("valor", 0.0)),
         }
         return temp_forecast_data
-    
+
+
+def _parse_public_smp_timestamp(value: str | None) -> datetime | None:
+    """Parse an ISO timestamp from the public SMP feed."""
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value)
+    except (TypeError, ValueError):
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=UTC)
+    return parsed
+
+
+async def _async_fetch_public_alerts(
+    hass: HomeAssistant, *, force: bool = False
+) -> dict | None:
+    """Fetch the public SMP feed used by Meteocat's own alerts widget."""
+    cache = hass.data.setdefault(
+        PUBLIC_SMP_CACHE_KEY,
+        {"lock": asyncio.Lock(), "data": None, "updated": 0.0},
+    )
+    async with cache["lock"]:
+        now = datetime.now(UTC)
+        if (
+            not force
+            and cache["data"] is not None
+            and now.timestamp() - cache["updated"] < PUBLIC_SMP_CACHE_SECONDS
+        ):
+            return cache["data"]
+
+        session = async_get_clientsession(hass)
+        alerts: list[dict] = []
+        failed = False
+        any_success = False
+        current_day = datetime.now(TIMEZONE)
+
+        for offset in range(PUBLIC_SMP_DAYS):
+            day = current_day + timedelta(days=offset)
+            url = PUBLIC_SMP_BASE_URL.format(date=day.strftime("%Y%m%d"))
+            try:
+                async with session.get(
+                    url,
+                    timeout=ClientTimeout(total=15),
+                    headers={"User-Agent": "HomeAssistant-Meteocat/1.0"},
+                ) as response:
+                    if response.status == 404:
+                        any_success = True
+                        continue
+                    response.raise_for_status()
+                    payload = await response.json(content_type=None)
+                    if not isinstance(payload, list):
+                        raise TypeError("Public SMP payload is not a list")
+                    alerts.extend(payload)
+                    any_success = True
+            except (TimeoutError, ClientError, TypeError, ValueError) as err:
+                failed = True
+                _LOGGER.debug("Public SMP feed unavailable in %s: %s", url, err)
+
+        if failed:
+            if cache["data"] is not None:
+                _LOGGER.debug("Using cached public SMP feed after fetch failure")
+                return cache["data"]
+            return None
+        if not any_success:
+            return None
+
+        payload = {
+            "actualitzat": {"dataUpdate": datetime.now(TIMEZONE).isoformat()},
+            "dades": alerts,
+        }
+        cache["data"] = payload
+        cache["updated"] = now.timestamp()
+        _LOGGER.debug("Public SMP feed loaded with %d alerts", len(alerts))
+        return payload
+
+
+class MeteocatAlertsPublicCoordinator(DataUpdateCoordinator):
+    """Coordinator for the public SMP feed used by Meteocat's widget."""
+
+    def __init__(self, hass: HomeAssistant, entry_data: dict):
+        self.public_alerts_file = get_storage_dir(hass, "files") / "alerts_public.json"
+        self._force_update = False
+
+        super().__init__(
+            hass,
+            _LOGGER,
+            name=f"{DOMAIN} Alerts Public Coordinator",
+            update_interval=DEFAULT_ALERTS_PUBLIC_UPDATE_INTERVAL,
+        )
+
+    def force_next_update(self) -> None:
+        """Force the next refresh to bypass the shared public feed cache."""
+        self._force_update = True
+
+    async def _async_update_data(self) -> dict:
+        """Refresh the public SMP feed cache."""
+        force = self._force_update
+        self._force_update = False
+        data = await _async_fetch_public_alerts(self.hass, force=force)
+        if data is None:
+            try:
+                return await self.public_alerts_file.async_read_json()
+            except FileNotFoundError as err:
+                raise UpdateFailed(
+                    "Public SMP feed and local cache are unavailable"
+                ) from err
+
+        await self.public_alerts_file.async_write_json(data)
+        return data
+
+
 class MeteocatAlertsCoordinator(DataUpdateCoordinator):
     """Coordinator para manejar la actualización de alertas."""
 
@@ -2052,6 +2176,7 @@ class MeteocatAlertsRegionCoordinator(DataUpdateCoordinator):
         # Ruta persistente en /config/meteocat_files/files
         files_folder = get_storage_dir(hass, "files")
         self._file_path = files_folder / f"alerts_{self.region_id}.json"
+        self._public_file_path = files_folder / "alerts_public.json"
 
     def _convert_to_local_time(self, time_str: str) -> datetime:
         """Convierte una cadena de tiempo UTC a la zona horaria de Madrid."""
@@ -2120,26 +2245,114 @@ class MeteocatAlertsRegionCoordinator(DataUpdateCoordinator):
         # Formatear los tiempos a "HH:MM"
         return f"{start_local.strftime('%H:%M')} - {end_local.strftime('%H:%M')}"
 
-    async def _async_update_data(self) -> Dict[str, Any]:
-        """Carga y procesa los datos de alertas desde el archivo JSON."""
-        data = await load_json_from_file(self._file_path)
-        _LOGGER.debug("Datos cargados desde %s: %s", self._file_path, data)  # Log de la carga de datos
+    def _alert_sort_key(self, alert: dict) -> tuple[datetime, float]:
+        """Prefer the earliest alert and the newest emission within a day."""
+        avisos = alert.get("avisos", []) if isinstance(alert, dict) else []
+        starts: list[datetime] = []
+        emissions: list[datetime] = []
+        for aviso in avisos:
+            if not isinstance(aviso, dict):
+                continue
+            start = _parse_public_smp_timestamp(aviso.get("dataInici"))
+            if start is not None:
+                starts.append(start)
+            emitted = _parse_public_smp_timestamp(aviso.get("dataEmisio"))
+            if emitted is not None:
+                emissions.append(emitted)
 
-        if not data:
-            _LOGGER.error("No se pudo cargar el archivo JSON de alertas en %s.", self._file_path)
+        earliest_start = (
+            min(starts) if starts else datetime.max.replace(tzinfo=UTC)
+        )
+        latest_emission = (
+            max(emissions) if emissions else datetime.min.replace(tzinfo=UTC)
+        )
+        return (earliest_start, -latest_emission.timestamp())
+
+    def _merge_alert_data(
+        self, api_data: dict | None, public_data: dict | None
+    ) -> dict[str, Any]:
+        """Merge API and public SMP alerts, preferring current/newer sources."""
+        alerts: list[dict] = []
+        updates: list[datetime] = []
+        source_updates: dict[str, str | None] = {}
+
+        for source_name, source in (
+            (ALERT_SOURCE_API, api_data),
+            (ALERT_SOURCE_PUBLIC, public_data),
+        ):
+            if not isinstance(source, dict):
+                continue
+            source_alerts = source.get("dades", [])
+            if isinstance(source_alerts, list):
+                for item in source_alerts:
+                    if isinstance(item, dict):
+                        tagged = dict(item)
+                        tagged[ALERT_SOURCE_KEY] = source_name
+                        alerts.append(tagged)
+            update_raw = source.get("actualitzat", {}).get("dataUpdate")
+            update = _parse_public_smp_timestamp(update_raw)
+            if update is not None:
+                updates.append(update)
+            source_updates[source_name] = (
+                update_raw if isinstance(update_raw, str) else None
+            )
+
+        # _process_alerts_data keeps the last alert per meteor, so sort the
+        # least preferred alerts first and the preferred ones last.
+        alerts.sort(key=self._alert_sort_key, reverse=True)
+        latest_update = max(updates) if updates else None
+        merged = {
+            "actualitzat": {
+                "dataUpdate": latest_update.isoformat() if latest_update else ""
+            },
+            "source_updates": source_updates,
+            "dades": alerts,
+        }
+        _LOGGER.debug(
+            "Merged alert sources for region %s: %d alerts",
+            self.region_id,
+            len(alerts),
+        )
+        return self._process_alerts_data(merged)
+
+    async def _async_update_data(self) -> dict[str, Any]:
+        """Carga y procesa los datos de alertas desde los archivos JSON."""
+        data = await load_json_from_file(self._file_path)
+        try:
+            public_data = await self._public_file_path.async_read_json()
+        except FileNotFoundError:
+            public_data = None
+        _LOGGER.debug(
+            "Datos cargados desde %s y %s",
+            self._file_path,
+            self._public_file_path,
+        )
+
+        if not data and not public_data:
+            _LOGGER.error(
+                "No se pudo cargar el archivo JSON de alertas en %s ni en %s.",
+                self._file_path,
+                self._public_file_path,
+            )
             return {}
 
-        return self._process_alerts_data(data)
+        return self._merge_alert_data(data, public_data)
 
-    def _process_alerts_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _process_alerts_data(self, data: dict[str, Any]) -> dict[str, Any]:
         """Procesa los datos de alertas y devuelve un diccionario filtrado por región."""
+        source_updates = data.get("source_updates", {})
         if not data.get("dades"):
             _LOGGER.debug("No hay alertas activas para la región %s.", self.region_id)
             return {
                 "estado": "Tancat",
                 "actualizado": data.get("actualitzat", {}).get("dataUpdate", ""),
                 "activas": 0,  # Sin alertas activas
-                "detalles": {"meteor": {}}
+                "detalles": {"meteor": {}},
+                "sources": [],
+                "api_alerts": 0,
+                "public_alerts": 0,
+                "api_updated": source_updates.get(ALERT_SOURCE_API),
+                "public_updated": source_updates.get(ALERT_SOURCE_PUBLIC),
             }
 
         # Obtener la fecha de actualización y añadirla a detalles
@@ -2217,6 +2430,10 @@ class MeteocatAlertsRegionCoordinator(DataUpdateCoordinator):
                                                 "inicio": data_inici,
                                                 "fin": data_fi,
                                                 "comentario": comentario,
+                                                "source": alert.get(
+                                                    ALERT_SOURCE_KEY,
+                                                    ALERT_SOURCE_API,
+                                                ),
                                                 "umbral": afectacion.get("llindar", "Desconocido"),
                                                 "peligro": afectacion.get("perill", 0),
                                                 "nivel": afectacion.get("nivell", 0),
@@ -2234,6 +2451,21 @@ class MeteocatAlertsRegionCoordinator(DataUpdateCoordinator):
                             break  # Salimos del ciclo de evoluciones si ya encontramos una alerta
 
         alert_data["activas"] = len(alert_data["detalles"]["meteor"])  # Actualizar el número de alertas activas
+        details = alert_data["detalles"]["meteor"]
+        alert_data["estado"] = "Tancat" if not details else "Obert"
+        alert_data["sources"] = sorted(
+            {detail.get("source") for detail in details.values() if detail.get("source")}
+        )
+        alert_data["api_alerts"] = sum(
+            1 for detail in details.values() if detail.get("source") == ALERT_SOURCE_API
+        )
+        alert_data["public_alerts"] = sum(
+            1
+            for detail in details.values()
+            if detail.get("source") == ALERT_SOURCE_PUBLIC
+        )
+        alert_data["api_updated"] = source_updates.get(ALERT_SOURCE_API)
+        alert_data["public_updated"] = source_updates.get(ALERT_SOURCE_PUBLIC)
         _LOGGER.info("Detalles recibidos: %s", alert_data.get("detalles", []))
 
         return alert_data
