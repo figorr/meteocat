@@ -368,6 +368,49 @@
           }
         }
       },
+      "public_alert_feed_status": {
+        "name": "Public Alert Feed",
+        "state": {
+          "ok": "OK",
+          "degraded": "Degraded",
+          "unknown": "Unknown"
+        },
+        "state_attributes": {
+          "last_result": {
+            "name": "Last result",
+            "state": {
+              "ok": "OK",
+              "no_alerts": "No alerts",
+              "error": "Error",
+              "unknown": "Unknown"
+            }
+          },
+          "last_success": {
+            "name": "Last success"
+          },
+          "last_200": {
+            "name": "Last 200 response"
+          },
+          "last_error": {
+            "name": "Last error"
+          },
+          "last_http_status": {
+            "name": "Last HTTP status"
+          },
+          "http_statuses": {
+            "name": "HTTP statuses"
+          },
+          "consecutive_failures": {
+            "name": "Consecutive failures"
+          },
+          "alerts": {
+            "name": "Alerts"
+          },
+          "cache_age_seconds": {
+            "name": "Cache age (seconds)"
+          }
+        }
+      },
       "quota_file_status": {
         "name": "Quota File",
         "state": {

@@ -329,3 +329,68 @@ def test_force_bypasses_public_feed_cache(monkeypatch):
     assert first is cached
     assert forced is not first
     assert session.calls == 6
+
+    status = coordinator_module.get_public_feed_status(hass)
+    assert status["status"] == "ok"
+    assert status["last_result"] == "ok"
+    assert status["consecutive_failures"] == 0
+
+
+def test_all_404_is_healthy_and_reports_no_alerts(monkeypatch):
+    """404 responses mean no alerts and must not degrade the feed."""
+
+    class FakeResponse:
+        status = 404
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return False
+
+    class FakeSession:
+        def get(self, *args, **kwargs):
+            return FakeResponse()
+
+    hass = SimpleNamespace(data={})
+    monkeypatch.setattr(
+        coordinator_module,
+        "async_get_clientsession",
+        lambda hass: FakeSession(),
+    )
+
+    result = asyncio.run(coordinator_module._async_fetch_public_alerts(hass))
+    status = coordinator_module.get_public_feed_status(hass)
+
+    assert result is not None
+    assert result["dades"] == []
+    assert status["status"] == "ok"
+    assert status["last_result"] == "no_alerts"
+    assert status["last_http_status"] == 404
+    assert status["consecutive_failures"] == 0
+    assert status["alerts"] == 0
+
+
+def test_public_feed_failure_marks_status_degraded(monkeypatch):
+    """Technical failures degrade the feed status without turning 404 into an error."""
+
+    class FailingSession:
+        def get(self, *args, **kwargs):
+            raise TimeoutError("feed unavailable")
+
+    hass = SimpleNamespace(data={})
+    monkeypatch.setattr(
+        coordinator_module,
+        "async_get_clientsession",
+        lambda hass: FailingSession(),
+    )
+
+    result = asyncio.run(coordinator_module._async_fetch_public_alerts(hass))
+    status = coordinator_module.get_public_feed_status(hass)
+
+    assert result is None
+    assert status["status"] == "degraded"
+    assert status["last_result"] == "error"
+    assert status["consecutive_failures"] == 1
+    assert "feed unavailable" in status["last_error"]
+    assert status["http_statuses"] == [None, None, None]

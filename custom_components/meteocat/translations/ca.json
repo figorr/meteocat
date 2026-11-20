@@ -368,6 +368,49 @@
           }
         }
       },
+      "public_alert_feed_status": {
+        "name": "Feed Públic d'Alertes",
+        "state": {
+          "ok": "OK",
+          "degraded": "Degradat",
+          "unknown": "Desconegut"
+        },
+        "state_attributes": {
+          "last_result": {
+            "name": "Últim resultat",
+            "state": {
+              "ok": "OK",
+              "no_alerts": "Sense alertes",
+              "error": "Error",
+              "unknown": "Desconegut"
+            }
+          },
+          "last_success": {
+            "name": "Última actualització correcta"
+          },
+          "last_200": {
+            "name": "Última resposta 200"
+          },
+          "last_error": {
+            "name": "Últim error"
+          },
+          "last_http_status": {
+            "name": "Últim estat HTTP"
+          },
+          "http_statuses": {
+            "name": "Estats HTTP"
+          },
+          "consecutive_failures": {
+            "name": "Fallades consecutives"
+          },
+          "alerts": {
+            "name": "Alertes"
+          },
+          "cache_age_seconds": {
+            "name": "Antiguitat de la memòria cau (s)"
+          }
+        }
+      },
       "quota_file_status": {
         "name": "Arxiu Quota",
         "state": {

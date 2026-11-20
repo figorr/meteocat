@@ -1722,14 +1722,43 @@ def _parse_public_smp_timestamp(value: str | None) -> datetime | None:
     return parsed
 
 
+def _default_public_feed_status() -> dict:
+    """Return the default status for the public SMP feed."""
+    return {
+        "status": "unknown",
+        "last_result": "unknown",
+        "last_success": None,
+        "last_200": None,
+        "last_error": None,
+        "last_http_status": None,
+        "http_statuses": [],
+        "consecutive_failures": 0,
+        "alerts": 0,
+    }
+
+
+def get_public_feed_status(hass: HomeAssistant) -> dict:
+    """Return the current public SMP feed status."""
+    cache = hass.data.get(PUBLIC_SMP_CACHE_KEY)
+    if not isinstance(cache, dict):
+        return _default_public_feed_status()
+    return cache.setdefault("status", _default_public_feed_status())
+
+
 async def _async_fetch_public_alerts(
     hass: HomeAssistant, *, force: bool = False
 ) -> dict | None:
     """Fetch the public SMP feed used by Meteocat's own alerts widget."""
     cache = hass.data.setdefault(
         PUBLIC_SMP_CACHE_KEY,
-        {"lock": asyncio.Lock(), "data": None, "updated": 0.0},
+        {
+            "lock": asyncio.Lock(),
+            "data": None,
+            "updated": 0.0,
+            "status": _default_public_feed_status(),
+        },
     )
+    status = cache.setdefault("status", _default_public_feed_status())
     async with cache["lock"]:
         now = datetime.now(UTC)
         if (
@@ -1743,18 +1772,27 @@ async def _async_fetch_public_alerts(
         alerts: list[dict] = []
         failed = False
         any_success = False
+        http_statuses: list[int | None] = []
+        last_http_status: int | None = None
+        last_200: str | None = None
+        error_messages: list[str] = []
         current_day = datetime.now(TIMEZONE)
+        now_iso = datetime.now(TIMEZONE).isoformat()
 
         for offset in range(PUBLIC_SMP_DAYS):
             day = current_day + timedelta(days=offset)
             url = PUBLIC_SMP_BASE_URL.format(date=day.strftime("%Y%m%d"))
+            response_status: int | None = None
             try:
                 async with session.get(
                     url,
                     timeout=ClientTimeout(total=15),
                     headers={"User-Agent": "HomeAssistant-Meteocat/1.0"},
                 ) as response:
-                    if response.status == 404:
+                    response_status = response.status
+                    http_statuses.append(response_status)
+                    last_http_status = response_status
+                    if response_status == 404:
                         any_success = True
                         continue
                     response.raise_for_status()
@@ -1763,17 +1801,49 @@ async def _async_fetch_public_alerts(
                         raise TypeError("Public SMP payload is not a list")
                     alerts.extend(payload)
                     any_success = True
+                    last_200 = now_iso
             except (TimeoutError, ClientError, TypeError, ValueError) as err:
                 failed = True
+                if response_status is None:
+                    http_statuses.append(None)
+                error_messages.append(f"{url}: {err}")
                 _LOGGER.debug("Public SMP feed unavailable in %s: %s", url, err)
 
         if failed:
+            status.update(
+                {
+                    "status": "degraded",
+                    "last_result": "error",
+                    "last_error": "; ".join(error_messages) or "Unknown error",
+                    "last_http_status": last_http_status,
+                    "http_statuses": http_statuses,
+                    "consecutive_failures": int(
+                        status.get("consecutive_failures", 0)
+                    )
+                    + 1,
+                }
+            )
             if cache["data"] is not None:
                 _LOGGER.debug("Using cached public SMP feed after fetch failure")
                 return cache["data"]
             return None
         if not any_success:
             return None
+
+        status.update(
+            {
+                "status": "ok",
+                "last_result": "no_alerts" if not alerts else "ok",
+                "last_success": now_iso,
+                "last_error": None,
+                "last_http_status": last_http_status,
+                "http_statuses": http_statuses,
+                "consecutive_failures": 0,
+                "alerts": len(alerts),
+            }
+        )
+        if last_200 is not None:
+            status["last_200"] = last_200
 
         payload = {
             "actualitzat": {"dataUpdate": datetime.now(TIMEZONE).isoformat()},
@@ -1805,9 +1875,17 @@ class MeteocatAlertsPublicCoordinator(DataUpdateCoordinator):
 
     async def _async_update_data(self) -> dict:
         """Refresh the public SMP feed cache."""
+        previous_status = get_public_feed_status(self.hass).get("status")
         force = self._force_update
         self._force_update = False
         data = await _async_fetch_public_alerts(self.hass, force=force)
+        status = get_public_feed_status(self.hass)
+        if status.get("status") == "degraded" and previous_status != "degraded":
+            _LOGGER.warning(
+                "Public SMP feed degraded: %s", status.get("last_error")
+            )
+        elif status.get("status") == "ok" and previous_status == "degraded":
+            _LOGGER.info("Public SMP feed recovered")
         if data is None:
             try:
                 return await self.public_alerts_file.async_read_json()

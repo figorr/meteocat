@@ -368,6 +368,49 @@
           }
         }
       },
+      "public_alert_feed_status": {
+        "name": "Feed Público de Alertas",
+        "state": {
+          "ok": "OK",
+          "degraded": "Degradado",
+          "unknown": "Desconocido"
+        },
+        "state_attributes": {
+          "last_result": {
+            "name": "Último resultado",
+            "state": {
+              "ok": "OK",
+              "no_alerts": "Sin alertas",
+              "error": "Error",
+              "unknown": "Desconocido"
+            }
+          },
+          "last_success": {
+            "name": "Última actualización correcta"
+          },
+          "last_200": {
+            "name": "Última respuesta 200"
+          },
+          "last_error": {
+            "name": "Último error"
+          },
+          "last_http_status": {
+            "name": "Último estado HTTP"
+          },
+          "http_statuses": {
+            "name": "Estados HTTP"
+          },
+          "consecutive_failures": {
+            "name": "Fallos consecutivos"
+          },
+          "alerts": {
+            "name": "Alertas"
+          },
+          "cache_age_seconds": {
+            "name": "Antigüedad de la caché (s)"
+          }
+        }
+      },
       "quota_file_status": {
         "name": "Archivo Cuota",
         "state": {

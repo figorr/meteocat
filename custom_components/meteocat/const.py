@@ -46,6 +46,7 @@ ALERT_COLD = "alert_cold"
 ALERT_WARM = "alert_warm"
 ALERT_WARM_NIGHT = "alert_warm_night"
 ALERT_SNOW = "alert_snow"
+PUBLIC_ALERT_FEED_STATUS = "public_alert_feed_status"
 PUBLIC_SMP_BASE_URL = (
     "https://static-m.meteo.cat/ginys/pronostic/smp/episodisOberts/"
     "avisos-episodis-oberts-{date}.json"

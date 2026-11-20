@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone, time, timedelta
+from datetime import UTC, datetime, timezone, time, timedelta
 from zoneinfo import ZoneInfo
 from typing import Any, ClassVar, Optional
 import os
@@ -78,6 +78,8 @@ from .const import (
     QUOTA_QUERIES,
     ALERTS,
     ALERT_FILE_STATUS,
+    PUBLIC_ALERT_FEED_STATUS,
+    PUBLIC_SMP_CACHE_KEY,
     ALERT_WIND,
     ALERT_RAIN_INTENSITY,
     ALERT_RAIN_INTENSITY_30_MIN,
@@ -148,7 +150,9 @@ from .coordinator import (
     DailyForecastCoordinator,
     MeteocatUviCoordinator,
     MeteocatAlertsCoordinator,
+    MeteocatAlertsPublicCoordinator,
     MeteocatAlertsRegionCoordinator,
+    get_public_feed_status,
     MeteocatQuotesCoordinator,
     MeteocatQuotesFileCoordinator,
     MeteocatLightningCoordinator,
@@ -424,6 +428,12 @@ SENSOR_TYPES: tuple[MeteocatSensorEntityDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     MeteocatSensorEntityDescription(
+        key=PUBLIC_ALERT_FEED_STATUS,
+        translation_key="public_alert_feed_status",
+        icon="mdi:rss",
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    MeteocatSensorEntityDescription(
         key=ALERT_WIND,
         translation_key="alert_wind",
         icon="mdi:alert-outline",
@@ -648,6 +658,7 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
     entity_coordinator = entry_data.get("entity_coordinator")
     uvi_coordinator = entry_data.get("uvi_coordinator")
     alerts_coordinator = entry_data.get("alerts_coordinator")
+    alerts_public_coordinator = entry_data.get("alerts_public_coordinator")
     alerts_region_coordinator = entry_data.get("alerts_region_coordinator")
     quotes_coordinator = entry_data.get("quotes_coordinator")
     quotes_file_coordinator = entry_data.get("quotes_file_coordinator")
@@ -771,6 +782,15 @@ async def async_setup_entry(hass, entry, async_add_entities: AddEntitiesCallback
         for description in SENSOR_TYPES
         if description.key == ALERT_FILE_STATUS
     )
+
+    if alerts_public_coordinator:
+        async_add_entities(
+            MeteocatAlertPublicStatusSensor(
+                alerts_public_coordinator, description, entry_data
+            )
+            for description in SENSOR_TYPES
+            if description.key == PUBLIC_ALERT_FEED_STATUS
+        )
 
     # Sensores de alertas para la comarca
     async_add_entities(
@@ -2015,6 +2035,75 @@ class MeteocatAlertStatusSensor(CoordinatorEntity[MeteocatAlertsCoordinator], Se
             manufacturer="Meteocat",
             model="Meteocat API",
         )
+
+
+class MeteocatAlertPublicStatusSensor(
+    CoordinatorEntity[MeteocatAlertsPublicCoordinator], SensorEntity
+):
+    """Diagnostic sensor for the public SMP alert feed."""
+
+    _attr_has_entity_name = True
+
+    def __init__(self, alerts_public_coordinator, description, entry_data):
+        super().__init__(alerts_public_coordinator)
+        self.entity_description = description
+        self._town_name = entry_data["town_name"]
+        self._town_id = entry_data["town_id"]
+        self._station_id = entry_data["station_id"]
+        self._attr_unique_id = (
+            f"sensor.{DOMAIN}_{self._town_id}_public_alert_feed_status"
+        )
+        self.entity_id = _build_entity_id(
+            self._station_id,
+            self._town_name,
+            entry_data,
+            self.entity_description.translation_key,
+            self.entity_description.key,
+        )
+        self._attr_entity_category = getattr(description, "entity_category", None)
+
+    @property
+    def available(self) -> bool:
+        """Keep the diagnostic visible while the feed is degraded."""
+        return True
+
+    @property
+    def native_value(self):
+        """Return the public feed status."""
+        return get_public_feed_status(self.hass).get("status", "unknown")
+
+    @property
+    def extra_state_attributes(self):
+        """Return public feed diagnostics."""
+        status = get_public_feed_status(self.hass)
+        cache = self.hass.data.get(PUBLIC_SMP_CACHE_KEY, {})
+        attributes = {
+            "last_result": status.get("last_result"),
+            "last_success": status.get("last_success"),
+            "last_200": status.get("last_200"),
+            "last_error": status.get("last_error"),
+            "last_http_status": status.get("last_http_status"),
+            "http_statuses": status.get("http_statuses", []),
+            "consecutive_failures": status.get("consecutive_failures", 0),
+            "alerts": status.get("alerts", 0),
+        }
+        updated = cache.get("updated") if isinstance(cache, dict) else None
+        if updated:
+            attributes["cache_age_seconds"] = max(
+                0, int(datetime.now(UTC).timestamp() - updated)
+            )
+        return attributes
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return device information."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._town_id)},
+            name=f"Meteocat {self._station_id} {self._town_name}",
+            manufacturer="Meteocat",
+            model="Meteocat API",
+        )
+
 
 class MeteocatAlertRegionSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinator], SensorEntity):
     """Sensor dinámico que muestra el estado de las alertas por región."""
