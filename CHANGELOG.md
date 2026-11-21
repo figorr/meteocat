@@ -1,3 +1,16 @@
+# [4.5.0](https://github.com/figorr/meteocat/compare/v4.4.0...v4.5.0) (2026-11-21)
+
+
+### Bug Fixes
+
+* align alert period end with SMP intervals ([37b90e4](https://github.com/figorr/meteocat/commit/37b90e4d6ae5b5727bdfa3f979f4cb0fa61a0b9f))
+
+
+### Features
+
+* add public alert feed diagnostics ([eebfb6b](https://github.com/figorr/meteocat/commit/eebfb6b5e897244f7493d4ea067e61061bfe8a75))
+* expose regional alert windows ([4fb81d7](https://github.com/figorr/meteocat/commit/4fb81d7c0ef4b5caf6fa2ce97d9091d74c8208e0))
+
 # [4.4.0](https://github.com/figorr/meteocat/compare/v4.3.1...v4.4.0) (2026-11-20)
 
 
