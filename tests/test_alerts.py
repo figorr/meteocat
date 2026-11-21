@@ -103,3 +103,20 @@ def test_future_alert_is_processed():
 
     assert result["activas"] == 1
     assert "Vent" in result["detalles"]["meteor"]
+
+
+def test_period_end_stops_one_minute_before_next_boundary():
+    """Periods end at :59, matching the inclusive SMP interval."""
+    coordinator = make_region_coordinator()
+
+    start, end = coordinator._convert_period_to_local_datetimes(
+        "06-12", "2026-11-22"
+    )
+    assert start == datetime(2026, 11, 22, 7, 0, tzinfo=TIMEZONE)
+    assert end == datetime(2026, 11, 22, 12, 59, tzinfo=TIMEZONE)
+
+    start, end = coordinator._convert_period_to_local_datetimes(
+        "18-00", "2026-11-22"
+    )
+    assert start == datetime(2026, 11, 22, 19, 0, tzinfo=TIMEZONE)
+    assert end == datetime(2026, 11, 23, 0, 59, tzinfo=TIMEZONE)

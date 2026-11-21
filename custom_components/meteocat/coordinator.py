@@ -2316,7 +2316,9 @@ class MeteocatAlertsRegionCoordinator(DataUpdateCoordinator):
 
         date_utc = datetime.fromisoformat(f"{date}T00:00+00:00")
         start_local = (date_utc + timedelta(hours=int(start_utc))).astimezone(TIMEZONE)
-        end_local = (date_utc + timedelta(hours=int(end_utc))).astimezone(TIMEZONE)
+        end_local = (
+            date_utc + timedelta(hours=int(end_utc))
+        ).astimezone(TIMEZONE) - timedelta(minutes=1)
         return start_local, end_local
 
     def _convert_period_to_local_time(self, period: str, date: str) -> str:
