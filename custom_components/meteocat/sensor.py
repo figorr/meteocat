@@ -2337,6 +2337,8 @@ class MeteocatAlertMeteorSensor(CoordinatorEntity[MeteocatAlertsRegionCoordinato
         return {
             "inicio": meteor_data.get("inicio"),
             "fin": meteor_data.get("fin"),
+            "inicio_comarca": meteor_data.get("inicio_comarca"),
+            "fin_comarca": meteor_data.get("fin_comarca"),
             "fecha": meteor_data.get("fecha"),
             "periodo": meteor_data.get("periodo"),
             "umbral": umbral_convertido,

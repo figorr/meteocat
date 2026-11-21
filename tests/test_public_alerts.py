@@ -19,7 +19,9 @@ def make_region_coordinator():
     return coordinator
 
 
-def make_alert(meteor, start, end, emission, comment, day):
+def make_alert(
+    meteor, start, end, emission, comment, day, region_periods=PERIODS
+):
     """Build an alert in the API/public SMP schema."""
     periodes = [
         {
@@ -31,7 +33,9 @@ def make_alert(meteor, start, end, emission, comment, day):
                     "perill": 1,
                     "nivell": 1,
                 }
-            ],
+            ]
+            if period in region_periods
+            else [],
         }
         for period in PERIODS
     ]
@@ -334,6 +338,41 @@ def test_force_bypasses_public_feed_cache(monkeypatch):
     assert status["status"] == "ok"
     assert status["last_result"] == "ok"
     assert status["consecutive_failures"] == 0
+
+
+def test_region_window_uses_only_comarca_periods():
+    """The badge window uses the periods affecting the configured region."""
+    now = datetime.now(TIMEZONE)
+    today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    tomorrow = today + timedelta(days=1)
+    coordinator = make_region_coordinator()
+    data = make_payload(
+        [
+            make_alert(
+                "Vent",
+                now - timedelta(hours=1),
+                tomorrow + timedelta(hours=23),
+                now - timedelta(hours=2),
+                "Regional window test",
+                tomorrow,
+                region_periods=("06-12", "12-18"),
+            )
+        ]
+    )
+
+    result = coordinator._process_alerts_data(data)
+    detail = result["detalles"]["meteor"]["Vent"]
+    expected_start, _ = coordinator._convert_period_to_local_datetimes(
+        "06-12", tomorrow.date().isoformat()
+    )
+    _, expected_end = coordinator._convert_period_to_local_datetimes(
+        "12-18", tomorrow.date().isoformat()
+    )
+
+    assert detail["inicio_comarca"] == expected_start
+    assert detail["fin_comarca"] == expected_end
+    assert detail["inicio"] != detail["inicio_comarca"]
+    assert detail["fin"] != detail["fin_comarca"]
 
 
 def test_all_404_is_healthy_and_reports_no_alerts(monkeypatch):

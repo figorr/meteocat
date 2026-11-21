@@ -2305,20 +2305,58 @@ class MeteocatAlertsRegionCoordinator(DataUpdateCoordinator):
         else:
             return periods[3]
     
-    def _convert_period_to_local_time(self, period: str, date: str) -> str:
-        """Convierte un periodo UTC a la hora local para una fecha específica."""
+    def _convert_period_to_local_datetimes(
+        self, period: str, date: str
+    ) -> tuple[datetime, datetime]:
+        """Convierte un periodo UTC a datetimes locales para una fecha."""
         utc_times = period.split("-")
         # Manejar la transición de "18-00" como "18-24" para el cálculo
         start_utc = utc_times[0]
         end_utc = "24" if utc_times[1] == "00" else utc_times[1]
-        
-        # Convertir los tiempos UTC a datetime
-        date_utc = datetime.fromisoformat(f"{date}T00:00+00:00")  # Fecha base en UTC
+
+        date_utc = datetime.fromisoformat(f"{date}T00:00+00:00")
         start_local = (date_utc + timedelta(hours=int(start_utc))).astimezone(TIMEZONE)
         end_local = (date_utc + timedelta(hours=int(end_utc))).astimezone(TIMEZONE)
-        
-        # Formatear los tiempos a "HH:MM"
+        return start_local, end_local
+
+    def _convert_period_to_local_time(self, period: str, date: str) -> str:
+        """Convierte un periodo UTC a la hora local para una fecha específica."""
+        start_local, end_local = self._convert_period_to_local_datetimes(period, date)
         return f"{start_local.strftime('%H:%M')} - {end_local.strftime('%H:%M')}"
+
+    def _get_region_alert_window(
+        self, aviso: dict, current_time: datetime
+    ) -> tuple[datetime | None, datetime | None]:
+        """Return the first and last active period affecting this region."""
+        region_id = int(self.region_id)
+        starts: list[datetime] = []
+        ends: list[datetime] = []
+
+        for evolution in aviso.get("evolucions", []) or []:
+            date_str = str(evolution.get("dia", ""))[:10]
+            if not date_str:
+                continue
+            for period in evolution.get("periodes", []) or []:
+                affectations = period.get("afectacions") or []
+                if not any(
+                    affectation.get("idComarca") == region_id
+                    for affectation in affectations
+                ):
+                    continue
+                try:
+                    start, end = self._convert_period_to_local_datetimes(
+                        period["nom"], date_str
+                    )
+                except (KeyError, TypeError, ValueError):
+                    continue
+                if end < current_time - timedelta(seconds=1):
+                    continue
+                starts.append(start)
+                ends.append(end)
+
+        if not starts:
+            return None, None
+        return min(starts), max(ends)
 
     def _alert_sort_key(self, alert: dict) -> tuple[datetime, float]:
         """Prefer the earliest alert and the newest emission within a day."""
@@ -2464,6 +2502,9 @@ class MeteocatAlertsRegionCoordinator(DataUpdateCoordinator):
                     and data_inici <= data_fi
                     and current_time <= data_fi + timedelta(seconds=1)
                 ):
+                    region_start, region_end = self._get_region_alert_window(
+                        aviso, current_time
+                    )
                     evoluciones = aviso.get("evolucions", [])
                     for evolucion in evoluciones:
                         evolucion_date = datetime.fromisoformat(evolucion["dia"].replace("Z", "+00:00")).date()
@@ -2504,6 +2545,8 @@ class MeteocatAlertsRegionCoordinator(DataUpdateCoordinator):
                                                 "motivo": meteor,
                                                 "inicio": data_inici,
                                                 "fin": data_fi,
+                                                "inicio_comarca": region_start,
+                                                "fin_comarca": region_end,
                                                 "comentario": comentario,
                                                 "source": alert.get(
                                                     ALERT_SOURCE_KEY,
